@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityMemberAccountDAO">
+	<!-- 活动奖励sum -->
+	<select id="selectActivityRewardsSum" resultType="DECIMAL" parameterType="java.util.HashMap" >
+		SELECT ifnull(SUM(amount),0) from js_activity_member_account 
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="afid != null"> and afid = #{afid}</if>
+			<if test="uid != null"> and uid = #{uid}</if>
+			<if test="status != null" > and status = #{status}</if>				
+		</trim>	
+	</select>
+	
+	<update id="update">
+		update js_activity_member_account
+			set status = #{status}				
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null"> and uid = #{uid}</if>
+			<if test="afid != null"> and afid = #{afid}</if>
+			<if test="endStatus != null"> and status = #{endStatus}</if>
+		</trim>
+	</update>
+	
+</mapper>

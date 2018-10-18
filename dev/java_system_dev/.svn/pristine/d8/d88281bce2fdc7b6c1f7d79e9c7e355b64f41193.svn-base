@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberCarryDAO" >
+	<resultMap id="DrMemberCarryResult" type="com.jsjf.model.member.DrMemberCarry" >
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="bankid" property="bankId" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="poundage" property="poundage" jdbcType="DECIMAL" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="auditid" property="auditId" jdbcType="INTEGER" />
+		<result column="audittime" property="auditTime" jdbcType="TIMESTAMP" />
+		<result column="bankname" property="bankName" jdbcType="VARCHAR" />
+		<result column="banknum" property="bankNum" jdbcType="VARCHAR" />
+		<result column="realname" property="realName" jdbcType="VARCHAR"/>
+		<result column="phone" property="phone" jdbcType="CHAR" />
+		<result column="paymentnum" property="paymentNum" jdbcType="VARCHAR" />
+		<result column="reason" property="reason" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="recommCodes" property="recommCodes" jdbcType="VARCHAR" />
+	</resultMap>
+	<!-- 获取 提现记录列表数据  concat(substring(m.mobilePhone,1,3),"****",substring(m.mobilePhone,8))
+	
+	-->
+	<select id="getDrMemberCarryList" parameterType="java.util.HashMap" resultMap="DrMemberCarryResult">
+		select c.id,c.uid,c.audittime,c.addtime,c.status,c.amount,c.poundage,c.paymentnum,c.reason,
+		CONCAT(LEFT(m.mobilePhone,3),'****',RIGHT(m.mobilePhone,4)) as phone,
+		 c.bankname,CONCAT(LEFT( c.banknum,4),'****',RIGHT( c.banknum,4)) as banknum, c.channel,CONCAT(LEFT(mbi.realname,1),'**') AS realname,c.type,f.balance,
+		(f.crushcount+f.investProfit+f.spreadProfit) as earningSum,(f.freeze+f.wprincipal+f.carrycount) as paySum,m.recommCodes
+		from dr_member_carry c 
+		left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mbi on m.uid = mbi.uid 
+		left join dr_member_funds f on f.uid = c.uid	
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') <= #{endDate} ]]>
+			</if>
+			<if test="audStartDate != null and audStartDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') >= #{audStartDate}]]>
+			</if>
+			<if test="audEndDate != null and audEndDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') <= #{audEndDate} ]]>
+			</if>
+			<if test="paymentNum != null and paymentNum !='' ">
+				and c.paymentnum like CONCAT('%',trim('${paymentNum}'),'%' )
+			</if>
+			<if test="realName != null and realName !='' "> 
+			and mbi.realname like CONCAT('%',trim('${realName}'),'%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 and m.mobilephone like CONCAT('%',trim('${phone}'),'%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+			 and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="idCards != null and idCards !='' ">
+			 and mbi.idcards like CONCAT('%','${idCards}','%' )
+			</if>
+			<if test="(status != null and status != '') or status==0">
+			and	c.status =#{status}
+			</if>
+			<if test="startamount != null and startamount != ''">
+			and	c.amount>=#{startamount}
+			</if>
+			<if test="endamount != null and endamount != ''">
+			and	#{endamount}>=c.amount
+			</if>
+			<if test="type != null and type != ''">
+			and	c.type=#{type}
+			</if>
+		</where>
+		<![CDATA[ order by status,mbi.realname,c.addtime desc ]]>    
+		limit #{offset},#{limit} 
+	</select>
+	<!-- 获取 提现记录 总数 -->
+	<select id="getDrMemberCarryCounts" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from dr_member_carry c 
+		left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mbi on m.uid = mbi.uid 
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') <= #{endDate} ]]>
+			</if>
+			<if test="audStartDate != null and audStartDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') >= #{audStartDate}]]>
+			</if>
+			<if test="audEndDate != null and audEndDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') <= #{audEndDate} ]]>
+			</if>
+			<if test="paymentNum != null and paymentNum !='' ">
+				and c.paymentnum like CONCAT('%','${paymentNum}','%' )
+			</if>
+			<if test="realName != null and realName !='' "> 
+			and mbi.realname like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 and m.mobilephone like CONCAT('%','${phone}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+			 and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="(status != null and status != '') or status==0">
+			and	c.status =#{status}
+			</if>
+			<if test="startamount != null and startamount != ''">
+			and	c.amount>=#{startamount}
+			</if>
+			<if test="endamount != null and endamount != ''">
+			and	#{endamount}>=c.amount
+			</if>
+			<if test="type != null and type != ''">
+			and	c.type=#{type}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获得提现总额  -->
+	<select id="getDrMemberCarrySum" parameterType="java.util.HashMap" resultType="Double">		
+		select sum(c.amount)
+		from dr_member_carry c 
+		left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mbi on m.uid = mbi.uid 
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') >=#{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d %H:%i:%s') <= #{endDate} ]]>
+			</if>
+			<if test="audStartDate != null and audStartDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') >= #{audStartDate}]]>
+			</if>
+			<if test="audEndDate != null and audEndDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.audittime,'%Y-%m-%d') <= #{audEndDate} ]]>
+			</if>
+			<if test="realName != null and realName !='' "> 
+			and mbi.realname like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 and m.mobilephone like CONCAT('%','${phone}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+			 and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="(status != null and status != '') or status==0">
+			and	c.status =#{status}
+			</if>
+			<if test="type != null and type != '' ">
+			and	c.type =#{type}
+			</if>
+		</where>   
+	</select>
+	
+  	<update id="updateStatusById" parameterType="com.jsjf.model.member.DrMemberCarry" >
+    update dr_member_carry
+    <set>
+		<if test="status != null">
+      	status = #{status:INTEGER},
+      	</if>
+      	<if test="auditId != null">
+      	auditid = #{auditId:INTEGER},
+      	</if>
+      	<if test="auditTime != null">
+      	audittime = #{auditTime:TIMESTAMP},
+      	</if>
+		<if test="reason != null">
+		reason = #{reason:VARCHAR},
+		</if>
+		<if test="paymentNum != null">
+		paymentnum = #{paymentNum:VARCHAR},
+		</if>
+		<if test="remitMchntTxnSsn != null">
+		remitMchntTxnSsn = #{remitMchntTxnSsn}
+		</if>
+	</set> 
+    where id = #{id:INTEGER}
+  	</update>
+  	
+    <select id="selectDrMemberCarryById" resultMap="DrMemberCarryResult" parameterType="int" >
+    select * from dr_member_carry
+    where id = #{id:INTEGER}
+  	</select>
+  	
+  	<select id="selectDrMemberCarryByPaymentNum" resultMap="DrMemberCarryResult" parameterType="String" >
+    select * from dr_member_carry
+    where paymentnum = #{paymentnum:VARCHAR} and channel !=4 and (status=1 or status = 5)
+  	</select>
+  	
+  	<!-- 查询所有处理中的记录-->
+	<select id="getAllDrMemberCarry" resultMap="DrMemberCarryResult">
+		select * from dr_member_carry
+		<where>
+			(status=1 or status=5) and channel != 4
+		</where>
+	</select>
+	
+	<select id="selectDrMemberCarryByPaymentnum" resultType="com.jsjf.model.member.DrMemberCarry" parameterType="java.util.Map">
+  		select * from dr_member_carry where paymentnum=#{paymentnum}
+  	</select>
+  	
+  	<select id="selectFuiouByStatus" resultType="com.jsjf.model.member.DrMemberCarry">
+  		select * from dr_member_carry where status=0 and type=3 order by addtime asc limit 100
+  	</select>
+</mapper>

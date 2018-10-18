@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrFeedbackDAO">
+	<resultMap id="DrFeedbackResult" type="com.jsjf.model.member.DrFeedback">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="handleId" property="handleId" jdbcType="INTEGER" />
+		<result column="contactInformation" property="contactInformation" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="feedbackTime" property="feedbackTime" jdbcType="DATE" />
+		<result column="handleResult" property="handleResult" jdbcType="VARCHAR" />
+		<result column="handleTime" property="handleTime" jdbcType="DATE" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="statusName" property="statusName" jdbcType="VARCHAR" />
+		
+	</resultMap>
+	<insert id="insertFeedback" parameterType="com.jsjf.model.member.DrFeedback" >
+		INSERT INTO dr_feedback
+		<trim prefix=" (" suffix=" )" suffixOverrides=",">
+			<if test="uid != null"> uid ,</if>
+			<if test="contactInformation != null"> contactInformation,</if>
+			<if test="content != null"> content ,</if>
+			<if test="feedbackTime != null"> feedbackTime ,</if>
+			<if test="status != null"> status ,</if>
+			<if test="channel != null"> channel ,</if>
+		</trim>
+		<trim prefix=" values (" suffix=")" suffixOverrides=",">
+			<if test="uid != null"> #{uid},</if>
+			<if test="contactInformation != null"> #{contactInformation},</if>
+			<if test="content != null"> #{content},</if>
+			<if test="feedbackTime != null"> #{feedbackTime},</if>
+			<if test="status != null"> #{status},</if>
+			<if test="channel != null"> #{channel},</if>
+		</trim>
+	</insert>
+	<update id="updateDrFeedback" parameterType="com.jsjf.model.member.DrFeedback">
+	update dr_feedback
+		<set>
+			<if test="uid != null">
+				uid = #{uid:INTEGER},
+			</if>
+			<if test="contactInformation != null">
+				contactInformation = #{contactInformation:VARCHAR},
+			</if>
+			<if test="content != null">
+				content = #{content:VARCHAR},
+			</if>
+			<if test="feedbackTime != null">
+				feedbackTime = #{feedbackTime:DATE},
+			</if>
+			<if test="handleResult != null">
+				handleResult = #{handleResult:VARCHAR},
+			</if>
+			<if test="handleTime != null ">
+				handleTime = #{handleTime:DATE},
+			</if>
+			<if test="handleId != null">
+				handleId = #{handleId:INTEGER},
+			</if>
+			<if test="status != null ">
+				status = #{status:INTEGER},
+			</if>
+		</set>
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</update>
+	<select id="selectByPrimaryKey" resultMap="DrFeedbackResult" parameterType="com.jsjf.model.member.DrFeedback" >
+    select * from dr_feedback ff where ff.id= #{id:INTEGER}
+	</select>
+	<select id="getDrFeedbackList" resultMap="DrFeedbackResult" parameterType="java.util.HashMap" >
+    	select ff.*,case when ff.status=0 then '未处理' else '已处理' end as statusName from dr_feedback ff where 1=1
+    	
+    	<if test="status !=null and status !='' ">
+			and status = #{status:VARCHAR} 
+		</if>
+		<if test="contactInformation !=null and contactInformation !='' ">
+			and contactInformation like like CONCAT('%','${contactInformation:VARCHAR}','%' )  
+		</if>
+		order by feedbackTime desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="getDrFeedbackCounts" resultType="int" parameterType="java.util.HashMap">
+		select count(1) from dr_feedback ff where 1=1
+    	
+    	<if test="status !=null and status !='' ">
+			and status = #{status:VARCHAR} 
+		</if>
+		<if test="contactInformation !=null and contactInformation !='' ">
+			and contactInformation = #{contactInformation:VARCHAR} 
+		</if>
+		order by feedbackTime desc
+	</select>
+</mapper>

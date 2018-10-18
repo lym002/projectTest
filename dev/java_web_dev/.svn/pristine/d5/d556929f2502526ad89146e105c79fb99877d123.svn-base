@@ -1,0 +1,722 @@
+package com.jsjf.controller.account.mycenter;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.alibaba.fastjson.JSON;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.SecurityUtils;
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.cpa.DrChannelInfoDAO;
+import com.jsjf.model.cpa.DrChannelInfo;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberBank;
+import com.jsjf.model.system.SysBank;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.member.DrMemberBankService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.SysMessageLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jzh.FuiouConfig;
+
+@RequestMapping("/memberSetting")
+@Controller
+public class MemberSettingController {
+	private Logger log = Logger.getLogger(this.getClass());
+	
+	@Autowired
+	private DrMemberService drMemberService;
+	@Autowired
+	private SysMessageLogService sysMessageLogService;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrMemberBankService drMemberBankService;
+	@Autowired
+	public DrChannelInfoDAO drChannelInfoDAO;
+	
+	@RequestMapping("fuiouUpdatePwd")
+	@ResponseBody
+	public String fuiouUpdatePwd(HttpServletRequest req,@RequestBody Map<String, Object> params){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		
+		try {
+			if(member.getIsFuiou() ==1){
+				if(Utils.isObjectNotEmpty(params.get("busi_tp")) && Utils.isNumber(params.get("busi_tp").toString())){
+					params.put("id", member.getUid());
+					params.put("login_id", member.getMobilephone());
+					
+					map.put("signature", FuiouConfig.resetPassword(params));
+					map.put("fuiouUrl", FuiouConfig.RESETPASSWORDURL);
+					br.setMap(map);
+					br.setSuccess(true);
+				}else{
+					br.setErrorCode("1002");
+					br.setErrorMsg("业务类型编码错误");
+				}				
+			}else{
+				br.setErrorCode("1001");
+				br.setErrorMsg("未开通存管");
+			}
+		} catch (Exception e) {
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return JSON.toJSONString(br);
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	@RequestMapping("/fuiouIndex")
+	@ResponseBody
+	public String fuiouIndex(HttpServletRequest req){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		if(Utils.isObjectEmpty(member)){
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return JSON.toJSONString(br);
+		}
+		
+		try {
+			DrMember drMember = drMemberService.selectByPrimaryKey(member.getUid());
+			if(Utils.isObjectEmpty(drMember)){
+				br.setSuccess(false);
+				br.setErrorCode("9999");
+				return JSON.toJSONString(br);
+			}
+			
+			map.put("isFuiou", drMember.getIsFuiou());
+			
+			map.put("mobilePhone",drMember.getMobilephone().substring(0,4)+"****"+drMember.getMobilephone().substring(drMember.getMobilephone().length()-3));
+			
+		
+			if(1 == member.getIsFuiou()){
+				DrMemberBank drMemberBank = drMemberBankService.selectFuiouIdentificationBank(drMember.getUid());
+				if(Utils.isObjectNotEmpty(drMemberBank.getMobilePhone())){
+					map.put("mobilePhone",drMemberBank.getMobilePhone().substring(0,4)+"****"+drMemberBank.getMobilePhone().substring(drMemberBank.getMobilePhone().length()-3));
+				}
+				
+				Map<String, Object> queryMap = new HashMap<String, Object>();
+				queryMap.put("bankName", drMemberBank.getBankName());
+				SysBank sysBank = drMemberBankService.selectSysBank(queryMap);
+				queryMap.clear();
+				map.put("realName","*"+ drMember.getRealName().substring(drMember.getRealName().length()-1,drMember.getRealName().length()));
+				map.put("idCards",drMember.getIdCards().substring(0,4)+"***"+drMember.getIdCards().substring(drMember.getIdCards().length()-3));
+				map.put("bankNum",drMemberBank.getBankNum().substring(drMemberBank.getBankNum().length()-4,drMemberBank.getBankNum().length()));
+				if(Utils.isObjectNotEmpty(sysBank)){
+					map.put("bankCode",sysBank.getId());
+				}
+			}
+			
+			
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("我(uid="+member.getUid()+")的信息读取失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	@RequestMapping("/index")
+	@ResponseBody
+	public String index(HttpServletRequest req){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		if(Utils.isObjectEmpty(member)){
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return JSON.toJSONString(br);
+		}
+		
+		try {
+			DrMember drMember = drMemberService.selectByPrimaryKey(member.getUid());
+			if(Utils.isObjectEmpty(drMember)){
+				br.setSuccess(false);
+				br.setErrorCode("9999");
+				return JSON.toJSONString(br);
+			}
+			
+			map.put("isFuiou", drMember.getIsFuiou());
+			map.put("mobileFlag", drMember.getMobileVerify());
+			map.put("mobilePhone",drMember.getMobilephone().substring(0,4)+"****"+drMember.getMobilephone().substring(drMember.getMobilephone().length()-3));
+
+			if(StringUtils.isBlank(drMember.getPassWord())){
+				map.put("pwFlag", 0);
+			}else{
+				map.put("pwFlag", 1);
+			}
+			if(StringUtils.isBlank(drMember.getTpassWord())){
+				map.put("tpwFlag", 0);
+			}else{
+				map.put("tpwFlag", 1);
+			}
+			map.put("realFlag", drMember.getRealVerify()==1?1:drMember.getIsFuiou());
+			if(1 == drMember.getRealVerify() || member.getIsFuiou() == 1){
+				DrMemberBank drMemberBank = drMemberBankService.selectIdentificationBank(drMember.getUid());
+				if(Utils.isObjectEmpty(drMemberBank)){
+					drMemberBank = drMemberBankService.selectFuiouIdentificationBank(drMember.getUid());
+				}
+				
+				Map<String, Object> queryMap = new HashMap<String, Object>();
+				queryMap.put("bankName", drMemberBank.getBankName());
+				SysBank sysBank = drMemberBankService.selectSysBank(queryMap);
+				queryMap.clear();
+				
+				map.put("realName","*"+ drMember.getRealName().substring(drMember.getRealName().length()-1,drMember.getRealName().length()));
+				map.put("idCards",Utils.isObjectEmpty(member.getIdCards())?null:drMember.getIdCards().substring(0,4)+"***"+drMember.getIdCards().substring(drMember.getIdCards().length()-3));
+				map.put("bankNum",drMemberBank.getBankNum().substring(drMemberBank.getBankNum().length()-4,drMemberBank.getBankNum().length()));
+				map.put("bankCode",sysBank !=null?sysBank.getId():null);
+			}
+			map.put("isFuiou", member.getIsFuiou());  
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("我(uid="+member.getUid()+")的信息读取失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/*
+	 * 认证银行卡四要素
+	 */
+	@RequestMapping("/bankInfoVerify")
+	@ResponseBody
+	public String bankInfoVerify(HttpServletRequest req,@RequestBody Map<String, Object> params){
+		BaseResult br = new BaseResult();
+		Object realName = params.get("realName");
+		Object idCards = params.get("idCards");
+		Object bankNum = params.get("bankNum");
+		Object phone = params.get("phone");
+		Object smsCode = params.get("smsCode");//短信验证码
+		
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		if(Utils.isObjectEmpty(member)){
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return JSON.toJSONString(br);
+		}
+		redisClientTemplate.lock("memberSetting"+member.getUid().toString());
+		
+		String bankPhoneCode = redisClientTemplate.get("bankMsgCode_"+phone);
+		DrMember drMember = drMemberService.selectByPrimaryKey(member.getUid());
+		if(1 == drMember.getRealVerify()){
+        	br.setSuccess(false);
+			br.setErrorCode("1013");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(realName)){
+			br.setSuccess(false);
+			br.setErrorCode("1001");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(idCards)){
+			br.setSuccess(false);
+			br.setErrorCode("1002");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(bankNum)){
+			br.setSuccess(false);
+			br.setErrorCode("1003");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(phone)){
+			br.setSuccess(false);
+			br.setErrorCode("1004");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(smsCode)){//短信验证码为空
+			br.setSuccess(false);
+			br.setErrorCode("1005");
+			return JSON.toJSONString(br);
+		}else if(!smsCode.equals(bankPhoneCode) || StringUtils.isBlank(bankPhoneCode)){//验证码错误
+			br.setSuccess(false);
+			br.setErrorCode("1006");
+			return JSON.toJSONString(br);
+		}
+		try {
+			br = drMemberBankService.insertDrMemberBank(member.getUid(),realName.toString(),idCards.toString(),bankNum.toString(),phone.toString());
+			if(br.isSuccess()){
+				Map<String, Object> map = new HashMap<String,Object>();
+				map.put("code", member.getToFrom());
+				List<DrChannelInfo> channelList = drChannelInfoDAO.getDrChannelInfoListForMap(map);//获取toFrom对应的渠道
+				map.clear();
+				if(!Utils.isEmptyList(channelList)){
+					DrChannelInfo channel = channelList.get(0);//获取渠道
+					map.put("isCps", channel.getType()==null?0:channel.getType());//渠道类型，如果为null默认为非CPS
+				}else{
+					map.put("isCps", 0);//如果渠道不存在，则默认是非CPS
+				}
+				if(Utils.isObjectNotEmpty(br.getMap())){
+					((Map<String,Object>)br.getMap()).putAll(map);
+				} else{
+					br.setMap(map);
+				}
+				member.setRealName(realName.toString());
+				member.setIdCards(idCards.toString());
+				member.setRealVerify(1);
+				req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, member);
+//				Map<String, Object> map2 = new HashMap<String,Object>();
+//				map2.put("type",3);
+//				map2.put("uid", member.getUid());
+//				redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(),SerializeUtil.serialize(map2));
+			}
+			redisClientTemplate.del("bankMsgCode_"+phone);
+			redisClientTemplate.del("bankMsgSendTime_"+phone);
+//			redisClientTemplate.del("bankMsgUse_"+phone);
+		} catch (Exception e) {
+			log.error("认证失败【真实姓名："+realName+",身份证号:"+idCards+",银行卡号:"+bankNum+",手机号:"+phone+"】",e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/**
+	 * 发送验证银行四要素短信
+	 * @param req
+	 * @param mobilephone
+	 * @return
+	 */
+	@RequestMapping("/sendBankMsg")
+	@ResponseBody
+	public BaseResult sendBankMsg(HttpServletRequest req,@RequestBody Map<String,Object> params){
+		BaseResult br = new BaseResult();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+
+		String mobilePhone = params.get("mobilePhone")+"";
+		String bankNum = params.get("bankNum")+"";
+		Object typeObj = params.get("type");
+		if(Utils.isObjectEmpty(typeObj)){
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return br;
+		}
+		int type = (Integer) typeObj;
+		try {
+			Map<String,Object> map = new HashMap<String, Object>();
+			//判断手机发送短信条数
+			map.put("uid", member.getUid());
+			map.put("phone", mobilePhone);
+			map.put("type", 15);
+			int sendCount = sysMessageLogService.selectMsgLogSendCount(map);
+			map.clear();
+			if(sendCount > 5){
+				br.setSuccess(false);
+				br.setErrorCode("1002");//每天只能发6条短信
+				return br;
+			}
+			
+			String redisCode = redisClientTemplate.get("bankMsgCode_"+mobilePhone);
+			int flag = 0;
+			int  seconds = 0;
+			if(StringUtils.isNotEmpty(redisCode)){
+				//当前时间和当前手机号码上次发送短信时间的秒数差
+				seconds = Utils.getDateSecondsSub(Utils.getStrDatetime(new Date()), redisClientTemplate.get("bankMsgSendTime_"+mobilePhone));
+				if(seconds < 59){
+					if(2 == type){
+						String bankMsgUse = redisClientTemplate.get("bankMsgUse_"+mobilePhone);
+						if("1".equals(bankMsgUse)){
+							br.setSuccess(false);
+							br.setErrorCode("8888");//语音频繁操作
+							return br;
+						}else{
+							seconds = 60;
+						}
+					}
+				}else{
+					redisCode = Utils.getRandomNumber();//生成验证码		
+					//短信验证码 10分钟有效
+					redisClientTemplate.setex("bankMsgCode_"+mobilePhone, 600, redisCode);
+					//短信发送时间 10分钟有效
+					redisClientTemplate.setex("bankMsgSendTime_"+mobilePhone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			}else if(StringUtils.isBlank(redisCode)){//短信内容是否存在redis中
+				redisCode = Utils.getRandomNumber();//生成验证码		
+				seconds = 60;
+				//短信验证码 10分钟有效
+				redisClientTemplate.setex("bankMsgCode_"+mobilePhone, 600, redisCode);
+				//短信发送时间 10分钟有效
+				redisClientTemplate.setex("bankMsgSendTime_"+mobilePhone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			}
+			if(seconds > 59){//两次时间间隔60秒，重新发送短信
+				String content =redisClientTemplate.getProperties("bankSms")
+						.replace("${1}",redisCode)
+						.replace("${2}",bankNum);
+						
+//				if(2 == type){
+//					content = redisCode;
+//					redisClientTemplate.setex("bankMsgUse_"+mobilePhone, 600, "1");
+//				}
+//				if(1 == type){
+//					redisClientTemplate.del("bankMsgUse_"+mobilePhone);
+//				}
+				SysMessageLog logs = new SysMessageLog(member.getUid(),content,15, null, mobilePhone);
+				flag = sysMessageLogService.sendMsg(logs,type);
+			}else{
+				flag = 1;
+			}
+			//短信是否发送成功
+			if (flag > 0) {
+				br.setSuccess(true);
+			} else {
+				br.setSuccess(false);
+				br.setErrorCode("1003");//短信发送失败
+			}
+		} catch (Exception e) {
+			log.error("短信发送失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+	
+	/*
+	 * 修改登录密码
+	 */
+	@RequestMapping("/updateLoginPassWord")
+	@ResponseBody
+	public String updateLoginPassWord(@RequestBody Map<String, Object> param, HttpServletRequest req){
+		BaseResult br = new BaseResult();
+		String oldPwd = String.valueOf(param.get("oldPwd"));
+		String newPwd = String.valueOf(param.get("newPwd"));
+		String confirmPwd = String.valueOf(param.get("confirmPwd"));
+		DrMember loginMember = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		DrMember member = drMemberService.selectByPrimaryKey(loginMember.getUid());
+		String regex = "[A-Za-z0-9@!#$%^&*.~_]{6,18}";
+		Boolean newPwdFlg = Pattern.matches(regex, newPwd);
+		Boolean newPwd1Flg = Pattern.matches(regex, confirmPwd);
+		//原密码不对
+		if(StringUtils.isBlank(oldPwd) || !member.getPassWord().equals(SecurityUtils.MD5AndSHA256(oldPwd))){
+			br.setSuccess(false);
+        	br.setErrorCode("1001");
+        	return JSON.toJSONString(br);
+		}else if(StringUtils.isBlank(newPwd)||StringUtils.isBlank(confirmPwd)){//新密码为空
+			br.setSuccess(false);
+        	br.setErrorCode("1002");
+        	return JSON.toJSONString(br);
+		}else if(!newPwd.equals(confirmPwd)){//两次密码输入不一致
+			br.setSuccess(false);
+        	br.setErrorCode("1003");
+        	return JSON.toJSONString(br);
+		}
+		if(!(newPwdFlg && newPwd1Flg)){
+        	br.setSuccess(false);
+        	br.setErrorCode("1004");
+        	return JSON.toJSONString(br);
+		}
+			
+		member.setPassWord(SecurityUtils.MD5AndSHA256(newPwd));
+		try {
+			drMemberService.update(member);
+			req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, loginMember);
+			br.setSuccess(true);
+			// 发送手机短信
+			String sms = redisClientTemplate.getProperties("updatePwdSms").replace("${1}", member.getRealName()==null?"用户":member.getRealName());
+			if (member.getMobilephone() != null && !member.getMobilephone().equals("")) {
+				SysMessageLog logs = new SysMessageLog(member.getUid(), sms, 13, null, member.getMobilephone());
+				sysMessageLogService.sendMsg(logs,1);
+			}
+		} catch (Exception e) {
+			log.error("修改登录密码失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/*
+	 * 设置交易密码
+	 */
+	@RequestMapping("/setTpwd")
+	@ResponseBody
+	public String setTpwd(HttpServletRequest req, @RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		member = drMemberService.selectByPrimaryKey(member.getUid());
+		String tpwd = String.valueOf(param.get("tpwd"));
+		String confirm = String.valueOf(param.get("confirm"));
+		String regex = "[0-9]{6}";
+		Boolean newTpwdFlg = Pattern.matches(regex, tpwd);
+		Boolean newTpwd1Flg = Pattern.matches(regex, confirm);
+		
+		if(StringUtils.isBlank(tpwd)||StringUtils.isBlank(confirm)){//交易密码为空
+			br.setSuccess(false);
+			br.setErrorCode("1001");
+			return JSON.toJSONString(br);
+		}else if(!tpwd.equals(confirm)) {//两次交易密码不一致
+			br.setErrorCode("1002");
+			br.setSuccess(false);
+			return JSON.toJSONString(br);
+		}else if(StringUtils.isNotBlank(member.getTpassWord())){
+			br.setErrorCode("1003");
+			br.setSuccess(false);
+			return JSON.toJSONString(br);
+		}
+		if(!(newTpwdFlg && newTpwd1Flg)){
+        	br.setSuccess(false);
+        	br.setErrorCode("1004");
+        	return JSON.toJSONString(br);
+		}
+		member.setTpassWord(SecurityUtils.MD5AndSHA256(tpwd));
+		try {
+			drMemberService.update(member);
+			req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, member);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("交易密码设置失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	/**
+	 * 发送修改交易密码验证码
+	 */
+	@RequestMapping("/sendForgetTpwdCode")
+	@ResponseBody
+	public String sendForgetTpwdCode(HttpServletRequest req,@RequestBody Map<String,Object> params){
+		BaseResult br = new BaseResult();
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		Object typeObj = params.get("type");
+		if(Utils.isObjectEmpty(typeObj)){
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return JSON.toJSONString(br);
+		}
+		int type = (Integer) typeObj;
+		try {
+			String redisCode = redisClientTemplate.get("updateTpwdSms_"+member.getMobilephone());
+			int flag = 0;
+			int  seconds = 0;
+			if(StringUtils.isNotEmpty(redisCode)){
+				//当前时间和当前手机号码上次发送短信时间的秒数差
+				seconds = Utils.getDateSecondsSub(Utils.getStrDatetime(new Date()), redisClientTemplate.get("updateTpwdSendTime_"+member.getMobilephone()));
+				if(seconds < 59){
+					if(2 == type){
+						String updateTpwdUse = redisClientTemplate.get("updateTpwdUse_"+member.getMobilephone());
+						if("1".equals(updateTpwdUse)){
+							br.setSuccess(false);
+							br.setErrorCode("8888");//语音频繁操作
+							return JSON.toJSONString(br);
+						}else{
+							seconds = 60;
+						}
+					}
+				}else{
+					redisCode = Utils.getRandomNumber();//生成验证码	
+					//短信验证码 10分钟有效
+					redisClientTemplate.setex("updateTpwdSms_"+member.getMobilephone(), 600, redisCode);
+					//短信发送时间 10分钟有效
+					redisClientTemplate.setex("updateTpwdSendTime_"+member.getMobilephone(), 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			}else if(StringUtils.isBlank(redisCode)){//短信内容是否存在redis中
+				redisCode = Utils.getRandomNumber();//生成验证码	
+				seconds = 60;
+				//短信验证码 10分钟有效
+				redisClientTemplate.setex("updateTpwdSms_"+member.getMobilephone(), 600, redisCode);
+				//短信发送时间 10分钟有效
+				redisClientTemplate.setex("updateTpwdSendTime_"+member.getMobilephone(), 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			}
+			if(seconds > 59){//两次时间间隔60秒，重新发送短信
+				String content = redisClientTemplate.getProperties("forgetTpwdSms")
+						.replace("${realname}", member.getRealName()==null?"用户":member.getRealName())
+						.replace("${code}", redisCode);//取到修改交易密码的短信模板
+//				if(2 == type){
+//					content = redisCode;
+//					redisClientTemplate.setex("updateTpwdUse_"+member.getMobilephone(), 600, "1");
+//				}
+//				if(1 == type){
+//					redisClientTemplate.del("updateTpwdUse_"+member.getMobilephone());
+//				}
+				SysMessageLog logs = new SysMessageLog(member.getUid(),content,6, null, member.getMobilephone());
+				flag = sysMessageLogService.sendMsg(logs,type);
+			}else{
+				flag = 1;
+			}
+			//短信是否发送成功
+			if (flag > 0) {
+				br.setSuccess(true);
+			} else {
+				br.setSuccess(false);
+				br.setErrorCode("1001");//短信发送失败
+			}
+		} catch (Exception e) {
+			log.error(e.getMessage(),e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/**
+	 * 验证交易密码验证码
+	 */
+	@RequestMapping("/validateTpwdCode")
+	@ResponseBody
+	public BaseResult validateTpwdCode(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		String smsCode = String.valueOf(param.get("code"));//用户输入的短信验证码
+		DrMember member = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		String updateTpwdSms =  redisClientTemplate.get("updateTpwdSms_"+member.getMobilephone());
+		if(StringUtils.isNotBlank(smsCode) && smsCode.equals(updateTpwdSms)){
+			br.setSuccess(true);
+		}else{
+			br.setSuccess(false);
+		}
+		return br;
+	}
+	
+	/**
+	 * 修改交易密码 -通过原密码修改
+	 */
+	@RequestMapping(value="/updateTpwd", method = RequestMethod.POST)
+	@ResponseBody
+	public BaseResult updateTpwd(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		String old = String.valueOf(param.get("oldPwd"));
+		String tpwd = String.valueOf(param.get("tpwd"));
+		String confirmTpwd = String.valueOf(param.get("confirmTpwd"));
+		DrMember loginMember = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		DrMember member = drMemberService.selectByPrimaryKey(loginMember.getUid());
+		
+		String regex = "[0-9]{6}";
+		Boolean newTpwdFlg = Pattern.matches(regex, tpwd);
+		Boolean newTpwd1Flg = Pattern.matches(regex, confirmTpwd);
+		
+		if(!member.getTpassWord().equals(SecurityUtils.MD5AndSHA256(old)) ){//通过原密码修改交易密码， 判断原密码是否正确
+			br.setSuccess(false);
+			br.setErrorCode("1001");
+			return br;
+		}else if(StringUtils.isBlank(tpwd)||StringUtils.isBlank(confirmTpwd)){//判断新密码是否为空
+			br.setSuccess(false);
+			br.setErrorCode("1003");
+			return br;
+		}else if(!tpwd.equals(confirmTpwd)){//两次新密码输入不一致
+			br.setSuccess(false);
+			br.setErrorCode("1004");
+			return br;
+		}
+		if(!(newTpwdFlg && newTpwd1Flg)){
+        	br.setSuccess(false);
+        	br.setErrorCode("1005");
+        	return br;
+		}
+		member.setTpassWord(SecurityUtils.MD5AndSHA256(tpwd));
+		req.getSession().removeAttribute("forgetTpwdCode");//删除session
+		try {
+			drMemberService.update(member);
+			loginMember.setTpassWord(SecurityUtils.MD5AndSHA256(tpwd));
+			redisClientTemplate.del("error.tpwd.uid."+loginMember.getUid());
+			req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, loginMember);
+			br.setSuccess(true);
+			// 发送手机短信
+			String sms = redisClientTemplate.getProperties("updateTpwdSms").replace("${1}", member.getRealName());
+			if (member.getMobilephone() != null && !member.getMobilephone().equals("")) {
+				SysMessageLog logs = new SysMessageLog(member.getUid(), sms, 12, null, member.getMobilephone());
+				sysMessageLogService.sendMsg(logs,1);
+			}
+		} catch (Exception e) {
+			log.error("修改交易密码失败", e);
+			br.setSuccess(true);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+	
+	@RequestMapping(value="/updateTpwdBySms", method = RequestMethod.POST)
+	@ResponseBody
+	public BaseResult updateTpwdBySms(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		String tpwd = String.valueOf(param.get("tpwd"));
+		String confirmTpwd = String.valueOf(param.get("confirmTpwd"));
+		String smsCode = String.valueOf(param.get("code"));//用户输入的短信验证码
+		DrMember loginMember = (DrMember)req.getSession().getAttribute(ConfigUtil.FRONT_LOGIN_USER);
+		DrMember member = drMemberService.selectByPrimaryKey(loginMember.getUid());
+		Object forgetTpwdCode = redisClientTemplate.get("updateTpwdSms_"+member.getMobilephone());//如果存在则表示忘记交易密码
+		
+		String regex = "[0-9]{6}";
+		Boolean newTpwdFlg = Pattern.matches(regex, tpwd);
+		Boolean newTpwd1Flg = Pattern.matches(regex, confirmTpwd);
+		
+		if( Utils.isObjectNotEmpty(forgetTpwdCode) && !forgetTpwdCode.toString().equals(smsCode) ){//通过短信修改交易密码，判断短信验证码是否正确
+			br.setSuccess(false);
+			br.setErrorCode("1002");
+			return br;
+		}else if(StringUtils.isBlank(tpwd)||StringUtils.isBlank(confirmTpwd)){//判断新密码是否为空
+			br.setSuccess(false);
+			br.setErrorCode("1003");
+			return br;
+		}else if(!tpwd.equals(confirmTpwd)){//两次新密码输入不一致
+			br.setSuccess(false);
+			br.setErrorCode("1004");
+			return br;
+		}
+		if(!(newTpwdFlg && newTpwd1Flg)){
+        	br.setSuccess(false);
+        	br.setErrorCode("1005");
+        	return br;
+		}
+		member.setTpassWord(SecurityUtils.MD5AndSHA256(tpwd));
+		req.getSession().removeAttribute("forgetTpwdCode");//删除session
+		try {
+			drMemberService.update(member);
+			redisClientTemplate.del("error.tpwd.uid."+loginMember.getUid());
+			loginMember.setTpassWord(SecurityUtils.MD5AndSHA256(tpwd));
+			req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, loginMember);
+			br.setSuccess(true);
+			redisClientTemplate.del("updateTpwdSms_"+member.getMobilephone());
+			redisClientTemplate.del("updateTpwdSendTime_"+member.getMobilephone());
+//			redisClientTemplate.del("updateTpwdUse_"+member.getMobilephone());
+		} catch (Exception e) {
+			log.error("修改交易密码失败", e);
+			br.setSuccess(true);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+	
+	/**
+	 * 选择银行
+	 */
+	@RequestMapping("/selectBank")
+	@ResponseBody
+	public String selectBank(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		try {
+			List<SysBank> sysBankList = drMemberBankService.selectBank();
+			param.clear();
+			param.put("sysBankList", sysBankList);
+			br.setSuccess(true);
+			br.setMap(param);
+		} catch (Exception e) {
+			e.printStackTrace();
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+}

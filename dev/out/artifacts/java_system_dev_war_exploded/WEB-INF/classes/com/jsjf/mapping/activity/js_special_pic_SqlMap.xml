@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsSpecialPicDao">
+	
+	<sql id="Base_Column_List">
+		id,specialId,imgUrl,showSort,addDate
+	</sql>
+	<select id="selectBySpecialId" resultType="com.jsjf.model.activity.JsSpecialPic" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_special_pic where specialId = #{specialId}
+		order by showSort desc
+	</select>
+
+	 <insert id = "insert" parameterType="com.jsjf.model.activity.JsSpecialPic" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+	 	 insert into js_special_pic(specialId,imgUrl,showSort,addDate)
+	 	 	values(#{specialId},
+			#{imgUrl},#{showSort},#{addDate})
+	 </insert>
+	 
+	 <delete id="deletePicByJsSpecial" parameterType="java.lang.Integer" >
+	    delete from js_special_pic where specialId = #{specialId:INTEGER} 
+	</delete>
+	
+	<delete id="delete" parameterType="java.lang.Integer" >
+	    delete from js_special_pic where id = #{id:INTEGER} 
+	</delete>
+	
+	<update id="update" parameterType="com.jsjf.model.activity.JsSpecialPic">
+		update js_special_pic 
+			<set>
+				<if test="imgUrl !=null and imgUrl !=''">
+					imgUrl = #{imgUrl},
+				</if>
+				<if test="showSort !=null">
+					showSort = #{showSort}
+				</if>
+			</set>
+			<where>
+			<if test="id != null"> id = #{id:INTEGER}</if>
+			</where>
+	</update>
+</mapper>

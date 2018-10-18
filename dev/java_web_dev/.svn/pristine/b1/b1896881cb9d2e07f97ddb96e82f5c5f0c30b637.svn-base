@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsProductPrizeWishDAO">
+	<resultMap id="JsProductPrizeWishResult" type="com.jsjf.model.activity.JsProductPrizeWish">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="url" property="url" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="selectByMap" resultMap="JsProductPrizeWishResult" parameterType="java.util.HashMap">
+		SELECT * FROM `js_product_prize_wish`
+		<where>
+			<if test = "uid != null"> and uid = #{uid} </if>
+			<if test = "url != null and url !='' "> and url = #{url} </if>
+			<if test = "remark != null and remark !='' "> and remark = #{remark} </if>
+			<if test = "addtime != null"> and DATE_FORMAT(`addtime`,'%Y-%m-%d') = DATE_FORMAT(#{addtime},'%Y-%m-%d') </if>
+		</where>
+	</select>
+	
+	<insert id = "insert" parameterType="com.jsjf.model.activity.JsProductPrizeWish">
+		INSERT INTO `js_product_prize_wish` 
+				(`uid`, `url`, `remark`, `addTime`) 
+			VALUES 
+				(#{uid},#{url},#{remark},SYSDATE());
+	</insert>
+	
+</mapper>

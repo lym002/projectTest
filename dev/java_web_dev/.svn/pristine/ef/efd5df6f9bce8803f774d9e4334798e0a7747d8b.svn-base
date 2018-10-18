@@ -1,0 +1,185 @@
+package com.jsjf.service.product;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.product.DrProductInfo;
+
+import net.sf.json.JSONObject;
+
+public interface DrProductInfoService {
+
+
+	/**
+	 * 我的幸运码
+	 * @param map
+	 * @return
+	 */
+	public BaseResult getMyLuckCodes(Map<String,Object> map);
+	/**
+	 * js活动首页
+	 * @param map
+	 * @return
+	 */
+	public BaseResult  getNewActivityProduct();
+	
+	/**
+	 * 首页产品信息列表数据
+	 * @return BaseResult
+	 */
+	public BaseResult indexProductInfo();
+	
+	/**
+	 * 条件查找产品列表
+	 * @param param
+	 * @param pi
+	 * @return
+	 */
+	public BaseResult selectProductInfoByParams(Map<String, Object> param, PageInfo pi);
+	
+	
+	/**
+	 * 通过产品ID查看产品信息
+	 * @param id
+	 * @return
+	 */
+	public DrProductInfo selectProductByPrimaryKey(Integer id);
+	
+	/**
+	 * 保存投资
+	 * @param loginMember
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public BaseResult saveInvest(DrMember loginMember, DrProductInfo pInfo, Map<String,Object> param) throws Exception;
+	/**
+	 * 投资成功后其他后续业务处理, 发红包,自动发标,满标提醒 等等
+	 * @param loginMember
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public void investSuccessAfter(DrProductInfo info, Map<String,Object> param,DrMember loginMember);
+	
+	/**
+	 * 投资完成后更新
+	 * @param message
+	 * @return
+	 */
+	public BaseResult updateInvestInfo(JSONObject message);
+	
+	/**
+	 * 查询热销产品
+	 * @return
+	 */
+	public List<DrProductInfo> selectHotProductInfo(); 
+	
+	/**
+	 * 查询活动产品详情
+	 * @return
+	 */
+	public DrProductInfo selectActivityProduct();
+	
+	/**
+	 * 通过PID获取产品详情（包括部分票据信息）
+	 * @param id
+	 * @return
+	 */
+	public DrProductInfo selectProductDetailByPid(Integer id);
+	/**
+	 * 通过PID获取产品详情（包括部分票据信息）
+	 * @param id
+	 * @return
+	 */
+	public DrProductInfo selectProductDetailById(Integer id);
+	
+	/**
+	 * 砸金蛋产品过滤
+	 * @param list
+	 * @param listMap
+	 * @param m
+	 */
+	public void eggActivityRuleFilter(List<DrProductInfo> list,List<Map<String,Object>> listMap, DrMember m);
+	
+	/**
+	 * 
+	 * @param 
+	 * @return
+	 */
+	public List<DrProductInfo> selectProductbyMap(Map<String,Object> map);
+	
+	/**
+	 * 获取双蛋活动页产品
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInfo> doubleEggList(Map<String,Object> param);
+	
+	/**
+	 * 查找体验标详情
+	 * @param param
+	 * @return
+	 */
+	public DrProductInfo selectExperienceDetail();
+	
+	
+	/**
+	 * 体验标投资
+	 * @param param
+	 * @return
+	 */
+	public BaseResult experienceInvest(DrProductInfo info,Integer uid, Map<String,Object> map,Integer channel);
+	
+	/**
+	 * 根据status type hotshow， deadline来查询
+	 */
+	public DrProductInfo getProductInfoByType(Map<String,Object> param);
+	
+	/**
+	 * 查询Iphone7活动产品
+	 * @param id
+	 * @return
+	 */
+	public DrProductInfo selectJSProductActive();
+	/**
+	 * 获取投即送产品list
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInfo> selectInvestSendListByParam(Map<String,Object> param);
+	/**
+	 * 查询端午节产品
+	 * @return
+	 */
+	public BaseResult selectProductInfoByDragonBoat();
+	/**
+	 * 等本等息产品
+	 */
+	public Map<String, Object> selectPeriodProductList(Map<String,Object> param, PageInfo pi) throws Exception;
+	/**
+	 * 查询30,60,180 天的产品各一个
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Map<String,Object>> selectProductInfoByDeadLine () throws Exception;
+	
+	/**
+	 * 按期限分类取产品 
+	 * @return
+	 */
+	public List<DrProductInfo> selectPorductClassifyByDeadline (Map<String,Object> map);
+	
+	/**
+	 * 获取新手标信息
+	 * @return
+	 */
+	public DrProductInfo selectNewHandInfo(Map<String,Object> map);
+
+    public BaseResult getZeroBuy();
+
+	Integer selectToHelpFarmersProduct();
+}

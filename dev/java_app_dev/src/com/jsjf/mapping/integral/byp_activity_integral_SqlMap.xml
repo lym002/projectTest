@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.integral.ActivityIntegralMapper">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.integral.ActivityIntegralBean">
+    <id column="ID" jdbcType="INTEGER" property="id" />
+    <result column="activityId" jdbcType="INTEGER" property="activityid" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="status" jdbcType="TINYINT" property="status" />
+    <result column="details" jdbcType="VARCHAR" property="details" />
+    <result column="addtime" jdbcType="TIMESTAMP" property="addtime" />
+    <result column="updatetime" jdbcType="TIMESTAMP" property="updatetime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    ID, activityId, type, status, details, addtime, updatetime
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_activity_integral
+    where ID = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_activity_integral
+    where ID = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.integral.ActivityIntegralBean">
+    insert into byp_activity_integral (ID, activityId, type, 
+      status, details, addtime, 
+      updatetime)
+    values (#{id,jdbcType=INTEGER}, #{activityid,jdbcType=INTEGER}, #{type,jdbcType=INTEGER}, 
+      #{status,jdbcType=TINYINT}, #{details,jdbcType=VARCHAR}, #{addtime,jdbcType=TIMESTAMP}, 
+      #{updatetime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.integral.ActivityIntegralBean">
+    insert into byp_activity_integral
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        ID,
+      </if>
+      <if test="activityid != null">
+        activityId,
+      </if>
+      <if test="type != null">
+        type,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="details != null">
+        details,
+      </if>
+      <if test="addtime != null">
+        addtime,
+      </if>
+      <if test="updatetime != null">
+        updatetime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="activityid != null">
+        #{activityid,jdbcType=INTEGER},
+      </if>
+      <if test="type != null">
+        #{type,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="details != null">
+        #{details,jdbcType=VARCHAR},
+      </if>
+      <if test="addtime != null">
+        #{addtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updatetime != null">
+        #{updatetime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.integral.ActivityIntegralBean">
+    update byp_activity_integral
+    <set>
+      <if test="activityid != null">
+        activityId = #{activityid,jdbcType=INTEGER},
+      </if>
+      <if test="type != null">
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="details != null">
+        details = #{details,jdbcType=VARCHAR},
+      </if>
+      <if test="addtime != null">
+        addtime = #{addtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updatetime != null">
+        updatetime = #{updatetime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where ID = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.integral.ActivityIntegralBean">
+    update byp_activity_integral
+    set activityId = #{activityid,jdbcType=INTEGER},
+      type = #{type,jdbcType=INTEGER},
+      status = #{status,jdbcType=TINYINT},
+      details = #{details,jdbcType=VARCHAR},
+      addtime = #{addtime,jdbcType=TIMESTAMP},
+      updatetime = #{updatetime,jdbcType=TIMESTAMP}
+    where ID = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

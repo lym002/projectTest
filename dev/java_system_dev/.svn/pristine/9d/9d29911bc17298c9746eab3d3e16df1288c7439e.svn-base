@@ -1,0 +1,34 @@
+package com.zcdj.dto;
+
+public class TestDTO {
+
+	private String productNo;
+	
+	private String platformProductName;
+	
+	private String contractNo;
+
+	public String getProductNo() {
+		return productNo;
+	}
+
+	public void setProductNo(String productNo) {
+		this.productNo = productNo;
+	}
+
+	public String getPlatformProductName() {
+		return platformProductName;
+	}
+
+	public void setPlatformProductName(String platformProductName) {
+		this.platformProductName = platformProductName;
+	}
+
+	public String getContractNo() {
+		return contractNo;
+	}
+
+	public void setContractNo(String contractNo) {
+		this.contractNo = contractNo;
+	}
+}

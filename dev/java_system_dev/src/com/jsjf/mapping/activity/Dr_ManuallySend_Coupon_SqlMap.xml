@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrManuallySendCouponDAO">
+	<resultMap id="DrManuallySendCouponResult" type="com.jsjf.model.activity.DrManuallySendCoupon">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="cirId" property="cirId" jdbcType="INTEGER" />
+		<result column="coupons" property="coupons" jdbcType="VARCHAR" />
+		<result column="couponNames" property="couponNames" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="sendUser" property="sendUser" jdbcType="INTEGER"/>
+		<result column="sendTime" property="sendTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="getDrManuallySendCouponList"  parameterType="java.util.HashMap" resultMap="DrManuallySendCouponResult">
+		select s.*,u1.`name` as addName,u2.`name` sendName from dr_manuallySend_coupon s
+		LEFT JOIN sys_users u1 ON s.addUser = u1.user_ky
+		LEFT JOIN sys_users u2 ON s.sendUser = u2.user_ky
+		where
+			s.cirId=#{cirId}
+			<if test="addTime != null ">
+				and DATE_FORMAT(s.addTime,'%Y%m%d') = DATE_FORMAT(#{addTime},'%Y%m%d')
+			</if>
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getDrManuallySendCouponCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(1) from dr_manuallySend_coupon
+		where
+			cirId = #{cirId}
+			<if test="addTime != null ">
+				and DATE_FORMAT(addTime,'%Y%m%d') = DATE_FORMAT(#{addTime},'%Y%m%d')
+			</if>
+	</select>
+	
+	<insert id="batchInsert">
+		<foreach collection="list" item="item" separator=";" >
+			insert into dr_manuallySend_coupon(cirId,coupons,couponNames,mobilePhone,status,addUser,addTime)
+			values(#{item.cirId},#{item.coupons},#{item.couponNames},#{item.mobilePhone},1,#{item.addUser},sysdate())
+		</foreach>
+	</insert>
+	
+	<update id="updateSendParameter" parameterType="java.util.HashMap">
+		update dr_manuallySend_coupon set status=2,sendTime=sysdate(),sendUser=#{uid} 
+		where cirId=#{cirId} and status=1 and DATE_FORMAT(addTime,'%Y%m%d')=DATE_FORMAT(#{addTime},'%Y%m%d')
+	</update>
+	
+	<insert id="executeManuallySendCoupon" parameterType="java.util.HashMap">
+		INSERT INTO dr_member_favourable(uid,activityId,type,code,name,amount,profitAmount,
+		raisedRates,multiple,productDeadline,enableAmount,`status`,source,remark,expireDate,user_key,addtime)
+		
+		select m.uid,a.ID,a.type,a.`code`,a.`name`,a.amount,0,
+		a.raisedRates,1, a.productDeadline,a.enableAmount,0,2,'运营发放',DATE_ADD(SYSDATE(),INTERVAL (a.deadline-1) DAY),#{uid},SYSDATE() 
+		from  dr_manuallySend_coupon c, dr_member m, dr_activity_parameter a 
+		where c.cirId = #{cirId}
+			and c.status = 1
+			and c.mobilePhone = m.mobilePhone
+			and DATE_FORMAT(c.addTime,'%Y%m%d') = DATE_FORMAT(#{addTime},'%Y%m%d')
+			and FIND_IN_SET(a.id,c.coupons)
+		order by m.mobilePhone
+	</insert>
+	
+	<insert id="executeSendMessage" parameterType="java.util.HashMap">
+		INSERT INTO dr_member_msg(ruid,puid,type,title,content,addtime,isread,status)
+		select m.uid,0,2,'币优铺理财礼包',#{message},SYSDATE(),0,0 
+		from  dr_manuallySend_coupon c,dr_member m
+		where c.cirId = #{cirId}
+		AND c.mobilePhone = m.mobilePhone
+		AND DATE_FORMAT(c.addTime,'%Y%m%d') = DATE_FORMAT(#{addTime},'%Y%m%d')
+	</insert>
+</mapper>

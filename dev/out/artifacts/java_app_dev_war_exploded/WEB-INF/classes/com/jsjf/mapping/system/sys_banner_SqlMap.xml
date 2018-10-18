@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysBannerDAO" >
+	<resultMap id="SysBannerResult" type="com.jsjf.model.system.SysBanner" >
+		<result column="id" property="id" jdbcType="BIGINT" />
+		<result column="img_url" property="imgUrl" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="sort" property="sort" jdbcType="INTEGER" />
+		<result column="location" property="location" jdbcType="VARCHAR" />
+		<result column="color" property="color" jdbcType="VARCHAR" />
+		<result column="minVersion" property="minVersion" jdbcType="VARCHAR" />
+	</resultMap>
+	
+  	<select id="getIndexBanner" resultMap="SysBannerResult" parameterType="java.util.HashMap" >
+		  select id, img_url, remark, title, code, sort, location, minVersion
+	 		 from sys_banner where status = 1
+			 <if test="code != null and code != ''">
+			  	and code = #{code}
+			 </if>
+			  	order by sort desc
+  	</select>
+	<select id="selectPastActivity" resultMap="SysBannerResult" parameterType="java.util.HashMap" >
+		select id, img_url, remark, title, code, sort, location, minVersion
+		from sys_banner where status = 0
+		<if test="code != null and code != ''">
+			and code = #{code}
+		</if>
+		order by sort desc
+	</select>
+</mapper>

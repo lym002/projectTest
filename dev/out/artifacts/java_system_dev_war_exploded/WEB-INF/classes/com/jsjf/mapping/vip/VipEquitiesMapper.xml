@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.VipEquitiesDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.VipEquities">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="equities_name" jdbcType="VARCHAR" property="equitiesName" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="equities_explain" jdbcType="VARCHAR" property="equitiesExplain" />
+    <result column="open_level" jdbcType="VARCHAR" property="openLevel" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="created_time" jdbcType="TIMESTAMP" property="createdTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, equities_name, status, equities_explain, open_level, update_time, created_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_vip_equities
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByEquitiesName" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_equities
+    where equities_name = #{equitiesName,jdbcType=VARCHAR}
+    limit 1
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_vip_equities
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.VipEquities">
+    insert into byp_vip_equities (id, equities_name, status, 
+      equities_explain, open_level, update_time, 
+      created_time)
+    values (#{id,jdbcType=INTEGER}, #{equitiesName,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{equitiesExplain,jdbcType=VARCHAR}, #{openLevel,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, 
+      #{createdTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="addVipEquities" parameterType="com.jsjf.model.vip.VipEquities">
+    insert into byp_vip_equities
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="equitiesName != null">
+        equities_name,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="equitiesExplain != null">
+        equities_explain,
+      </if>
+      <if test="openLevel != null">
+        open_level,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="createdTime != null">
+        created_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="equitiesName != null">
+        #{equitiesName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="equitiesExplain != null">
+        #{equitiesExplain,jdbcType=VARCHAR},
+      </if>
+      <if test="openLevel != null">
+        #{openLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdTime != null">
+        #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateVipInfo" parameterType="com.jsjf.model.vip.VipEquities">
+    update byp_vip_equities
+    <set>
+      <if test="equitiesName != null">
+        equities_name = #{equitiesName,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="equitiesExplain != null">
+        equities_explain = #{equitiesExplain,jdbcType=VARCHAR},
+      </if>
+      <if test="openLevel != null">
+        open_level = #{openLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createdTime != null">
+        created_time = #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.VipEquities">
+    update byp_vip_equities
+    set equities_name = #{equitiesName,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      equities_explain = #{equitiesExplain,jdbcType=VARCHAR},
+      open_level = #{openLevel,jdbcType=VARCHAR},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      created_time = #{createdTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  <select id="queryQy"  resultType="com.jsjf.model.vip.VipEquities">
+    select 
+    	id as id,equities_name as equitiesName
+    from byp_vip_equities
+    where status = 1
+  </select>
+  
+   <select id="queryVipEquitiesList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_vip_equities bvi
+    where 1=1
+    <if test="limit !=null">
+			 limit #{offset},#{limit}
+		</if>
+  </select>
+  
+   <select id="queryVipEquitiesListCount" parameterType="java.util.Map" resultType="Integer">
+    select 
+    count(0)
+    from byp_vip_equities
+  </select>
+</mapper>

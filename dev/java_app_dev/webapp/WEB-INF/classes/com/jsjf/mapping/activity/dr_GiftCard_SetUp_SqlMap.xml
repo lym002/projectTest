@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrGiftCardSetUpDAO">
+	<resultMap id="DrDrGiftCardSetUpResult" type="com.jsjf.model.activity.DrGiftCardSetUp">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="channelId" property="channelId" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="onceQty" property="onceQty" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<select id="getEfficaciousDrGiftCardSetUpList" parameterType="java.util.HashMap" resultMap="DrDrGiftCardSetUpResult">
+		select h.* 
+		from dr_giftCard_setUp h,
+		dr_channel_info c 
+		where h.channelId = c.id
+			and h.status = 1
+			<if test="toFrom != null">
+			  and INSTR(#{toFrom},c.`code`)=1
+			</if>
+			<if test="now != null">
+				and <![CDATA[DATE_FORMAT(#{now},'%Y-%m-%d %H:%i:%s')>=DATE_FORMAT(startTime,'%Y-%m-%d %H:%i:%s')]]>
+				and <![CDATA[DATE_FORMAT(#{now},'%Y-%m-%d %H:%i:%s')<=DATE_FORMAT(endTime,'%Y-%m-%d %H:%i:%s')]]>
+			</if>
+
+	</select>
+</mapper>

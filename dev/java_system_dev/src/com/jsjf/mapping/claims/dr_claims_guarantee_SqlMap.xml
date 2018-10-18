@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsGuaranteeDAO">
+	<resultMap id="DrClaimsGuaranteeResult" type="com.jsjf.model.claims.DrClaimsGuarantee">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="isPawn" property="isPawn" jdbcType="INTEGER" />
+		<result column="pawnType" property="pawnType" jdbcType="INTEGER" />
+		<result column="assessAmount" property="assessAmount" jdbcType="DECIMAL" />
+		<result column="isAcceptance" property="isAcceptance" jdbcType="INTEGER" />	
+		<result column="guarantor" property="guarantor" jdbcType="VARCHAR" />
+		<result column="isGuarantee" property="isGuarantee" jdbcType="INTEGER" />
+		<result column="guaranteeType" property="guaranteeType" jdbcType="INTEGER" />
+		<result column="guarantee" property="guarantee" jdbcType="VARCHAR" />
+		<result column="isFinanc" property="isFinanc" jdbcType="INTEGER" />	
+		<result column="financType" property="financType" jdbcType="INTEGER" />
+		<result column="guaranteeAmount" property="guaranteeAmount" jdbcType="DECIMAL" />
+	</resultMap>
+	<!-- 获取担保情况-->
+	<select id="getDrClaimsGuaranteeByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsGuarantee">
+		SELECT id,lid,isPawn,pawnType,assessAmount/10000 as assessAmount,isAcceptance,guarantor,isGuarantee,
+		guaranteeType,guarantee,isFinanc,financType,guaranteeAmount 
+		FROM dr_claims_guarantee
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	
+	<!-- 添加担保情况 -->
+	<insert id="insertDrClaimsGuarantee" parameterType="com.jsjf.model.claims.DrClaimsGuarantee">
+		insert into dr_claims_guarantee(lid,isPawn,pawnType,assessAmount,isAcceptance,guarantor,isGuarantee,guaranteeType,
+		guarantee,isFinanc,financType,guaranteeAmount)
+		values (#{lid:INTEGER},#{isPawn:INTEGER},#{pawnType:INTEGER},#{assessAmount:DECIMAL},#{isAcceptance:INTEGER},
+		#{guarantor:VARCHAR},#{isGuarantee:INTEGER},#{guaranteeType:INTEGER},#{guarantee:VARCHAR},
+		#{isFinanc:INTEGER},#{financType:INTEGER},#{guaranteeAmount:DECIMAL})
+	</insert>
+	
+	<!-- 删除担保情况 -->
+	<delete id="deleteDrClaimsGuarantee" parameterType="java.lang.Integer" >
+	    delete from dr_claims_guarantee where lid = #{lid:INTEGER} 
+	</delete>
+	
+	<!-- 修改担保情况 -->
+	<update id="updateDrClaimsGuarantee" parameterType="com.jsjf.model.claims.DrClaimsGuarantee">
+		update dr_claims_guarantee
+		<set>
+			<if test="isPawn != null"> isPawn = #{isPawn:INTEGER},</if>
+			<if test="pawnType != null"> pawnType = #{pawnType:INTEGER},</if>
+			<if test="assessAmount != null"> assessAmount = #{assessAmount:DECIMAL},</if>
+			<if test="isAcceptance != null"> isAcceptance = #{isAcceptance:INTEGER},</if>
+			<if test="guarantor != null"> guarantor = #{guarantor:VARCHAR},</if>
+			<if test="isGuarantee != null"> isGuarantee = #{isGuarantee:INTEGER},</if>
+			<if test="guaranteeType != null"> guaranteeType = #{guaranteeType:INTEGER},</if>
+			<if test="guarantee != null"> guarantee = #{guarantee:VARCHAR},</if>
+			<if test="isFinanc != null"> isFinanc = #{isFinanc:INTEGER},</if>
+			<if test="financType != null"> financType = #{financType:INTEGER},</if>
+			<if test="guaranteeAmount != null"> guaranteeAmount = #{guaranteeAmount:DECIMAL}</if>
+		</set>
+		where lid = #{lid:INTEGER}
+	</update>
+</mapper>

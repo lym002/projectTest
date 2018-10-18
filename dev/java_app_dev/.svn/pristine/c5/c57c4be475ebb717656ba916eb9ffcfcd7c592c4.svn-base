@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.activity.BypCommodityDAO">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.activity.BypCommodity">
+    <id column="prid" jdbcType="INTEGER" property="prid" />
+    <result column="prizeName" jdbcType="VARCHAR" property="prizename" />
+    <result column="price" jdbcType="DECIMAL" property="price" />
+    <result column="details" jdbcType="VARCHAR" property="details" />
+    <result column="status" jdbcType="TINYINT" property="status" />
+    <result column="type" jdbcType="TINYINT" property="type" />
+    <result column="need_points" jdbcType="INTEGER" property="needPoints" />
+    <result column="activity_id" jdbcType="VARCHAR" property="activityId" />
+    <result column="product_url" jdbcType="VARCHAR" property="productUrl" />
+    <result column="repertory" jdbcType="DECIMAL" property="repertory" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    prid, prizeName, price, details, status, type, need_points, activity_id, repertory
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_commodity
+    where prid = #{prid,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_commodity
+    where prid = #{prid,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.activity.BypCommodity">
+    insert into byp_commodity (prid, prizeName, price, 
+      details, status, type, 
+      need_points, activity_id)
+    values (#{prid,jdbcType=INTEGER}, #{prizename,jdbcType=VARCHAR}, #{price,jdbcType=DECIMAL}, 
+      #{details,jdbcType=VARCHAR}, #{status,jdbcType=TINYINT}, #{type,jdbcType=TINYINT}, 
+      #{needPoints,jdbcType=INTEGER}, #{activityId,jdbcType=VARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.activity.BypCommodity">
+    insert into byp_commodity
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="prid != null">
+        prid,
+      </if>
+      <if test="prizename != null">
+        prizeName,
+      </if>
+      <if test="price != null">
+        price,
+      </if>
+      <if test="details != null">
+        details,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="type != null">
+        type,
+      </if>
+      <if test="needPoints != null">
+        need_points,
+      </if>
+      <if test="activityId != null">
+        activity_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="prid != null">
+        #{prid,jdbcType=INTEGER},
+      </if>
+      <if test="prizename != null">
+        #{prizename,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null">
+        #{price,jdbcType=DECIMAL},
+      </if>
+      <if test="details != null">
+        #{details,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="type != null">
+        #{type,jdbcType=TINYINT},
+      </if>
+      <if test="needPoints != null">
+        #{needPoints,jdbcType=INTEGER},
+      </if>
+      <if test="activityId != null">
+        #{activityId,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.activity.BypCommodity">
+    update byp_commodity
+    <set>
+      <if test="prizename != null">
+        prizeName = #{prizename,jdbcType=VARCHAR},
+      </if>
+      <if test="price != null">
+        price = #{price,jdbcType=DECIMAL},
+      </if>
+      <if test="details != null">
+        details = #{details,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="type != null">
+        type = #{type,jdbcType=TINYINT},
+      </if>
+      <if test="needPoints != null">
+        need_points = #{needPoints,jdbcType=INTEGER},
+      </if>
+      <if test="activityId != null">
+        activity_id = #{activityId,jdbcType=VARCHAR},
+      </if>
+      <if test="repertory != null">
+        repertory = #{repertory,jdbcType=DECIMAL},
+      </if>
+    </set>
+    where prid = #{prid,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.activity.BypCommodity">
+    update byp_commodity
+    set prizeName = #{prizename,jdbcType=VARCHAR},
+      price = #{price,jdbcType=DECIMAL},
+      details = #{details,jdbcType=VARCHAR},
+      status = #{status,jdbcType=TINYINT},
+      type = #{type,jdbcType=TINYINT},
+      need_points = #{needPoints,jdbcType=INTEGER},
+      activity_id = #{activityId,jdbcType=VARCHAR},
+      activity_id = #{activityId,jdbcType=VARCHAR}
+    where prid = #{prid,jdbcType=INTEGER}
+  </update>
+  <!-- 查询兑换奖品所需积分 -->
+   <select id="selectIntegralByPid" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_commodity
+    where activity_id = #{activity_id}
+  </select>
+  <!-- 查询积分商城列表-->
+  <select id="selectCommodityList" resultMap="BaseResultMap">
+    select * from byp_commodity bc where 1=1
+    <if test="activity_id != null">
+    and activity_id = #{activity_id}
+    </if>
+    <if test="status != null">
+      and status = #{status}
+    </if>
+    <if test="type != null">
+      and type = #{type}
+    </if>
+  </select>
+  <select id="selectCommodityByPid" resultType="com.jsjf.model.activity.BypCommodity">
+    select prid, prizeName, price, details, status, type, need_points needPoints, activity_id,product_url productUrl,code,repertory from byp_commodity bc
+  where 1=1
+  <if test="pid != null">
+    and bc.prid = #{pid}
+  </if>
+    for update
+  </select>
+</mapper>

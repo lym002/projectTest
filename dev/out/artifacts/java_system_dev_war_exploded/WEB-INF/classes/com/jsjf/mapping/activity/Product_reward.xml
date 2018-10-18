@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.ProductRewardDao">
+	<select id="selProductReward" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select jpr.id as id,dpi.fullName,dap.name from js_product_reward jpr
+		inner join dr_product_info dpi on dpi.id=jpr.pid
+		inner join dr_activity_parameter dap on dap.ID=jpr.apid
+		order by createDate desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selProductRewardCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from js_product_reward jpr
+		inner join dr_product_info dpi on dpi.id=jpr.pid
+		inner join dr_activity_parameter dap on dap.ID=jpr.apid
+	</select>
+	
+	<select id="selProductList"  resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info where (status=1 or status=2) and type!=1 and (deadline=60 or deadline=180)
+	</select>
+	
+	<select id="selParameterList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select ap.id as apid ,ap.name as name ,sc.cnvalue as typeName from dr_activity_parameter ap
+		inner join sys_chooseoption sc on sc.code=ap.type and sc.category='couponType'
+		where  (ap.type=1 or ap.type=2) and ap.applicableScenarios=1
+		<if test="type !=null and type !='' ">
+			and ap.type=#{type}
+		</if>
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.ProductReward"
+		keyProperty="id" useGeneratedKeys="true">
+		insert into js_product_reward (
+		pid,
+		apid,
+		user_ky,
+		createDate
+		)
+		values
+		(
+		#{pid},
+		#{apid},
+		#{user_ky},
+		now()
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="java.util.HashMap">
+		delete from  js_product_reward where id=#{id}
+	</delete>
+</mapper>

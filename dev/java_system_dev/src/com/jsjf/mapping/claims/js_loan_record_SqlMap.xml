@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.JsLoanRecordDAO">
+	<resultMap id="JsLoanRecordResult" type="com.jsjf.model.claims.JsLoanRecord">
+		<result	column="id" property="id" jdbcType="INTEGER"/>
+		<result	column="lid" property="lid" jdbcType="INTEGER"/>
+		<result	column="pid" property="pid" jdbcType="INTEGER"/>
+		<result	column="contractCode" property="contractCode" jdbcType="VARCHAR"/>
+		<result	column="claimsName" property="claimsName" jdbcType="VARCHAR"/>
+		<result	column="company" property="company" jdbcType="VARCHAR"/>
+		<result	column="amount" property="amount" jdbcType="DECIMAL"/>
+		<result	column="loanName" property="loanName" jdbcType="VARCHAR"/>
+		<result	column="bankName" property="bankName" jdbcType="VARCHAR"/>
+		<result	column="bankNo" property="bankNo" jdbcType="VARCHAR"/>
+		<result	column="productName" property="productName" jdbcType="VARCHAR"/>
+		<result	column="addtime" property="addtime" jdbcType="TIMESTAMP"/>
+		<result	column="addUseky" property="addUseky" jdbcType="INTEGER"/>
+		<result	column="startTime" property="startTime" jdbcType="TIMESTAMP"/>
+		<result	column="endTime" property="endTime" jdbcType="TIMESTAMP"/>
+		<result	column="claimsLoanStauts" property="claimsLoanStauts" jdbcType="INTEGER"/>
+
+	</resultMap>
+	<sql id="Base_sql">
+		id,lid,pid,contractCode,claimsName,company,amount,loanName,bankName,bankNo,productName,addtime,addUseky,startTime,endTime
+	</sql>
+		
+	<select id="selectByPrimaryKey" resultMap="JsLoanRecordResult"	parameterType="int">
+		select <include refid="Base_sql"/> from js_loan_record where pid=#{pid}
+	</select>
+	<insert id="insert" parameterType="com.jsjf.model.claims.JsLoanRecord">
+		insert js_loan_record (lid,pid,contractCode,claimsName,company,amount,loanName,
+				bankName,bankNo,productName,addtime,addUseky,startTime,endTime)		
+		values(#{lid},#{pid},#{contractCode},#{claimsName},#{company},#{amount},#{loanName},#{bankName},#{bankNo},
+				#{productName},now(),#{addUseky},#{startTime},#{endTime})
+	</insert>
+	<insert id="insertByPid" parameterType="java.util.HashMap">
+		INSERT into js_loan_record 
+		(lid,pid,contractCode,claimsName,company,amount,loanName,
+				bankName,bankNo,productName,addtime,addUseky,startTime,endTime)
+		SELECT DISTINCT dcl.id,dp.id ,dcl.`no` ,dcl.`name`,dcc.companyName,
+						dp.amount,dcl.loanName,dcl.bankName,dcl.bankNo,dp.fullName,NOW(),#{useKy},
+						dcl.addDate,dcl.endDate
+		from dr_product_info dp 
+		LEFT JOIN dr_subject_info dsi ON dp.sid = dsi.id
+		LEFT JOIN dr_claims_loan dcl ON dsi.lid = dcl.id
+		LEFT JOIN dr_claims_customer dcc ON dcc.lid = dcl.id
+		WHERE dp.id = #{pid}
+	</insert>
+	<insert id="insertBatch" parameterType="java.util.List">
+		insert js_loan_record (lid,type,status,addTime,updateTime,addUserKy,updateUserKy,cache)
+			<foreach collection="list" item="item" open="(" separator="," close=")" index="index">
+				(#{item.lid},#{item.pid},#{item.contractCode},#{item.claimsName},#{item.company},
+					#{item.amount},#{item.loanName},#{item.bankName},#{item.bankNo},#{item.productName},now(),#{item.addUseky})
+			</foreach>
+	</insert>
+	
+	<select id="selectJsLoanRecordByMap" resultMap="JsLoanRecordResult"	parameterType="java.util.HashMap">
+		select jlr.id, jlr.lid, jlr.pid, jlr.contractCode, jlr.claimsName, jlr.company, jlr.amount,
+				 jlr.loanName, jlr.bankName,CONCAT(LEFT(jlr.bankNo,4),'****',RIGHT(jlr.bankNo,4)) AS bankNo, jlr.productName, jlr.addtime, jlr.addUseky, jlr.startTime, jlr.endTime, dcl.status as claimsLoanStauts
+		from js_loan_record jlr
+		left join dr_claims_loan dcl on jlr.lid= dcl.id
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id !=null">
+				and  jlr.id = #{id}
+			</if>
+			<if test="pid !=null">
+				and  jlr.pid = #{pid}
+			</if>
+			<if test="lid !=null">
+				and  jlr.lid = #{lid}
+			</if>
+			<if test="contractCode != null and contractCode !=''  ">
+				and jlr.contractCode like concat('%',trim(#{contractCode}),'%')
+			</if>
+			<if test="claimsName != null and claimsName !=''  ">
+				and jlr.claimsName like concat('%',trim(#{claimsName}),'%')
+			</if>
+			<if test="company != null and company !=''  ">
+				and jlr.company  like  concat('%',trim(#{company}),'%')
+			</if>
+			<if test="productName != null and productName !=''  ">
+				and jlr.productName  like  concat('%',trim(#{productName}),'%')
+			</if>
+		</trim>
+		<if test="orders !=null and orders !='' ">
+			ORDER BY ${orders}
+		</if>
+		<if test="offset !=null and limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<select id="selectJsLoanRecordCountByMap" resultType="int"	parameterType="java.util.HashMap">
+		select count(1) 
+		from js_loan_record jlr
+		left join dr_claims_loan dcl on jlr.lid= dcl.id
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id !=null">
+				and  jlr.id = #{id}
+			</if>
+			<if test="pid !=null">
+				and  jlr.pid = #{pid}
+			</if>
+			<if test="lid !=null">
+				and  jlr.lid = #{lid}
+			</if>
+			<if test="contractCode != null and contractCode !=''  ">
+				and jlr.contractCode like concat('%',trim(#{contractCode}),'%')
+			</if>
+			<if test="claimsName != null and claimsName !=''  ">
+				and jlr.claimsName like concat('%',trim(#{claimsName}),'%')
+			</if>
+			<if test="company != null and company !=''  ">
+				and jlr.company  like  concat('%',trim(#{company}),'%')
+			</if>
+			<if test="productName != null and productName !=''  ">
+				and jlr.productName  like  concat('%',trim(#{productName}),'%')
+			</if>
+		</trim>
+	</select>
+
+	<delete id="deleteLoanRecord" parameterType="java.util.Map">
+		delete from js_loan_record where pid=#{id}
+	</delete>
+
+</mapper>

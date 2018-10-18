@@ -1,0 +1,237 @@
+package com.jsjf.dao.product;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.product.DrProductInfo;
+import com.jsjf.model.product.DrProductInvest;
+
+public interface DrProductInvestDAO {
+	/**
+	 * 得到投资记录
+	 * 
+	 * @param Map
+	 * @return List<DrProductInvest>
+	 */
+	public List<DrProductInvest> selectInvestLogByParam(Map<String, Object> map);
+
+	public Integer selectInvestLogCountByParam(Map<String, Object> map);
+
+	/**
+	 * 只插入有值得字段
+	 * 
+	 * @param invest
+	 */
+	public void insertSelective(DrProductInvest invest);
+
+	public BigDecimal selectInvestSumByParam(Map<String, Object> map);
+
+	public DrProductInvest selectByPrimaryKey(Integer id);
+
+	public DrProductInvest selectByParam(Map<String, Object> map);
+
+	public Integer selectInvestCountByMap(Map<String, Object> map);
+
+	/**
+	 * 查询时间段内，投资排名
+	 * 
+	 * @return
+	 */
+	public List<Map<String, Object>> selectInvestTopGroupByUid(
+			Map<String, Object> map);
+
+	public Map<String, Object> selectUserLastInvestmentInfo(Integer uid);
+
+	/**
+	 * 查询用户大于指定金额和期限的投资记录
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInvest> selectInvestList(Map<String, Object> param);
+
+	public List<Map<String, Object>> rrlQueryInvestList(
+			Map<String, Object> param);
+
+	/**
+	 * 查询8.1之前的所有投资总额【七夕】
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<Map<String, Object>> selectInvestTotal();
+
+	/**
+	 * 查询投资记录前100条数据
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInfo> selectInvest();
+
+	/**
+	 * 是否符合规则
+	 * 
+	 * @return
+	 */
+	public int selectInvestCountExcludeNewHand(Integer uid);
+
+	/**
+	 * 查询
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInvest> selectInvestByMap(Map<String, Object> param);
+
+	/**
+	 * 根据id查询非新手标和体验标的投资记录
+	 * 
+	 * @param uid
+	 * @return
+	 */
+	public int selectIsOldUserById(Integer uid);
+
+	/**
+	 * 判断用户投过新手标或者体验标
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInvest> checkProductType(Map<String, Object> param);
+
+	/**
+	 * 根据pid查询投资次数
+	 * 
+	 * @param pid
+	 * @return
+	 */
+	public Integer selectExperienceInvestCount(Integer pid);
+
+	/**
+	 * 查询除体验标之外的投资次数
+	 * 
+	 * @param uid
+	 * @return
+	 */
+	public Integer selectProductInvestCountByUid(Integer uid);
+
+	/**
+	 * 根据产品类型,产品状态，投资状态，查询投资记录
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public List<DrProductInvest> getProductInvestListByType(
+			Map<String, Object> param);
+
+	/**
+	 * 根据产品类型,产品状态，投资状态，查询投资总数
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public int getProductInvestCountByType(Map<String, Object> param);
+
+	/**
+	 * 根据投资id查奖品详情
+	 * 
+	 * @param investId
+	 * @return
+	 */
+	public List<Map<String, Object>> selectprizeInfoByInvestId(
+			Map<String, Object> param);
+
+	/**
+	 * 查询老投资
+	 * 
+	 * @param map
+	 * @return
+	 */
+	public List<DrProductInvest> selectOldInvest(Map<String, Object> map);
+
+	/**
+	 * 查询端午节活动投资记录
+	 * 
+	 * @return
+	 */
+	public List<Map<String, Object>> selectInvestByDragonBoat(
+			Map<String, Object> map);
+
+	/**
+	 * 查询518累计投资
+	 * 
+	 * @param map
+	 * @return
+	 */
+	public List<Map<String, Object>> selectActivityMay18d(
+			Map<String, Object> map);
+
+	/**
+	 * 查询518累计投资count
+	 * 
+	 * @param map
+	 * @return
+	 */
+	public int selectActivityMay18dCount(Map<String, Object> map);
+
+	/**
+	 * 查询518 个人累计投资
+	 * 
+	 * @param map
+	 * @return
+	 */
+	public int selectActivityMay18dInvestAmountByUid(Map<String, Object> map);
+
+	/**
+	 * 根据订单id查询E签id
+	 * 
+	 * @param string
+	 * @return
+	 */
+	public DrProductInvest getEvidByInvestId(String string);
+
+	/**
+	 * 根据id查询用户双12累积投资金额
+	 * 
+	 * @param uid
+	 * @return
+	 */
+	public Map<String, BigDecimal> selectDoubleTwelve(Integer uid);
+
+	/**
+	 * 获取第一个投资的用户
+	 * @param integer 
+	 * 
+	 * @return
+	 */
+	public DrProductInvest selectOneInvestUser(Integer integer);
+	/**
+	 * 获取累积投资的最多用户
+	 * @param integer
+	 *
+	 * @return
+	 */
+    DrProductInvest selectMaxInvestUser(Integer id);
+
+	List<Map<String,Object>> getCount(Map<String, Object> map);
+
+	/**
+	 * 最后一位投资的用户
+	 * @param integer
+	 *
+	 * @return
+	 */
+	DrProductInvest selectLastInvestUser(Integer id);
+
+    Map<String,Object> selectEveryoneJdCard(Map<String, Object> param);
+
+    List<Map<String,Object>> selectEveryoneTopFive(Map<String, Object> param);
+
+    List<Map<String,Object>> selectEveryoneForVIP(Map<String, Object> param);
+
+    List<Map<String,Object>> getEveryoneTopTen();
+
+    Integer selectNewInvest(Map<String, Object> map);
+}

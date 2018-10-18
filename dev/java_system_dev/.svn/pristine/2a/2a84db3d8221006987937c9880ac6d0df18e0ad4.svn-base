@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsPicDAO">
+	<resultMap id="DrClaimsPicResult" type="com.jsjf.model.claims.DrClaimsPic">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="smallUrl" property="smallUrl" jdbcType="VARCHAR" />
+		<result column="bigUrl" property="bigUrl" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="isShow" property="isShow" jdbcType="INTEGER" />
+		<result column="showSort" property="showSort" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 获取债权图片-->
+	<select id="getDrClaimsPicByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsPic">
+		select * from dr_claims_pic
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	
+	<!-- 获取债权图片-->
+	<select id="getDrClaimsPicById" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsPic">
+		select * from dr_claims_pic
+		<where>
+	 		id = #{id}
+		</where>
+	</select>
+	
+	<!-- 添加债权图片 -->
+	<insert id="insertDrClaimsPic" parameterType="com.jsjf.model.claims.DrClaimsPic">
+		insert into dr_claims_pic(lid, smallUrl, bigUrl,name,status,isShow,showSort)
+		values (#{lid:INTEGER},#{smallUrl:VARCHAR},#{bigUrl:VARCHAR},#{name:VARCHAR},
+		#{status:INTEGER},#{isShow:INTEGER},#{showSort:INTEGER})
+	</insert>
+	
+	<!-- 修改债权图片 -->
+	<update id="updateDrClaimsPic" parameterType="com.jsjf.model.claims.DrClaimsPic">
+		update dr_claims_pic
+		<set>
+			<if test="smallUrl != null"> smallUrl = #{smallUrl:VARCHAR},</if>
+			<if test="bigUrl != null"> bigUrl = #{bigUrl:VARCHAR},</if>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="isShow != null"> isShow = #{isShow:INTEGER},</if>
+			<if test="showSort != null"> showSort = #{showSort:INTEGER}</if>
+		</set>
+		<where>
+			<if test="id != null"> id = #{id:INTEGER}</if>
+			<if test="lid != null"> and lid = #{lid:INTEGER}</if>
+		</where>
+	</update>
+	<!-- 根据LID删除债权图片 -->
+	<delete id="deleteDrClaimsPicByLid" parameterType="java.lang.Integer" >
+	    delete from dr_claims_pic where lid = #{lid:INTEGER} 
+	</delete>
+	
+	<!-- 根据ID删除债权图片 -->
+	<delete id="deleteDrClaimsPicById" parameterType="java.lang.Integer" >
+	    delete from dr_claims_pic where id = #{id:INTEGER} 
+	</delete>
+</mapper>

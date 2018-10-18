@@ -1,0 +1,257 @@
+package com.jsjf.service.claims.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.claims.DrClaimsLoanDAO;
+import com.jsjf.model.claims.DrClaimsCustomer;
+import com.jsjf.model.claims.DrClaimsFinanc;
+import com.jsjf.model.claims.DrClaimsLoan;
+import com.jsjf.model.claims.DrClaimsShareholder;
+import com.jsjf.service.claims.BypFinancialService;
+import com.jsjf.service.claims.DrClaimsInfoService;
+import com.zcdj.dto.SyncProduct;
+import com.zcdj.util.Md5Utils;
+import com.zcdj.util.SubmitUtil;
+import net.sf.json.JSONArray;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+@Service
+@Transactional
+public class BypFinancialServiceImpl implements BypFinancialService {
+    protected static final Logger log = Logger.getLogger(BypFinancialServiceImpl.class);
+    @Autowired
+    private DrClaimsInfoService drClaimsInfoService;
+    @Autowired
+    private DrClaimsLoanDAO drClaimsLoanDAO;
+    @Override
+    public String addClaimsInfo(String data) throws Exception {
+        BaseResult br = new BaseResult();
+        net.sf.json.JSONObject jsonObject1 = net.sf.json.JSONObject.fromObject(data);
+        String orgCode = jsonObject1.getString("orgCode");
+        String signature = ConfigUtil.KEY;
+        List<Map<String, Object>> list1 = jsonObject1.getJSONArray("list");
+        Map<String, Object> map = new TreeMap<>();
+        map.put("orgCode", orgCode);
+        map.put("list", list1);
+        String[] claimsFiles = new String[9];
+        String enterpriseName = "";
+        String lpName = "";
+        String lpGender = "";
+        String lpMobile = "";
+        String certificateType = "";
+        String certificateNo = "";
+        String businessLicense = "";
+        String contactNumber = "";
+        String email = "";
+        String address = "";
+        String projectName = "";
+        String contractNo = "";
+        String loanUsedFor = "";
+        String loanAmount = "";
+        String currency = "";
+        String loanDeadline = "";
+        String loanRate = "";
+        String repaymentMode = "";
+        String repaymentPeriod = "";
+        String serviceRate = "";
+        String dateType = "";
+        String accountName = "";
+        String bankName = "";
+        String accountNo = "";
+        String branchName = "";
+        String contractStartDate = "";
+        String contractEndDate = "";
+        DrClaimsFinanc drClaimsFinanc = new DrClaimsFinanc();
+        DrClaimsCustomer drClaimsCustomer = new DrClaimsCustomer();
+        DrClaimsShareholder[] drClaimsShareholders = new DrClaimsShareholder[0];
+        if (Md5Utils.validateMD5Sign(net.sf.json.JSONObject.fromObject(map).toString(), signature, jsonObject1.getString("signature"))) {//MD5校验成功
+            JSONArray list2 = jsonObject1.getJSONArray("list");
+            if (list2.size() > 0) {
+                for (int i = 0; i < list2.size(); i++) {
+                    net.sf.json.JSONObject jsonObject = list2.getJSONObject(i);
+                    net.sf.json.JSONObject company = jsonObject.getJSONObject("company");
+                    enterpriseName = company.getString("enterpriseName");
+                    lpName = company.getString("lpName");
+                    lpGender = company.getString("lpGender");
+                    lpMobile = company.getString("lpMobile");
+                    certificateType = company.getString("certificateType");
+                    certificateNo = company.getString("certificateNo");
+                    businessLicense = company.getString("businessLicense");
+                    contactNumber = company.getString("contactNumber");
+                    email = company.getString("email");
+                    address = company.getString("address");
+                    //企业客户基本信息
+                    drClaimsFinanc.setName(lpName);
+                    drClaimsFinanc.setSex(Integer.parseInt(lpGender));
+                    drClaimsFinanc.setPhone(lpMobile);
+                    drClaimsFinanc.setCertificateType(Integer.parseInt(certificateType));
+                    drClaimsFinanc.setCertificateNo(certificateNo);
+                    drClaimsFinanc.setBusinessNo(businessLicense);
+                    drClaimsFinanc.setCompanyPhone(contactNumber);
+                    drClaimsFinanc.setCompanyMail(email);
+                    drClaimsFinanc.setAddress(address);
+                    //抓取json数组
+                    JSONArray loanProjectFiles = jsonObject.getJSONArray("loanProjectFiles");
+                    drClaimsShareholders = new DrClaimsShareholder[loanProjectFiles.size()];
+                    claimsFiles = new String[loanProjectFiles.size()];
+                    if (loanProjectFiles.size() > 0) {
+                        for (int j = 0; j < drClaimsShareholders.length; j++) {
+                            net.sf.json.JSONObject jsonObject2 = loanProjectFiles.getJSONObject(j);// 遍历 jsonarray 数组，把每一个对象转成 json 对象
+                            claimsFiles[j] = jsonObject2.getString("filePath");
+                        }
+                    }
+                    //贷款项目基本信息
+                    net.sf.json.JSONObject loanProject = jsonObject.getJSONObject("loanProject");
+                    projectName = loanProject.getString("projectName");
+                    contractNo = loanProject.getString("contractNo");
+                    loanUsedFor = loanProject.getString("loanUsedFor");
+                    loanAmount = loanProject.getString("loanAmount");
+                    currency = loanProject.getString("currency");
+                    loanDeadline = loanProject.getString("loanDeadline");
+                    loanRate = loanProject.getString("loanRate");
+                    repaymentMode = loanProject.getString("repaymentMode");
+                    repaymentPeriod = loanProject.getString("repaymentPeriod");
+                    serviceRate = loanProject.getString("serviceRate");
+                    dateType = loanProject.getString("dateType");
+                    accountName = loanProject.getString("accountName");
+                    bankName = loanProject.getString("bankName");
+                    accountNo = loanProject.getString("accountNo");
+                    branchName = loanProject.getString("branchName");
+                    contractStartDate = loanProject.getString("contractStartDate");
+                    contractEndDate = loanProject.getString("contractEndDate");
+                    JSONArray companyShareholders = jsonObject.getJSONArray("companyShareholders");
+                    drClaimsShareholders = new DrClaimsShareholder[companyShareholders.size()];
+                    if (loanProjectFiles.size() > 0) {
+                        for (int k = 0; k < companyShareholders.size(); k++) {
+                            net.sf.json.JSONObject jsonObject2 = companyShareholders.getJSONObject(k);// 遍历 jsonarray 数组，把每一个对象转成 json 对象
+                            DrClaimsShareholder drClaimsShareholder = new DrClaimsShareholder();
+                            drClaimsShareholder.setName(jsonObject2.getString("name"));
+                            drClaimsShareholder.setPhone(jsonObject2.getString("mobile"));
+                            drClaimsShareholder.setType(Integer.parseInt(jsonObject2.getString("holderType")));
+                            drClaimsShareholder.setCertificateType(Integer.parseInt(jsonObject2.getString("certificateType")));
+                            drClaimsShareholder.setCertificateNo(jsonObject2.getString("certificateNo"));
+                            drClaimsShareholder.setContributionLines(new BigDecimal(jsonObject2.getString("investment")));
+                            drClaimsShareholder.setContributionType(jsonObject2.getString("investType"));
+                            drClaimsShareholder.setInvestRate(new BigDecimal(jsonObject2.getString("investRatio")));
+                            drClaimsShareholders[k] = drClaimsShareholder;
+                        }
+                    }
+                }
+            }
+            //企业客户基本信息
+            drClaimsCustomer.setName(lpName);
+            drClaimsCustomer.setCompanyName(enterpriseName);
+            drClaimsCustomer.setSex(Integer.parseInt(lpGender));
+            drClaimsCustomer.setPhone(lpMobile);
+            drClaimsCustomer.setCertificateType(Integer.parseInt(certificateType));
+            drClaimsCustomer.setCertificateNo(certificateNo);
+            drClaimsCustomer.setBusinessNo(businessLicense);
+            drClaimsCustomer.setCompanyPhone(contactNumber);
+            drClaimsCustomer.setCompanyMail(email);
+            drClaimsCustomer.setAddress(address);
+                /*
+              lid,companyName,name,sex,phone,certificateType,certificateNo,mechanismNo,industryType,companyNameProtocolShow,
+		businessNo,companyPhone,companyMail,address,user_id,fuiou_acnt,mchnt_txn_ssn
+                 */
+            DrClaimsLoan drClaimsLoan = new DrClaimsLoan();
+            drClaimsLoan.setDrClaimsCustomer(drClaimsCustomer);
+            drClaimsLoan.setCompanyName(enterpriseName);
+            drClaimsLoan.setName(projectName);
+            drClaimsLoan.setNo(contractNo);
+            drClaimsLoan.setLoanUse(loanUsedFor);
+            drClaimsLoan.setLoanAmount(new BigDecimal(loanAmount));
+            drClaimsLoan.setCurrency(currency);
+            drClaimsLoan.setLoanDeadline(loanDeadline);
+            drClaimsLoan.setRate(new BigDecimal(loanRate));
+            drClaimsLoan.setRepayType(Integer.parseInt(repaymentMode));
+            drClaimsLoan.setRepayType(Integer.parseInt(repaymentMode));
+            drClaimsLoan.setRepayDeadline(Integer.parseInt(repaymentPeriod));
+            drClaimsLoan.setServiceRate(new BigDecimal(serviceRate));
+            drClaimsLoan.setDateType(Integer.parseInt(dateType));
+            drClaimsLoan.setLoanName(accountName);
+            drClaimsLoan.setBankName(bankName);
+            drClaimsLoan.setBankNo(accountNo);
+            drClaimsLoan.setBankAddress(branchName);
+            drClaimsLoan.setStartDate(Utils.parseDate(contractStartDate));
+            drClaimsLoan.setEndDate(Utils.parseDate(contractEndDate));
+            drClaimsLoan.setDrClaimsFinanc(drClaimsFinanc);
+            drClaimsLoan.setDrClaimsShareholder(drClaimsShareholders);
+            //抓取结束
+            List<DrClaimsLoan> list = drClaimsInfoService.getDrClaimsLoanByMap(drClaimsLoan.getNo());
+            if (!Utils.isEmptyList(list)) {
+                br.setSuccess(false);
+                br.setMsg("借款合同编号已存在!");
+                JSONObject jsonObject = (JSONObject) JSONObject.toJSON(br);
+                return jsonObject.toString();
+            }
+            drClaimsLoan.setStatus(1);
+            drClaimsInfoService.insertDrClaimsInfo(drClaimsLoan, claimsFiles);
+            br.setSuccess(true);
+        } else {//校验失败
+            br.setErrorCode("9998");
+            br.setErrorMsg("MD5验证失败");
+            br.setSuccess(false);
+            return JSONObject.toJSON(br).toString();
+        }
+        return JSONObject.toJSON(br).toString();
+    }
+
+    /**
+     * 资产对接接口_请求数据接口1
+     *
+     * @return
+     */
+    @Override
+    public String syncProductInfo(SyncProduct dto) throws Exception {
+        BaseResult br = new BaseResult();
+        JSONObject jsonObject = new JSONObject();
+        Map<String, Object> para = new TreeMap<>();
+        para.put("orgCode", "8ij90k8d14f746c4a429029s8i0oo98k23009m");//你的平台编码
+        List<SyncProduct> list = new ArrayList<>();
+        try {
+            list.add(dto);
+            para.put("list", list);//接口所需数据
+            para.put("json", net.sf.json.JSONObject.fromObject(para).toString());//整个map转换成json字符串
+            String jsonString = SubmitUtil.buildSubmit(para, ConfigUtil.URL + "/financial/syncProductInfo.do");
+            log.info("处理成功");
+            return JSONObject.toJSONString(jsonString);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("接口数据处理失败" + e);
+            return JSONObject.toJSONString(br);
+        }
+    }
+
+    @Override
+    public String syncRepaymentStatus(Integer param) throws Exception {
+        BaseResult br = new BaseResult();
+        Map<String, Object> para = new TreeMap<>();
+        para.put("orgCode", "8ij90k8d14f746c4a429029s8i0oo98k23009m");//你的平台编码
+        List<String> list = new ArrayList<>();
+        try {
+            DrClaimsLoan drClaimsLoanByid = drClaimsLoanDAO.getDrClaimsLoanByid(param);
+            list.add(drClaimsLoanByid.getNo());
+            para.put("productNos", list);//接口所需数据
+            para.put("json", net.sf.json.JSONObject.fromObject(para).toString());//整个map转换成json字符串
+            SubmitUtil.buildSubmit(para, ConfigUtil.URL + "/financial/syncRepaymentStatus.do");
+            log.info("处理成功");
+            return "资产同步数据处理成功";
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("接口数据处理失败" + e);
+            return "资产同步数据处理失败";
+        }
+    }
+}

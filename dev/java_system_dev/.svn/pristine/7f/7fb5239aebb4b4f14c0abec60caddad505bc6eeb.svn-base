@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsActivityProductInvestInfoDAO">
+	<resultMap id="JsActivityProductInvestInfoResult" type="com.jsjf.model.product.JsActivityProductInvestInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="piid" property="piid" jdbcType="INTEGER" />
+		<result column="luckCodes" property="luckCodes" jdbcType="VARCHAR" />
+		<result column="prizeStatus" property="prizeStatus" jdbcType="INTEGER" />
+		<result column="isUplod" property="isUplod" jdbcType="INTEGER" />
+		<result column="prizeMobile" property="prizeMobile" jdbcType="VARCHAR" />
+		<result column="prizeImgUrl" property="prizeImgUrl" jdbcType="VARCHAR" />														
+		<result column="prizeContent" property="prizeContent" jdbcType="VARCHAR" />
+	</resultMap>
+		
+	<!-- 插入 -->
+	<insert id="insert" parameterType="com.jsjf.model.product.JsActivityProductInvestInfo">
+		INSERT INTO js_activity_product_invest_info
+		(piid,luckCodes,prizeStatus,isUplod,prizeMobile,prizeImgUrl,prizeContent)
+ 		VALUES ( #{piid},#{luckCodes},#{prizeStatus},#{isUplod},#{prizeMobile},#{prizeImgUrl},#{prizeContent});
+	</insert>
+	
+	<!--  查询 投资记录 -->
+	<select id="selectJsActivityInvestList" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+			SELECT CONCAT(left(dm.mobilePhone,3),'****',right(dm.mobilePhone,4)) mobilePhone,dpi.amount,dpi.investTime,
+			if(LOCATE(',',apii.luckCodes)=0,apii.luckCodes,CONCAT(LEFT(apii.luckCodes,LOCATE(',',apii.luckCodes)),'...')) luckCodes
+			from js_activity_product_invest_info apii 
+				LEFT JOIN dr_product_invest dpi ON apii.piid  = dpi.id
+				LEFT JOIN dr_member dm on  dm.uid = dpi.uid
+				LEFT JOIN js_activity_product jap ON jap.pid = dpi.pid
+			<trim prefix=" where " prefixOverrides="and">
+				<if test="pid !=null and pid != ''">
+					 and dpi.pid = #{pid}
+				</if>
+				<if test="atid !=null and atid != ''">
+					 and jap.atid = #{atid}
+				</if>
+			</trim>
+	</select>
+	
+	<!-- 查询往期中奖者 -->
+	<select id="selectJsActivityProductIsWinner" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT ai.id,ai.piid,ai.luckCodes luckCodes,ai.prizeStatus,ai.isUplod,IFNULL(CONCAT(LEFT(ai.prizeMobile,3),"****",RIGHT(ai.prizeMobile,3)),NULL) prizeMobile,ai.prizeImgUrl,
+		ai.prizeContent,jap.activityPeriods,jap.prizeCode,jap.pid,ai.prizeHeadPhoto,ai.prizeVideoLink,ai.prizeVideoUrl,jap.appTitle,jap.pcDetailImg,jap.prizeUrl
+		from js_activity_product_invest_info ai 
+			LEFT JOIN dr_product_invest dpin ON ai.piid = dpin.id	
+			LEFT JOIN js_activity_product jap ON jap.pid = dpin.pid
+		WHERE ai.prizeStatus = 2 
+		<if test="pid != null and pid != ''">
+		  	and jap.pid = #{pid}
+		</if>
+		<if test="noPid != null and noPid != ''">
+			and jap.pid != #{noPid}
+		</if>
+		GROUP BY jap.activityPeriods ORDER BY ai.id desc
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 查询往期中奖者 -->
+	<select id="selectJsActivityProductIsWinnerCount" resultType="Integer" parameterType="java.util.HashMap">
+		select count(1) from (
+				SELECT  1 from js_activity_product_invest_info ai 
+			LEFT JOIN dr_product_invest dpin ON ai.piid = dpin.id	
+			LEFT JOIN js_activity_product jap ON jap.pid = dpin.pid
+		WHERE ai.prizeStatus = 2 
+		<if test="pid != null and pid != ''">
+		  	and jap.pid = #{pid}
+		</if>
+		<if test="noPid != null and noPid != ''">
+			and jap.pid != #{noPid}
+		</if>
+		GROUP BY jap.activityPeriods ORDER BY ai.id desc
+		)a
+		
+	</select>
+		
+	<!-- 查询我的中奖记录 -->
+	<select id="selectjsActivityProductInvestInfoList" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT dpi.id investId,dp.id pid,CONCAT(jat.`name`,'(第',jap.activityPeriods,'期)') activityName,dp.fullName productName,dpi.amount,japii.prizeStatus,japii.luckCodes,jap.prizeCode,
+		(SELECT GROUP_CONCAT(japr.`name`) from js_activity_prize japr where japr.atid = jat.id ) activityPrizes
+			from js_activity_product_invest_info japii  
+			LEFT JOIN dr_product_invest dpi ON japii.piid = dpi.id 
+			LEFT JOIN dr_product_info dp ON dp.id = dpi.pid AND dp.atid is not NULL AND dp.`status` in (5,6,8,9) 
+			LEFT JOIN js_activity_product jap ON dp.id = jap.pid
+			LEFT JOIN js_activity_template jat ON jat.id = jap.atid
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null and uid != '' ">
+				and dpi.uid = #{uid}
+			</if>
+			<if test="atid !=null and atid !=''">
+				and jap.atid = #{atid}
+			</if>
+			<if test="status !=null and status !=''">
+				and jap.status in 
+				 <foreach collection="status" item="item" open="(" close=")" separator="," >
+				 	#{item}
+				 </foreach>	
+			</if>
+		</trim>
+		ORDER BY japii.id DESC
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 查询我的中奖记录总条数 -->
+	<select id="selectjsActivityProductInvestInfoCount" resultType="Integer" parameterType="java.util.HashMap">
+		SELECT ifnull(count(1),0)
+			from js_activity_product_invest_info japii  
+			LEFT JOIN dr_product_invest dpi ON japii.piid = dpi.id 
+			LEFT JOIN dr_product_info dp ON dp.id = dpi.pid AND dp.atid is not NULL AND dp.`status` in (5,6,8,9) 
+			LEFT JOIN js_activity_product jap ON dp.id = jap.pid
+			LEFT JOIN js_activity_template jat ON jat.id = jap.atid
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null and uid != '' ">
+				and dpi.uid = #{uid}
+			</if>
+			<if test="pid != null and pid != '' ">
+				and jap.pid = #{pid}
+			</if>
+			<if test="atid !=null and atid !=''">
+				and jap.atid = #{atid}
+			</if>
+			<if test="noPid != null and noPid != ''">
+				and jap.pid != #{noPid}
+			</if>
+			<if test="status !=null and status !=''">
+				and jap.status in 
+				 <foreach collection="status" item="item" open="(" close=")" separator="," >
+				 	#{item}
+				 </foreach>	
+			</if>
+		</trim>
+	</select>
+		
+	<!-- 根据 Map查询我的幸运码 -->
+	<select id="selectjsActivityProductLuckCodes" resultType="String" parameterType="java.util.HashMap">
+		select GROUP_CONCAT(japii.luckCodes) luckCodes  
+				FROM js_activity_product_invest_info japii 
+				LEFT JOIN dr_product_invest dpi ON dpi.id = japii.piid			
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="pid != null and pid != '' ">
+				and dpi.pid = #{pid}
+			</if>
+			<if test="uid !=null and uid != ''">
+				and dpi.uid = #{uid}
+			</if>
+		</trim>
+	</select>
+		<!--  iphone7 活动总投资人数,活动中奖总人数 -->
+	<select id="iPhoneCensus" resultType="java.util.HashMap">
+<!-- 		SELECT COUNT(DISTINCT dpi.uid) investCount,sum(if(japi.prizeStatus=2,1,0)) prizeCount from js_activity_product_invest_info japi 
+			LEFT JOIN dr_product_invest dpi on japi.piid = dpi.id -->
+			
+		SELECT COUNT(DISTINCT dpi.uid) investCount,(SELECT COUNT(1) from js_activity_product where atid =1 ) prizeCount from js_activity_product_invest_info japi
+		LEFT JOIN dr_product_invest dpi on japi.piid = dpi.id
+	</select>
+	
+	
+</mapper>

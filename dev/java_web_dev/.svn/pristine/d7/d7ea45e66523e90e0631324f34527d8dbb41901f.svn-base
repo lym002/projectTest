@@ -1,0 +1,116 @@
+package com.jsjf.model.vip;
+
+import java.util.Date;
+
+public class VipInfo {
+    private Integer id;
+
+    private Integer vipLevel;
+
+    private String vipName;
+
+    private String levelUpdateRedPacket;
+
+    private Integer growthValueMin;
+
+    private Integer growthValueMax;
+
+    private Double integralMultiply;
+
+    private String rightsAndInterestsId;
+
+    private Integer freeWithdrawDeposit;
+
+    private Date createdTime;
+
+    private Date updateTime;
+
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getVipLevel() {
+        return vipLevel;
+    }
+
+    public void setVipLevel(Integer vipLevel) {
+        this.vipLevel = vipLevel;
+    }
+
+    public String getVipName() {
+        return vipName;
+    }
+
+    public void setVipName(String vipName) {
+        this.vipName = vipName == null ? null : vipName.trim();
+    }
+
+    public String getLevelUpdateRedPacket() {
+        return levelUpdateRedPacket;
+    }
+
+    public void setLevelUpdateRedPacket(String levelUpdateRedPacket) {
+        this.levelUpdateRedPacket = levelUpdateRedPacket == null ? null : levelUpdateRedPacket.trim();
+    }
+
+    public Integer getGrowthValueMin() {
+        return growthValueMin;
+    }
+
+    public void setGrowthValueMin(Integer growthValueMin) {
+        this.growthValueMin = growthValueMin;
+    }
+
+    public Integer getGrowthValueMax() {
+        return growthValueMax;
+    }
+
+    public void setGrowthValueMax(Integer growthValueMax) {
+        this.growthValueMax = growthValueMax;
+    }
+
+    public Double getIntegralMultiply() {
+        return integralMultiply;
+    }
+
+    public void setIntegralMultiply(Double integralMultiply) {
+        this.integralMultiply = integralMultiply;
+    }
+
+    public String getRightsAndInterestsId() {
+        return rightsAndInterestsId;
+    }
+
+    public void setRightsAndInterestsId(String rightsAndInterestsId) {
+        this.rightsAndInterestsId = rightsAndInterestsId == null ? null : rightsAndInterestsId.trim();
+    }
+
+    public Date getCreatedTime() {
+        return createdTime;
+    }
+
+    public void setCreatedTime(Date createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    public Integer getFreeWithdrawDeposit() {
+        return freeWithdrawDeposit;
+    }
+
+    public void setFreeWithdrawDeposit(Integer freeWithdrawDeposit) {
+        this.freeWithdrawDeposit = freeWithdrawDeposit;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+}

@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeLogDAO">
+	<resultMap id="JsProductPrizeLog" type="com.jsjf.model.product.JsProductPrizeLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="ppid" property="ppid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+	</resultMap>
+	
+	
+<!-- 根据MAP得到List -->
+	<select id="getJsProductPrizeLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.JsProductPrizeLog">
+		select concat(substring(di.`realname`,1,1),"**") as realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+		dm.recommCodes as recommCodes,
+		date_format(jl.addTime,'%Y-%m-%d %H:%i:%s') addTime from `js_product_prize_log` jl 
+		left join `dr_member` dm on dm.`uid` = jl.`uid` 
+		left join `dr_member_base_info` di on di.`uid` = dm.`uid`
+		where 1=1 and jl.type = 1
+		<if test="ppid != null">
+			and jl.ppid = #{ppid}
+		</if>
+		<if test="addTimeStart != null and addTimeStart != '' "> 
+					and date_format(jl.addTime,'%Y-%m-%d')>= date_format(#{addTimeStart},'%Y-%m-%d')</if>
+		<if test="addTimeEnd != null and addTimeEnd != '' "> 
+					and date_format(#{addTimeEnd},'%Y-%m-%d') >=date_format(jl.addTime,'%Y-%m-%d') </if>
+		order by date_format(jl.addTime,'%Y-%m-%d %H:%i:%s') desc 
+		<if test="limit != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 根据MAP得到产品信息List -->
+	<select id="getJsProductPrizeLogListCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from `js_product_prize_log` jl 
+				left join `dr_member` dm on dm.`uid` = jl.`uid` 
+				left join `dr_member_base_info` di on di.`uid` = dm.`uid`
+				where 1=1 and jl.type = 1
+			<if test="ppid != null">
+				and jl.ppid = #{ppid}
+			</if>
+			<if test="addTimeStart != null and addTimeStart != '' "> 
+						and date_format(jl.addTime,'%Y-%m-%d')>= date_format(#{addTimeStart},'%Y-%m-%d')</if>
+			<if test="addTimeEnd != null and addTimeEnd != '' "> 
+						and date_format(#{addTimeEnd},'%Y-%m-%d') >=date_format(jl.addTime,'%Y-%m-%d') </if>
+	</select>	
+	
+		<!-- 导出 -->
+		<select id="getJsProductPrizeLogListForExl" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+			select concat(substring(di.`realname`,1,1),"**") as realname,
+			concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+			dm.recommCodes as recommCodes,date_format(jl.addTime,'%Y-%m-%d %H:%i:%s') addTime from `js_product_prize_log` jl 
+			left join `dr_member` dm on dm.`uid` = jl.`uid` 
+			left join `dr_member_base_info` di on di.`uid` = dm.`uid`
+			where 1=1 and jl.type = 1
+			<if test="ppid != null">
+				and jl.ppid = #{ppid}
+			</if>
+			<if test="addTimeStart != null and addTimeStart != '' "> 
+						and date_format(jl.addTime,'%Y-%m-%d')>= date_format(#{addTimeStart},'%Y-%m-%d')</if>
+			<if test="addTimeEnd != null and addTimeEnd != '' "> 
+						and date_format(#{addTimeEnd},'%Y-%m-%d') >=date_format(jl.addTime,'%Y-%m-%d') </if>
+						order by jl.addTime desc 
+	</select>
+	
+	
+	<!-- 根据条件查询预约的总数 -->
+	<select id="getJsProductPrizeLogCountByPPid" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from `js_product_prize_log` jppl 
+		<where>
+		 1=1
+		 <if test="ppid !=null">
+			and jppl.`ppid` = #{ppid}
+		 </if>
+		 <if test="uid != null">
+		 	and jppl.uid = #{uid}
+		 </if>
+		 <if test="type">
+		 	and jppl.type = #{type}
+		 </if>
+		<if test="addTimeStart != null and addTimeStart != '' "> 
+						and date_format(jppl.addTime,'%Y-%m-%d')>= date_format(#{addTimeStart},'%Y-%m-%d')</if>
+			<if test="addTimeEnd != null and addTimeEnd != '' "> 
+						and date_format(#{addTimeEnd},'%Y-%m-%d') >=date_format(jppl.addTime,'%Y-%m-%d') </if>
+		</where>
+	</select>
+	
+	<!-- 查询订单列表 0投资订单 1预约订单 -->
+	<select id="getJsproductPrizeLogOrderList" parameterType="java.util.Map" resultType="com.jsjf.model.product.JsProductPrizeLog">
+		select jpp.name prizeName,dp.fullName fullName,
+		concat(substring(dmbi.realname,1,1),"**") AS realname,
+		concat(substring(jmi.`name`,1,1),"**") AS name, 
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+		dpi.`amount` investAmount,dp.`code` code,dp.`deadline` deadline,dp.`rate` rate,
+		DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d %H:%i:%s') addTime,
+		concat(substring(jmi.`phone`,1,3),"***",substring(dm.mobilePhone,8)) AS phone,detail.`address` address,
+		dm.recommCodes as recommCodes,
+		su.name as userName,
+		case dm.allot when 1 then '电销一部' when 2 then '电销二部' else '未分配' end as allotName
+		from `js_product_prize_log` jppl 
+		left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+		left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+		left join `dr_member` dm on dm.`uid` = jppl.`uid`
+		LEFT JOIN byp_commodity_detail detail on dm.uid=detail.uid
+		left join js_member_info jmi on	 jmi.`investId` = jppl.`investId`
+		left join js_product_prize jpp on jpp.id = jppl.ppid
+		left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+		left join dr_customerAllot dc on dc.uid=jppl.uid
+		left join sys_users su on su.user_ky=dc.userKy
+		where 1 = 1
+				<if test="type !=null">
+					and jppl.type=#{type}
+				</if>
+				<if test="deadline != null and deadline != ''  ">
+					and dp.deadline = #{deadline}
+				</if>
+				<if test="productCode != null and productCode !='' ">
+					and instr(dp.code,#{productCode})>0
+				</if>
+				<if test="productName != null and productName !='' ">
+					and jpp.name like CONCAT('%','${productName}','%')
+				</if>
+				<if test="mobilePhone != null and mobilePhone !='' ">
+					and instr(dm.`mobilePhone`,#{mobilePhone})>0
+				</if>
+				<if test="name != null and name != '' ">
+					and  instr(dmbi.realname,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d')
+				</if>
+				order by jppl.addTime desc 
+				<if test="offset != null and limit != null">
+					limit #{offset},#{limit}
+				</if>
+	</select>
+	<select id="getInvestAmountSum" parameterType="java.util.Map" resultType="java.math.BigDecimal">
+		select SUM(dpi.`amount`) as investAmountSum from `js_product_prize_log` jppl 
+			left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+			left join `dr_member` dm on dm.`uid` = jppl.`uid`
+			left join js_member_info jmi on	 jmi.`investId` = jppl.investId
+			left join js_product_prize jpp on jpp.id = jppl.ppid
+			left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+				where 1 = 1
+				<if test="type !=null">
+					and jppl.type=#{type}
+				</if>
+				<if test="deadline != null and deadline != ''  ">
+					and dp.deadline = #{deadline}
+				</if>
+				<if test="productCode != null and productCode !='' ">
+					and instr(dp.code,#{productCode})>0
+				</if>
+				<if test="productName != null and productName !='' ">
+					and jpp.name like CONCAT('%','${productName}','%')
+				</if>
+				<if test="mobilePhone != null and mobilePhone !='' ">
+					and instr(dm.`mobilePhone`,#{mobilePhone})>0
+				</if>
+				<if test="name != null and name != '' ">
+					and  instr(dmbi.realname,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d')
+				</if>
+				order by jppl.addTime desc 
+				<if test="offset != null and limit != null">
+					limit #{offset},#{limit}
+				</if>
+	</select>
+	<select id="getJsproductPrizeLogOrderListCount" parameterType="java.util.Map" resultType="int">
+		select count(1) from `js_product_prize_log` jppl 
+				left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+				left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+				left join `dr_member` dm on dm.`uid` = jppl.`uid`
+				left join js_member_info jmi on	 jmi.`investId` = jppl.investId
+				left join js_product_prize jpp on jpp.id = jppl.ppid
+				left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+				left join dr_customerAllot dc on dc.uid=jppl.uid
+				left join sys_users su on su.user_ky=dc.userKy
+				where 1 = 1
+				<if test="type !=null">
+					and jppl.type=#{type}
+				</if>
+				<if test="deadline != null and deadline !='' ">
+					and dp.deadline = #{deadline}
+				</if>
+				<if test="productCode != null and productCode !='' ">
+					and instr(dp.code,#{productCode})>0
+				</if>
+				<if test="productName != null and productName !='' ">
+					and jpp.name like CONCAT('%','${productName}','%')
+				</if>
+				<if test="mobilePhone != null and mobilePhone !='' ">
+					and instr(dm.`mobilePhone`,#{mobilePhone})>0
+				</if>
+				<if test="name != null and name != '' ">
+					and  instr(dmbi.realname,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d')
+				</if>
+	</select>
+	
+	<select id="getJsproductPrizeLogOrderListForExl" parameterType="java.util.Map" resultType="java.util.HashMap">
+			select jpp.name prizeName,dp.fullName fullName,
+			concat(substring(dmbi.realname,1,1),"**") AS realname,
+			concat(substring(jmi.`name`,1,1),"**") AS name, 
+			concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+			dpi.`amount` investAmount,dp.`code` code,dp.`deadline` deadline,dp.`rate` rate,
+			DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d %H:%i:%s') addTime,
+			concat(substring(jmi.`phone`,1,3),"***",substring(dm.mobilePhone,8)) AS phone,jmi.`address` address,
+			dm.recommCodes as recommCodes,
+			su.name as userName,
+			case dm.allot when 1 then '电销一部' when 2 then '电销二部' else '未分配' end as allotName
+		 	from `js_product_prize_log` jppl  
+			left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+			left join `dr_member` dm on dm.`uid` = jppl.`uid`
+			left join js_member_info jmi on	 jmi.`investId` = jppl.investId
+			left join js_product_prize jpp on jpp.id = jppl.ppid
+			left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+			left join dr_customerAllot dc on dc.uid=jppl.uid
+			left join sys_users su on su.user_ky=dc.userKy
+			where 1 = 1
+				<if test="type !=null">
+					and jppl.type=#{type}
+				</if>
+				<if test="productName != null and productName !='' ">
+					and jpp.name like CONCAT('%','${productName}','%')
+				</if>
+				<if test="deadline != null and deadline != ''">
+					and dp.deadline = #{deadline}
+				</if>
+				<if test="productCode != null and productCode !='' ">
+					and instr(dp.code,#{productCode})>0
+				</if>
+				<if test="mobilePhone != null and mobilePhone !='' ">
+					and instr(dm.`mobilePhone`,#{mobilePhone})>0
+				</if>
+				<if test="name != null and name != '' ">
+					and  instr(dmbi.realname,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d')
+				</if>
+				order by jppl.addTime desc 
+			</select>
+	<insert id="insert" parameterType="com.jsjf.model.product.JsProductPrizeLog">
+		INSERT INTO js_product_prize_log (uid,investId,ppid,addTime,type) 
+		VALUES ( #{uid}, #{investId},#{ppid},SYSDATE(), #{type});
+	</insert>
+</mapper>

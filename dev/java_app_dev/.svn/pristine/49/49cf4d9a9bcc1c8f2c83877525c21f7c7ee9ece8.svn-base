@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeLogDAO">
+	<resultMap id="JsProductPrizeLog" type="com.jsjf.model.product.JsProductPrizeLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="ppid" property="ppid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+	</resultMap>
+
+	<!-- 订单记录 -->
+	<select id="selectListMap" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT CONCAT(left(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) mobilePhone,dpi.amount,DATE_FORMAT(dpi.investTime,'%Y.%m.%d') investTime,jpp.simpleName,jpp.name 
+			from js_product_prize_log jpl 
+			LEFT JOIN js_product_prize jpp ON jpl.ppid = jpp.id
+			LEFT JOIN dr_product_invest dpi ON jpl.investId = dpi.id
+			LEFT JOIN dr_member dm ON dm.uid = jpl.uid
+		<where>
+			jpp.name != '50元话费'
+			<if test="status !=null ">and  jpp.status = #{status} </if>		
+			<if test="type !=null ">and  jpl.type = #{type} </if>		
+			<if test="uid !=null ">and jpl.uid = #{uid} </if>		
+		</where>
+		ORDER BY jpl.addTime desc
+		<if test="limit !=null and offset !=null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!--订单记录总数  -->
+	<select id="selectListMapCount" parameterType="java.util.HashMap" resultType="int">
+		SELECT COUNT(1) 
+			from js_product_prize_log jpl 
+			LEFT JOIN js_product_prize jpp ON jpl.ppid = jpp.id
+			LEFT JOIN dr_product_invest dpi ON jpl.investId = dpi.id
+			LEFT JOIN dr_member dm ON dm.uid = jpl.uid
+		<where>
+			<if test="status !=null ">and  jpp.status = #{status} </if>
+			<if test="type !=null ">and  jpl.type = #{type} </if>			
+			<if test="uid !=null ">and  jpl.uid = #{uid} </if>		
+		</where>
+	</select>
+
+	<select id = "selectPrizeLogByUid" resultType="com.jsjf.model.product.JsProductPrizeLog" parameterType="java.util.HashMap">
+		select a.investId,ifnull(c.name,"") AS prizeName,if(c.name = "50元话费",1,0) as prizeType ,d.name,d.phone,d.address from js_product_prize_log a
+			left join dr_product_invest b on a.investId = b.id
+			left join js_product_prize c on a.ppid = c.id  
+			left join js_member_info d on a.investId = d.investId
+			where a.uid = #{uid} and a.type = 0 order by a.addTime desc
+	</select>
+    <select id = "selectLogByUid" resultType="com.jsjf.model.product.JsProductPrizeLog" parameterType="java.util.HashMap">
+        select ifnull(c.name,"") AS prizeName,c.pcDetailImgUrl pcurl,c.h5DetailImgUrl h5url,a.addTime
+        from js_product_prize_log a
+        left join dr_member b on a.uid = b.uid
+        left join js_product_prize c on a.ppid = c.id
+        where
+        1=1
+        <if test="uid!=null">and a.uid = #{uid} </if>
+        and a.type = 0 order by a.addTime desc
+    </select>
+    <select id = "selectLogByPid" resultType="com.jsjf.model.product.JsProductPrizeLog" parameterType="java.util.HashMap">
+        select jpp.name,jpp.pcDetailImgUrl pcurl,jpp.h5ImgUrlH h5url,jpp.price
+        from dr_product_info dpi
+        LEFT JOIN js_product_prize jpp on dpi.prizeId=jpp.id
+        where
+        1=1
+        <if test="pid!=null">and dpi.id = #{pid} </if>
+    </select>
+	<insert id="insert" parameterType="com.jsjf.model.product.JsProductPrizeLog">
+		INSERT INTO js_product_prize_log (uid,investId,ppid,addTime,type) 
+		VALUES ( #{uid}, #{investId},#{ppid},SYSDATE(), #{type});
+	</insert>
+</mapper>

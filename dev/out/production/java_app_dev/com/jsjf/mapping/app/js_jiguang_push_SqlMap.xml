@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.app.JsJiGuangPushDAO">
+	<resultMap id="JsJiGuangPushResult" type="com.jsjf.model.app.JsJiGuangPush">
+		<result column="id" property="id" jdbcType="INTEGER" />	
+		<result column="uid" property="uid" jdbcType="INTEGER" />	
+		<result column="audienceId" property="audienceId" jdbcType="INTEGER" />	
+		<result column="code" property="code" jdbcType="VARCHAR" />	
+		<result column="type" property="type" jdbcType="INTEGER" />	
+	</resultMap>
+
+	<select id="selectObjectById" parameterType="Integer" resultMap="JsJiGuangPushResult">
+		select jp.id,jp.uid,jp.audienceId,ja.code,ja.type from js_jiguang_push jp
+		LEFT JOIN js_jiguang_push_audience ja on jp.audiencedId = ja.id
+		where jp.id = #{id}
+	</select>
+	
+	<select id="selectObjectList" parameterType="java.util.HashMap" resultMap="JsJiGuangPushResult">
+		select jp.id,jp.uid,jp.audienceId,ja.code,ja.type from js_jiguang_push jp
+			LEFT JOIN js_jiguang_push_audience ja on  jp.audiencedId = ja.id
+			where 1=1
+			<if test="uid !=null"> and jp.uid = #{uid}</if>
+			<if test="audienceId !=null"> and jp.audienceId = #{audienceId}</if>
+			<if test="code !=null and code !=''"> and ja.code = #{code}</if>
+			<if test="type !=null "> and ja.type = #{type}</if>
+			<if test="types !=null">
+				ja.type in
+				<foreach collection="types" close=")" open="(" item="item" separator=",">
+					#{item}
+				</foreach>
+			</if> 
+			<if test="orders != null and orders !=''"> order by ${orders}</if>
+			<if test="limit !=null">limit #{offset},#{limit}</if>
+	</select>
+	
+	<select id="selectObjectListCount" parameterType="java.util.HashMap" resultType="Integer">
+		select jp.id,jp.uid,jp.audienceId,ja.code,ja.type from js_jiguang_push jp
+			LEFT JOIN js_jiguang_push_audience ja on  jp.audiencedId = ja.id
+			where 1=1
+			<if test="uid !=null"> and jp.uid = #{uid}</if>
+			<if test="audienceId !=null"> and jp.audienceId = #{audienceId}</if>
+			<if test="code !=null and code !=''"> and ja.code = #{code}</if>
+			<if test="type !=null "> and ja.type = #{type}</if>
+			<if test="types !=null">
+				ja.type in
+				<foreach collection="types" close=")" open="(" item="item">
+					#{item}
+				</foreach>
+			</if> 			
+	</select>
+	
+	<select id="selectAudienceGroupConcat" parameterType="java.util.HashMap" resultType="String">
+		select GROUP_CONCAT(ja.code) from js_jiguang_push jp
+			LEFT JOIN js_jiguang_push_audience ja on jp.audienceId = ja.id
+		where jp.uid = #{uid} and ja.type = #{type}
+	</select>
+	<select id="selectJsJiguangPushRegistrationId" parameterType="java.util.HashMap"  resultType="java.util.HashMap">
+		SELECT id,uid,registrationId from js_jiguang_push_registrationId where registrationId =#{registrationId}
+	</select>
+	<update id="updateJsJiguangPushRegistrationId" parameterType="java.util.HashMap" >
+		UPDATE js_jiguang_push_registrationId SET uid = #{uid} where id = #{id}
+	</update>
+	<insert id="insertJsJiguangPushRegistrationId" parameterType="java.util.HashMap">
+		INSERT INTO js_jiguang_push_registrationId( registrationId, uid) VALUES ( #{registrationId}, #{uid});
+	</insert>
+	
+	
+	
+	
+	<!-- ===================== -->
+	
+	
+	<select id="selectJsPushApp" parameterType="String" resultType="com.jsjf.model.app.JsPushApp">
+		select * from js_push_app where appKey = #{appKey}
+	</select>
+	
+	<select id="selectJsPushDevice" parameterType="String" resultType="com.jsjf.model.app.JsPushDevice">
+		select * from js_push_device where device = #{device}
+	</select>
+	<update id="updateJsPushDevice" parameterType="com.jsjf.model.app.JsPushDevice" >
+			update js_push_device set uid = #{uid},updateTime = NOW() where id = #{id}		
+	</update>
+	<insert id="insertJsPushDevice" parameterType="com.jsjf.model.app.JsPushDevice">
+			INSERT INTO js_push_device ( uid, appId, device  ) 
+			VALUES ( #{uid}, #{appId}, #{device} );
+	</insert>
+	
+	
+	
+	
+
+</mapper>

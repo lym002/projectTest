@@ -1,0 +1,137 @@
+package com.jsjf.service.integral.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.service.member.DrMemberService;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.integral.UserDetailIntegralDao;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.service.integral.UserDetailIntegralService;
+
+@Service
+@Transactional
+public class UserDetailIntegralServiceImpl implements UserDetailIntegralService {
+	
+	@Autowired
+	private UserDetailIntegralDao userDetailIntegralDao;
+
+	@Autowired
+	private DrMemberService drMemberService;
+
+	private static transient Logger log = Logger.getLogger(UserDetailIntegralServiceImpl.class);
+
+
+
+	@Override
+	public PageInfo queryDetailintegralList(PageInfo info, Map<String, Object> param) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		map.put("mobilePhone", param.get("mobilePhone"));
+		map.put("integralSourceId", param.get("integralSourceId"));
+		map.put("startaddTime", param.get("startaddTime"));
+		map.put("endaddTime", param.get("endaddTime"));
+		map.put("orders", "id desc");
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryDetailintegralList(map);
+		int total = userDetailIntegralDao.queryDetailintegralListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+		
+	}
+
+
+
+	@Override
+	public PageInfo queryIntegralManageList(PageInfo info,
+			Map<String, Object> param) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		
+		map.put("mobilePhone", param.get("mobilePhone"));
+		map.put("integralType", param.get("integralType"));
+		map.put("startaddTime", param.get("startaddTime"));
+		map.put("endaddTime", param.get("endaddTime"));
+		map.put("greaterIntegral", param.get("greaterIntegral"));
+		map.put("lessIntegral", param.get("lessIntegral"));
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryIntegralManageList(map);
+		int total = userDetailIntegralDao.queryIntegralManageListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+		
+	}
+
+	/**
+	 *
+	 * @param uid 用户id
+	 * @param points 获得的积分数
+	 * @param source 积分来源（1：投资，3：任务）
+	 * @param taskId 任务id
+	 */
+	@Override
+	public void eranPoints(Integer uid, BigDecimal points, Integer source, Integer taskId){
+		boolean lockFlag = false;
+		String value=null;
+		BaseResult br = new BaseResult();
+		try {
+			value = String.valueOf(System.currentTimeMillis());
+			//获取用户可用的总积分
+			DrMember dm = drMemberService.selectByPrimaryKey(uid);
+			//添加用户积分
+			dm.setUserIntegralUse(dm.getUserIntegralUse().add(points));
+			drMemberService.update(dm);
+			//添加积分日志
+			UserDetailIntegralBean bmi = new UserDetailIntegralBean(
+					null,uid,source,points,new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(getExpirationTime()),new Date(),null,taskId);
+			userDetailIntegralDao.insert(bmi);
+		}catch (Exception e){
+			log.error("用户积分数据添加失败！" + e);
+		}
+	}
+
+	@Override
+	public Integer queryTodayInvestTask(Integer uid) {
+		return userDetailIntegralDao.queryTodayInvestTask(uid);
+	}
+
+	/**
+	 * 获取过期时间
+	 * @return
+	 */
+	public String getExpirationTime() {
+		Calendar calendar = Calendar.getInstance();
+		try {
+			//让日期
+			if (calendar.get(Calendar.MONTH + 1) < 7) {
+				calendar.set(Calendar.MONTH, 5);
+			} else {
+				calendar.set(Calendar.MONTH, 11);
+			}
+			calendar.set(Calendar.DATE, calendar.getActualMaximum(Calendar.DATE));
+		}catch (Exception e){
+			log.error("过期时间获取错误！",e);
+		}
+		String date = DateUtil.formatDate(calendar.getTime(),"yyyy-MM-dd 23:59:59");
+		return date;
+	}
+
+}

@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.ActivityTemplateDAO">
+	<select id="selActivityTemplate" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select id as id,name as name,date_format(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		codeFixation as codeFixation,digit as digit  
+		from js_activity_template  where 1=1
+		<if test="name !=null and name !='' ">
+			and name LIKE CONCAT('%', #{name,jdbcType=VARCHAR},'%')
+		</if>
+	 	<if test="startTime !=null">
+		    and createTime > #{startTime:VARCHAR}
+		</if>
+		<if test="endTime !=null">
+		    and  #{endTime:VARCHAR} > createTime 
+		</if> 
+		order by createTime desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selActivityTemplateCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*)
+		from js_activity_template  where 1=1
+		<if test="name !=null and name !='' ">
+			and name LIKE CONCAT('%', #{name,jdbcType=VARCHAR},'%')
+		</if>
+	 	<if test="startTime !=null">
+		    and createTime > #{startTime:VARCHAR}
+		</if>
+		<if test="endTime !=null">
+		    and  #{endTime:VARCHAR} > createTime 
+		</if> 
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.ActivityTemplate"
+		keyProperty="id" useGeneratedKeys="true">
+		insert into js_activity_template (
+		name,
+		createTime,
+		codeFixation,
+		digit
+		)
+		values
+		(
+		#{name},
+		SYSDATE(),
+		#{codeFixation},
+		#{digit}
+		)
+	</insert>
+	
+	<insert id="insertPrize" parameterType="com.jsjf.model.activity.ActivityPrize"
+		keyProperty="id" useGeneratedKeys="true">
+		insert into js_activity_prize (
+		atid,
+		name,
+		amount
+		)
+		values
+		(#{atid:INTEGER},
+		#{name},
+		#{amount}
+		)
+	</insert>
+	
+	<select id="selActivityPrize" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select id as id,atid as atid,name as name ,amount as amount from js_activity_prize where 1=1
+		<if test="atid !=null and atid !='' ">
+			and atid = #{atid:INTEGER}
+		</if> 
+	</select>
+	
+	<delete id="delActivityPrize" parameterType="java.util.HashMap">
+		delete from js_activity_prize  where atid = #{atid:INTEGER}
+	</delete>
+	
+	<update id="updateActivityTemplate" parameterType="com.jsjf.model.activity.ActivityTemplate">
+		update js_activity_template set 
+		name=#{name:VARCHAR},
+		codeFixation=#{codeFixation:VARCHAR},
+		digit=#{digit:INTEGER}
+		where id = #{id:INTEGER}
+	</update>
+	
+	<select id="selActivityTemplateAll" resultType="java.util.HashMap" >
+		select id as id,name as name from js_activity_template
+	</select>
+	
+	<insert id="insertActivityProduct" parameterType="java.util.HashMap"
+		keyProperty="id" useGeneratedKeys="true">
+		insert  into js_activity_product ( atid,   pid,   prizeCode,   status,   prizeImgUrl,   activityPeriods
+		,appTitle,pcDetailImg,pcBannerUrl,h5BannerUrl)  
+		select #{atid:INTEGER} ,#{pid:INTEGER} ,null ,1 ,null, CASE  WHEN COUNT(*)=0 THEN '1'   ELSE (max(activityPeriods)+1) END as activityPeriods
+		,#{appTitle},#{pcDetailImg},#{pcBannerUrl},#{h5BannerUrl}
+		from js_activity_product   
+		where atid=#{atid:INTEGER} order by activityPeriods desc limit 1
+	</insert>
+	
+	<update id="updateActivityProduct" parameterType="java.util.HashMap">
+		update js_activity_product set 
+		prizeCode=#{prizeCode:VARCHAR},
+		prizeImgUrl=#{prizeImgUrl:VARCHAR},
+		status=3,
+		prizeUrl=#{prizeUrl:VARCHAR}
+		where id = #{id:INTEGER}
+	</update>
+	
+	<select id="selActivityProduct" resultType="java.util.HashMap" >
+		select id as id ,atid as atid ,pid as pid ,prizeCode as prizeCode ,status as status,prizeImgUrl as prizeImgUrl,activityPeriods as activityperriods 
+		from js_activity_product where 1=1
+		<if test="id != null">
+			and id = #{id:INTEGER}
+		</if> 
+	</select>
+	
+	<delete id="deleteActivityProduct" parameterType="java.util.HashMap" >
+		delete from js_activity_product where pid = #{pid:INTEGER}
+	</delete>
+	
+	<select id="selActivityProductAll" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select jap.id as id,CONCAT(jat.name,'-',dpi.fullName,jap.activityPeriods) as name,date_format(dpi.startDate,'%Y-%m-%d %H:%i:%s') as startDate,
+		jap.status as status,sc.cnvalue as cnvalue, jap.prizeCode as prizeCode,jap.prizeUrl as prizeUrl
+		from js_activity_product jap
+		inner join js_activity_template jat on jat.id=jap.atid
+		inner join dr_product_info dpi on dpi.id =jap.pid
+		inner join sys_chooseoption sc on sc.code=dpi.status and sc.category='productStatus'
+		where 1=1
+		<if test="name !=null and name !='' ">
+			and jat.name LIKE CONCAT('%', #{name,jdbcType=VARCHAR},'%')
+		</if>
+	 	<if test="productname !=null and productname !=''">
+		   and dpi.fullName LIKE CONCAT('%', #{productname,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="status !=null and status !=''">
+		   and jap.status = #{status,jdbcType=INTEGER}
+		</if>
+		<if test="startTime !=null">
+		    and dpi.startDate > #{startTime:VARCHAR}
+		</if>
+		<if test="endTime !=null">
+		    and  #{endTime:VARCHAR} > dpi.startDate 
+		</if> 
+		order by dpi.startDate desc,jap.activityPeriods
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selActivityProductAllCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*)
+		from js_activity_product jap
+		inner join js_activity_template jat on jat.id=jap.atid
+		inner join dr_product_info dpi on dpi.id =jap.pid
+		inner join sys_chooseoption sc on sc.code=dpi.status and sc.category='productStatus'
+		where 1=1
+		<if test="name !=null and name !='' ">
+			and jat.name LIKE CONCAT('%', #{name,jdbcType=VARCHAR},'%')
+		</if>
+	 	<if test="productname !=null and productname !=''">
+		   and dpi.fullName LIKE CONCAT('%', #{productname,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="status !=null and status !=''">
+		   and jap.status = #{status,jdbcType=INTEGER}
+		</if>
+		<if test="startTime !=null">
+		    and dpi.startDate > #{startTime:VARCHAR}
+		</if>
+		<if test="endTime !=null">
+		    and  #{endTime:VARCHAR} > dpi.startDate 
+		</if> 
+	</select>
+	
+	<!-- 中奖啦 -->
+	<update id="updateActivityStatusTwo" parameterType="java.util.HashMap">
+		update js_activity_product_invest_info api 
+		LEFT join dr_product_invest pi on api.piid=pi.id
+		set api.prizeStatus=2
+		where pi.pid = #{pid:INTEGER} and api.luckCodes like CONCAT('%', #{prizeCode,jdbcType=VARCHAR},'%')
+	</update>
+	
+	<!-- 未中奖 -->
+	<update id="updateActivityStatusOne" parameterType="java.util.HashMap">
+		update js_activity_product_invest_info api 
+		LEFT join dr_product_invest pi on api.piid=pi.id
+		set api.prizeStatus=1
+		where pi.pid =#{pid:INTEGER} and api.prizeStatus!=2
+	</update>
+	
+	<select id="selActivityProductById" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select jap.id as id,CONCAT(jat.name,'-',dpi.fullName,jap.activityPeriods) as name,date_format(dpi.startDate,'%Y-%m-%d %H:%i:%s') as startDate,
+		date_format(dpi.fullDate,'%Y-%m-%d %H:%i:%s') as fullDate,
+		(case when jap.status=1	then '进行中' when jap.status=2	then  '待开奖' else '已完成' end) as status,
+		sc.cnvalue as cnvalue, jap.prizeCode as prizeCode,
+		(case when jap.status=3	then '已发布'  else '未发布' end) as statusCode,
+		dpi.simpleName as simpleName,dpi.amount as amount,dpi.deadline as deadline,dpi.rate as rate,
+		jap.appTitle as appTitle,jap.pcDetailImg as pcDetailImg,jap.pcBannerUrl as pcBannerUrl,jap.h5BannerUrl as h5BannerUrl
+		from js_activity_product jap
+		inner join js_activity_template jat on jat.id=jap.atid
+		inner join dr_product_info dpi on dpi.id =jap.pid
+		inner join sys_chooseoption sc on sc.code=dpi.status and sc.category='productStatus'
+		where jap.id=#{id:INTEGER}
+	</select>
+	
+	<select id="selActivityPrizeById" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select  group_concat(concat(jape.name,'*',jape.amount)) as name   from js_activity_product jap
+		inner join js_activity_template jst on jst.id=jap.atid
+		inner join js_activity_prize jape on jape.atid=jst.id
+		where jap.id=#{id:INTEGER}
+	</select>
+	
+	<select id="selProductInvestById" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select api.id as id,api.isUplod as isUplod,api.prizeStatus as prizeStatus,
+		concat(substring(dmbi.realname,1,1),"**") AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,dm.recommCodes as recommCodes,
+		pi.amount as amount,date_format(pi.investTime,'%Y-%m-%d %H:%i:%s') as investTime,
+		api.luckCodes,api.prizeMobile as prizeMobile,api.prizeContent as prizeContent,api.prizeImgUrl as prizeImgUrl,
+		api.prizeHeadPhoto as prizeHeadPhoto,api.prizeVideoLink as prizeVideoLink ,api.prizeVideoUrl as prizeVideoUrl
+		from  js_activity_product_invest_info api 
+		inner join dr_product_invest pi on api.piid=pi.id
+		inner join dr_member dm on dm.uid=pi.uid
+		inner join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		inner join js_activity_product jap on jap.pid=pi.pid
+		where jap.id=#{id:INTEGER}
+		<if test="luckCodes !=null and luckCodes !=''"> 
+		   and api.luckCodes  like CONCAT('%', #{luckCodes,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="prizeStatus !=null and prizeStatus !=''">
+		   and api.prizeStatus = #{prizeStatus,jdbcType=INTEGER}
+		</if>
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selProductInvestByIdCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from  js_activity_product_invest_info api 
+		inner join dr_product_invest pi on api.piid=pi.id
+		inner join dr_member dm on dm.uid=pi.uid
+		inner join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		inner join js_activity_product jap on jap.pid=pi.pid
+		where jap.id=#{id:INTEGER}
+		<if test="luckCodes !=null and luckCodes !=''"> 
+		   and api.luckCodes like CONCAT('%', #{luckCodes,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="prizeStatus !=null and prizeStatus !=''">
+		   and api.prizeStatus = #{prizeStatus,jdbcType=INTEGER}
+		</if>	
+	</select>
+	
+	<update id="addInvest" parameterType="java.util.HashMap">
+		update js_activity_product_invest_info set 
+		prizeContent=#{prizeContent:VARCHAR},
+		<if test="prizeImgUrl !=null and prizeImgUrl !=''"> 
+		   prizeImgUrl=#{prizeImgUrl:VARCHAR},
+		</if>
+		isUplod=#{isUplod:INTEGER},
+		prizeMobile=#{prizeMobile:VARCHAR},
+		<if test="prizeHeadPhoto !=null and prizeHeadPhoto !=''"> 
+		   prizeHeadPhoto=#{prizeHeadPhoto:VARCHAR},
+		</if>
+		prizeVideoLink=#{prizeVideoLink:VARCHAR},
+		prizeVideoUrl=#{prizeVideoUrl:VARCHAR}
+		where id = #{id:INTEGER}
+	</update>
+	
+	<select id="selSumCount" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select  count(distinct(dm.uid)) as count ,SUM(IFNULL(pi.amount,0)) as amount  from  js_activity_product_invest_info api 
+		inner join dr_product_invest pi on api.piid=pi.id
+		inner join dr_member dm on dm.uid=pi.uid
+		inner join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		inner join js_activity_product jap on jap.pid=pi.pid
+		where jap.id=#{id:INTEGER}	
+	</select>
+	
+	<select id="selInvestByCode" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from js_activity_product jap
+		left join dr_product_invest dpi on dpi.pid=jap.pid
+		left join js_activity_product_invest_info api on api.piid=dpi.id
+		where jap.id = #{id:INTEGER} and api.luckCodes like CONCAT('%', #{prizeCode,jdbcType=VARCHAR},'%')
+	</select>
+	
+	<select id="exportData" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select concat(substring(dmbi.realname,1,1),"**")as realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) as mobilePhone ,
+		dm.recommCodes as recommCodes,
+		date_format(dpi.investTime,'%Y-%m-%d %H:%i:%s') as investTime,dpi.amount as amount,api.luckCodes as luckCodes  
+		from js_activity_product jap 
+		left join dr_product_invest dpi on dpi.pid=jap.pid 
+		left join js_activity_product_invest_info api on api.piid=dpi.id 
+		left join dr_member dm on dm.uid=dpi.uid
+        left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		where jap.id = #{id:INTEGER} 
+	</select>
+	
+	<select id="selectPrizeMember" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select dm.mobilePhone as mobilePhone ,jap.prizeCode as prizeCode ,dm.uid,jap.activityPeriods from js_activity_product jap 
+		left join dr_product_invest dpi on dpi.pid=jap.pid 
+		left join js_activity_product_invest_info api on api.piid=dpi.id 
+		left join dr_member dm on dm.uid=dpi.uid
+		where jap.id = #{id:INTEGER}
+		GROUP BY dm.uid
+	</select>
+	
+	<update id="updateActivityProductAppTitle" parameterType="java.util.HashMap">
+		update js_activity_product set 
+		appTitle = #{appTitle:VARCHAR}
+		where id = #{id:INTEGER}
+	</update>
+	
+	<update id="updateActivityProductDetailImg" parameterType="java.util.HashMap">
+		update js_activity_product set 
+		pcDetailImg = #{pcDetailImg:VARCHAR}
+		where id = #{id:INTEGER}
+	</update>
+	
+	<update id="updateActivityDetailBanner" parameterType="java.util.HashMap">
+		update js_activity_product
+		<set>
+			<if test="pcBannerUrl != null and pcBannerUrl != ''">
+				pcBannerUrl = #{pcBannerUrl:VARCHAR},
+			</if>
+			<if test="h5BannerUrl != null and h5BannerUrl != ''">
+				h5BannerUrl = #{h5BannerUrl:VARCHAR}
+			</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<select id="getActivityProductByPid" parameterType="int" resultType="java.util.HashMap">
+		SELECT jap.id,jap.pid,jap.`appTitle`,jap.`pcDetailImg`,jap.`pcBannerUrl`,jap.`h5BannerUrl` FROM `js_activity_product` jap WHERE jap.`id` = #{id} 
+	</select>
+</mapper>

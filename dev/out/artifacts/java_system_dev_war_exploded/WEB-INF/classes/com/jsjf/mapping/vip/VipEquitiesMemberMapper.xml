@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.VipEquitiesMemberDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.VipEquitiesMember">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="uid" jdbcType="INTEGER" property="uid" />
+    <result column="mobile_phone" jdbcType="VARCHAR" property="mobilePhone" />
+    <result column="vip_level" jdbcType="INTEGER" property="vipLevel" />
+    <result column="vip_equities_id" jdbcType="INTEGER" property="vipEquitiesId" />
+    <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="startAddTime" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="endAddTime" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="vip_Name" jdbcType="TIMESTAMP" property="vipName" />
+    <result column="equities_Name" jdbcType="TIMESTAMP" property="equitiesName" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, uid, mobile_phone, vip_level, vip_equities_id, add_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_vip_equities_member
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_vip_equities_member
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.VipEquitiesMember">
+    insert into byp_vip_equities_member (id, uid, mobile_phone, 
+      vip_level, vip_equities_id, add_time
+      )
+    values (#{id,jdbcType=INTEGER}, #{uid,jdbcType=INTEGER}, #{mobilePhone,jdbcType=VARCHAR}, 
+      #{vipLevel,jdbcType=INTEGER}, #{vipEquitiesId,jdbcType=INTEGER}, #{addTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.vip.VipEquitiesMember">
+    insert into byp_vip_equities_member
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="uid != null">
+        uid,
+      </if>
+      <if test="mobilePhone != null">
+        mobile_phone,
+      </if>
+      <if test="vipLevel != null">
+        vip_level,
+      </if>
+      <if test="vipEquitiesId != null">
+        vip_equities_id,
+      </if>
+      <if test="addTime != null">
+        add_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="uid != null">
+        #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="mobilePhone != null">
+        #{mobilePhone,jdbcType=VARCHAR},
+      </if>
+      <if test="vipLevel != null">
+        #{vipLevel,jdbcType=INTEGER},
+      </if>
+      <if test="vipEquitiesId != null">
+        #{vipEquitiesId,jdbcType=INTEGER},
+      </if>
+      <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.vip.VipEquitiesMember">
+    update byp_vip_equities_member
+    <set>
+      <if test="uid != null">
+        uid = #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="mobilePhone != null">
+        mobile_phone = #{mobilePhone,jdbcType=VARCHAR},
+      </if>
+      <if test="vipLevel != null">
+        vip_level = #{vipLevel,jdbcType=INTEGER},
+      </if>
+      <if test="vipEquitiesId != null">
+        vip_equities_id = #{vipEquitiesId,jdbcType=INTEGER},
+      </if>
+      <if test="addTime != null">
+        add_time = #{addTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.VipEquitiesMember">
+    update byp_vip_equities_member
+    set uid = #{uid,jdbcType=INTEGER},
+      mobile_phone = #{mobilePhone,jdbcType=VARCHAR},
+      vip_level = #{vipLevel,jdbcType=INTEGER},
+      vip_equities_id = #{vipEquitiesId,jdbcType=INTEGER},
+      add_time = #{addTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  
+  <select id="queryVipEquitiesList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    bvi.id, bvi.uid, bvi.mobile_phone, info.vip_name as vipName, equ.equities_name as equitiesName, bvi.add_time
+    from byp_vip_equities_member bvi
+    left join byp_vip_info info on bvi.vip_level = info.vip_level
+    left join byp_vip_equities equ on bvi.vip_equities_id = equ.id
+    where 1=1
+    <if test="mobilePhone != null and mobilePhone != ''">
+				and bvi.mobile_Phone=#{mobilePhone}
+	</if>
+	<if test="startAddTime != null and startAddTime != ''">
+				and bvi.add_Time<![CDATA[ >= ]]>#{startAddTime}
+	</if>
+	<if test="endAddTime != null and endAddTime != ''">
+				and bvi.add_Time<![CDATA[ <= ]]>#{endAddTime}
+	</if>
+	<if test="vipLevel != null and vipLevel != ''">
+				and bvi.vip_level=#{vipLevel}
+	</if>
+	<if test="vipEquitiesId != null and vipEquitiesId != ''">
+				and bvi.vip_equities_id=#{vipEquitiesId}
+	</if>
+    <if test="limit !=null">
+			 limit #{offset},#{limit}
+		</if>
+  </select>
+  
+   <select id="queryVipEquitiesListCount" parameterType="java.util.Map" resultType="Integer">
+    select 
+    count(0)
+    from byp_vip_equities_member
+    where 1=1
+    <if test="mobilePhone != null and mobilePhone != ''">
+				and mobile_Phone=#{mobilePhone}
+	</if>
+	<if test="startAddTime != null and startAddTime != ''">
+				and add_Time<![CDATA[ >= ]]>#{startAddTime}
+	</if>
+	<if test="endAddTime != null and endAddTime != ''">
+				and add_Time<![CDATA[ <= ]]>#{endAddTime}
+	</if>
+	<if test="vipLevel != null and vipLevel != ''">
+				and vip_level=#{vipLevel}
+	</if>
+	<if test="vipEquitiesId != null and vipEquitiesId != ''">
+				and vip_equities_id=#{vipEquitiesId}
+	</if>
+  </select>
+  
+  
+   <select id="queryVipLevel"  resultType="com.jsjf.model.vip.VipInfo">
+    select 
+    vip_level as vipLevel,vip_name as vipName
+    from byp_vip_info 
+  </select>
+</mapper>

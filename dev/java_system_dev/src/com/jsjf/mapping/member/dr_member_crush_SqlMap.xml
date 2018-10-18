@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberCrushDAO">
+	<resultMap id="drMemberCrushResult" type="com.jsjf.model.member.DrMemberCrush">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="pound_fee" property="poundFee" jdbcType="DECIMAL" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />
+		<result column="submit_userky" property="submitUserKy" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="auditid" property="auditId" jdbcType="INTEGER" />
+		<result column="audittime" property="auditTime" jdbcType="TIMESTAMP" />
+		<result column="realname" property="realName" jdbcType="VARCHAR"/>
+		<result column="phone" property="phone" jdbcType="CHAR" />
+		<result column="name" property="name"  jdbcType="VARCHAR"/>
+		<result column="paynum" property="payNum" jdbcType="VARCHAR" />
+		<result column="bankid" property="bankId" jdbcType="INTEGER" />
+		<result column="sftOrderNo" property="sftOrderNo" jdbcType="VARCHAR" />
+		<result column="sessionToken" property="sessionToken" jdbcType="VARCHAR" />		
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="recommCodes" property="recommCodes" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<!-- 获取充值待审 list -->
+	<select id="getDrMemberCrushList" parameterType="java.util.HashMap" resultMap="drMemberCrushResult">
+		select c.id,c.uid,c.addtime,c.status,s.name,
+		c.paynum, CONCAT(LEFT(m.mobilePhone,3),'****',RIGHT(m.mobilePhone,4)) as phone , CONCAT(LEFT(mb.realname,1),'**') as realname,
+		c.amount,c.channel,c.remark,c.type,bank.bankName,m.recommCodes
+		from dr_member_crush c 
+		left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mb on m.uid=mb.uid 
+		left join sys_users s on c.auditid=s.USER_KY
+		left JOIN dr_member_bank bank on c.bankId = bank.id
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="channel != null"> and c.channel=#{channel} </if>
+			<if test="type != null"> and c.type=#{type} </if>
+			<if test="realName != null and realName !='' "> 
+				and mb.realName like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' "> 
+				and m.recommCodes like CONCAT('%','${recommCodes}','%' )
+			</if>
+			<if test="payNum != null and payNum !='' "> 
+				and c.payNum like CONCAT('%','${payNum}','%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 	and m.mobilephone like CONCAT('%','${phone}','%' )
+			</if>
+			<if test="(status != null and status != '') or status == 0">
+				and	c.status = #{status}
+			</if>
+		</where>
+		<![CDATA[ order by c.addtime desc ]]>
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取充值待审总数 -->
+	<select id="getDrMemberCrushCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1)
+		from dr_member_crush c left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mb on m.uid=mb.uid 
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="channel != null"> and c.channel=#{channel} </if>
+			<if test="recommCodes != null and recommCodes !='' "> 
+				and m.recommCodes like CONCAT('%','${recommCodes}','%' )
+			</if>
+			<if test="type != null"> and c.type=#{type} </if>
+			<if test="realName != null and realName !='' "> 
+			and mb.realName like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="payNum != null and payNum !='' "> 
+				and c.payNum like CONCAT('%','${payNum}','%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 and m.mobilephone like CONCAT('%','${phone}','%' )
+			</if>
+			<if test="(status != null and status != '') or status == 0">
+			and	c.status = #{status}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 处理审核 -->
+	<update id="updateMemberCrushById" parameterType="com.jsjf.model.member.DrMemberCrush">
+		update dr_member_crush
+		<set>
+		<if test="remark != null">
+			remark = #{remark:VARCHAR},
+		</if>
+		<if test="status != null">
+			status =#{status:INTEGER},
+		</if>
+		<if test="auditId != null">
+			auditid=#{auditId:INTEGER},
+		</if>
+		<if test="auditTime != null">
+			audittime=#{auditTime:TIMESTAMP}
+		</if>
+		</set> 
+		<where>
+			id =#{id:INTEGER}
+		</where> 
+	</update>
+	
+	<select id="getDrMemberCrushById" parameterType="int" resultMap="drMemberCrushResult">
+		select * from dr_member_crush
+		<where>
+			id=#{id:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 获得充值总额 -->
+	<select id="getDrMemberCrushRecordSum" parameterType="java.util.HashMap" resultType="Double">
+		select if(sum(c.amount) is null,0,sum(c.amount)) as sum
+		from dr_member_crush c left join dr_member m on c.uid =m.uid 
+		left join dr_member_base_info mb on m.uid=mb.uid 
+		<where>
+			<if test="payNum != null and payNum !='' ">c.paynum=#{payNum}</if>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="recommCodes != null and recommCodes !='' "> 
+				and m.recommCodes like CONCAT('%','${recommCodes}','%' )
+			</if>
+			<if test="channel != null"> and c.channel=#{channel} </if>
+			<if test="type != null"> and c.type=#{type} </if>
+			<if test="realName != null and realName !='' "> 
+			and mb.realName like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="payNum != null and payNum !='' "> 
+				and c.payNum like CONCAT('%','${payNum}','%' )
+			</if>
+			<if test="phone != null and phone !='' ">
+			 and m.mobilephone like CONCAT('%','${phone}','%' )
+			</if>
+			<if test="(status != null and status != '') or status==0">
+			and	c.status =#{status}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 添加充值记录 -->
+	<insert id="insertDrMemberCrush" parameterType="com.jsjf.model.member.DrMemberCrush" >
+    insert into dr_member_crush ( uid, amount, pound_fee, channel, submit_userky, remark,
+      status, addtime, auditid, audittime,paynum,bankid,sftOrderNo,sessionToken,type)
+    values (#{uid:INTEGER}, #{amount:DECIMAL}, #{poundFee:DECIMAL}, #{channel:INTEGER},
+      #{submitUserKy:INTEGER}, #{remark:VARCHAR}, #{status:INTEGER},SYSDATE(), #{auditId:INTEGER},
+      #{auditTime:TIMESTAMP},#{payNum:VARCHAR},#{bankId:INTEGER},#{sftOrderNo:VARCHAR},#{sessionToken:VARCHAR},#{type:INTEGER})
+  	</insert>
+  	
+	<select id="getDrMemberCrush" resultMap="drMemberCrushResult">
+		select * from dr_member_crush
+		<where>
+			status=0 and channel != 4 and type !=3 
+			and DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY),'%Y%m%d') <![CDATA[ <= ]]> DATE_FORMAT(addtime,'%Y%m%d') 
+			and DATE_FORMAT(addtime,'%Y%m%d %H%i%s') <![CDATA[ <= ]]> DATE_FORMAT(date_sub(now(),interval 5 minute),'%Y%m%d %H%i%s')
+		</where>
+	</select>
+	
+	<select id="getdrMemberCrushByPaynum" parameterType="String" resultType="com.jsjf.model.member.DrMemberCrush">
+		select * from dr_member_crush where status = 0 and paynum = #{paynum}
+	</select>
+	<!-- 只根据流水号查询 -->
+	<select id="getFuioudrMemberCrushByPaynum" parameterType="String" resultType="com.jsjf.model.member.DrMemberCrush">
+		select * from dr_member_crush where  paynum = #{paynum}
+	</select>
+</mapper>

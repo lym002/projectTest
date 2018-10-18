@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductReservationDAO">
+	<resultMap id="JsProductReservationResult" type="com.jsjf.model.product.JsProductReservation">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="periods" property="periods" jdbcType="INTEGER" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		
+		<result column="dateInterval" property="dateInterval" jdbcType="VARCHAR" />
+		<result column="total" property="total" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,name,periods,startTime,endTime,status,addUser,addTime,updateUser,updateTime
+	</sql>
+	
+	<!-- 插入规则 -->
+	<insert id="insertProductReservation" parameterType="com.jsjf.model.product.JsProductReservation" useGeneratedKeys="true" keyProperty="id" >
+		insert into js_product_reservation(name,periods,startTime,endTime,status,addUser,addTime)
+		values(#{name:VARCHAR},#{periods:INTEGER},#{startTime:TIMESTAMP},#{endTime:TIMESTAMP},0,#{addUser:INTEGER},SYSDATE())
+	</insert>
+	
+	<!-- 获取规则-->
+	<select id="selectJsProductReservationList" parameterType="java.util.HashMap" resultMap="JsProductReservationResult">
+		SELECT pr.id,pr.`name`,pr.periods,CONCAT(DATE_FORMAT(pr.startTime,'%Y-%m-%d %H:%i:%s'),'-',
+		DATE_FORMAT(pr.endTime,'%Y-%m-%d %H:%i:%s')) dateInterval,pr.`status`,count(prl.id) total,sum(prl.amount) totalAmount,
+		su.name as addName,pr.addTime
+		FROM js_product_reservation pr
+		LEFT JOIN js_product_reservation_log prl on pr.id = prl.prid
+		left join sys_users su on pr.addUser =su.user_ky
+		<where>
+			<if test="name != null and name != ''">
+				and INSTR(pr.name,#{name:VARCHAR})>0 
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and DATE_FORMAT(pr.startTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ >= ]]>DATE_FORMAT( #{startTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')
+			</if>
+			<if test="endTime != null and endTime != ''">
+				and DATE_FORMAT(pr.endTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ <= ]]> DATE_FORMAT(#{endTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')
+			</if>
+			<if test="status != null">
+				and pr.status = #{status:INTEGER}
+			</if>
+		</where>
+			GROUP BY pr.id
+			order by pr.periods desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取规则条数 -->
+	<select id="selectJsProductReservationCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(1)
+		from  js_product_reservation a
+		<where>
+			<if test="name != null and name != ''">
+				and INSTR(a.name,#{name:VARCHAR})>0 
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and DATE_FORMAT(a.startTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ >= ]]> DATE_FORMAT(#{startTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')
+			</if>
+			<if test="endTime != null and endTime != ''">
+				and DATE_FORMAT(a.endTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ <= ]]> DATE_FORMAT(#{endTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status:INTEGER}
+			</if>
+			<if test="periods != null and periods != ''">
+				and a.periods = #{periods:INTEGER}
+			</if>
+			<if test="notStatus != null">
+				and a.status <![CDATA[<>]]> #{notStatus:INTEGER}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 更改规则 -->
+	<update id="updateProductReservation" parameterType="com.jsjf.model.product.JsProductReservation">
+		update js_product_reservation 
+		<trim prefix=" set " suffixOverrides=",">
+				<if test="name != null">name = #{name},</if>
+				<if test="startTime != null "> startTime = #{startTime},  </if>
+				<if test="endTime != null "> endTime = #{endTime},  </if>
+				<if test="status != null "> status = #{status},  </if>
+				<if test="updateUser != null "> updateUser = #{updateUser},  </if>
+				updateTime = SYSDATE()				
+			</trim>
+			<where>
+				id = #{id:INTEGER}
+			</where>
+	</update>
+	
+	<select id="getJsProductReservationById" parameterType="Integer" resultType="com.jsjf.model.product.JsProductReservation">
+		select * from js_product_reservation where id = #{id}
+	</select>
+	
+	<select id="selectJsProductReservationByMap" parameterType="java.util.HashMap" resultMap="JsProductReservationResult">
+	 	select <include refid="Base_Column_List" /> from js_product_reservation
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="periods != null">
+	 			and periods = #{periods}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	<select id="update" parameterType="com.jsjf.model.activity.JsProductReservation">
+	 	update js_product_reservation 
+	 		set updateUser = 0
+	 			,updateTime = now()
+	 			<if test="status != null"> , status = #{status}</if>
+	 	where id = #{id}
+	 </select>
+	
+</mapper>

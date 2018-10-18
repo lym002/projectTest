@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductExtendDAO">
+	<resultMap id="DrProductInfoResult" type="com.jsjf.model.product.DrProductExtend">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<!-- 添加产品扩展信息 -->
+	<insert id="insertDrProductExtend" parameterType="com.jsjf.model.product.DrProductExtend" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_product_extend(pid,title,content,addDate,addUser)
+		values (#{pid:INTEGER},#{title:VARCHAR},#{content:VARCHAR},sysdate(),#{addUser:INTEGER})
+	</insert>
+	
+	<!-- 根据pid得到产品扩展信息 -->
+	<select id="getDrProductExtendByPid" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductExtend">
+		select * from dr_product_extend
+		<where>
+			pid = #{pid:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 根据PID删除产品扩展信息 -->
+	<delete id="deleteDrProductExtendByPid" parameterType="java.lang.Integer" >
+	    delete from dr_product_extend where pid = #{pid:INTEGER} 
+	</delete>
+	
+	<select id="getDrProductExtendBySid" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductExtend">
+		SELECT dpe.* from dr_product_extend dpe
+		WHERE dpe.pid = (SELECT MAX(id) from dr_product_info where sid = #{sid}) ;
+	
+	</select>
+</mapper>

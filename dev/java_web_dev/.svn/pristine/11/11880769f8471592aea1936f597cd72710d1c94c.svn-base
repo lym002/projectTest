@@ -1,0 +1,170 @@
+package com.jsjf.service.activity.impl;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.dao.activity.BypCommodityDetailDAO;
+import com.jsjf.dao.activity.BypMemberIntegralDAO;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.dao.member.JsMemberInfoDAO;
+import com.jsjf.dao.product.DrProductInvestDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.model.activity.BypCommodityDetail;
+import com.jsjf.model.activity.BypMemberIntegral;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberMsg;
+import com.jsjf.model.member.JsMemberInfo;
+import com.jsjf.service.activity.BypCommodityDetailService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+
+@Service
+@Transactional
+public class BypCommodityDetailServiceImpl implements BypCommodityDetailService {
+	private Logger log = Logger.getLogger(this.getClass());
+	@Autowired
+	private BypCommodityDetailDAO bypCommodityDetailDAO;
+	@Autowired
+	private DrProductInvestDAO drProductInvestDAO;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private BypCommodityDAO bypCommodityDAO;
+	@Autowired
+	private DrMemberDAO drMemberDAO;
+	@Autowired
+	private BypMemberIntegralDAO bypMemberIntegralDAO;
+	@Autowired
+	private JsMemberInfoDAO jsMemberInfoDAO;
+	@Autowired
+	private DrMemberMsgDAO drMemberMsgDAO;
+	@Override
+	public List<BypCommodityDetail> doubleTwelve(Integer uid) {
+
+		return bypCommodityDetailDAO.doubleTwelve(uid);
+	}
+
+	@Override
+	public Map<String, BigDecimal> selectDoubleTwelve(Integer uid) {
+		return drProductInvestDAO.selectDoubleTwelve(uid);
+	}
+
+	@Override
+	public List<BypCommodityDetail> selectTopIntegralLog() {
+		return bypCommodityDetailDAO.selectTopIntegralLog();
+	}
+
+	@Override
+	public void insertSelective(BypCommodityDetail bcdl) {
+		bypCommodityDetailDAO.insertSelective(bcdl);
+	}
+
+	@Override
+	public BaseResult updateConvertGiftByUidAndPid(Integer uid, String pid) {
+		boolean lockFlag = false;
+		DrMember dm =null;
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<String, Object>();
+        String value=null;
+		try {
+			String doubleDanStartDate = redisClientTemplate
+					.getProperties("doubleDanStartDate");
+			String doubleDanEndDate = redisClientTemplate
+					.getProperties("doubleDanEndDate");
+			Date nowDate = new Date();
+			if (nowDate.after(Utils.parseDate(doubleDanStartDate,
+					"yyyy-MM-dd HH:mm:ss"))
+					&& nowDate.before(Utils.parseDate(doubleDanEndDate,
+							"yyyy-MM-dd HH:mm:ss"))) {
+				// 查询用户是否拥有满足条件的积分
+				BypCommodity bcd = bypCommodityDAO.selectIntegralByPid(pid);
+				log.info("奖品积分:"+bcd.getNeedPoints());
+                value=String.valueOf(System.currentTimeMillis());
+				 lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, 30,TimeUnit.SECONDS, false,value);
+				if (lockFlag) {
+					dm = drMemberDAO.selectForUpDateByPrimaryKey(uid);
+					log.info("用户积分:"+dm.getUser_integral());
+					
+					if (dm.getUser_integral().compareTo(bcd.getNeedPoints())== 0 || dm.getUser_integral().compareTo(bcd.getNeedPoints())== 1) {
+						// 修改客户积分
+						BigDecimal nwdBcsub = Utils.nwdBcsub(dm.getUser_integral(), bcd.getNeedPoints());
+						BigDecimal integral = Utils.setScale(nwdBcsub);
+						dm.setUser_integral(integral);
+						drMemberDAO.updateByPrimaryKey(dm);
+						// 插入积分使用记录
+					BypMemberIntegral bmi = new BypMemberIntegral(null, 1,
+								uid, new BigDecimal("-"+bcd.getNeedPoints().toString()) , new Date(), 1);
+
+						bypMemberIntegralDAO.insert(bmi);
+						// 查询客户是否有地址
+						JsMemberInfo selectMemberInfoByUid = jsMemberInfoDAO
+								.selectMemberInfoByUid(uid);
+						if (Utils.isObjectEmpty(selectMemberInfoByUid)) {
+							// 插入客户兑换记录
+							BypCommodityDetail bcdl = new BypCommodityDetail(
+									null, null, bcd.getPrid(), uid, 1,
+									new Date(), null, null, null, null);
+							insertSelective(bcdl);
+							br.setErrorMsg("用户地址表空");
+							map.put("address", false);
+							br.setMap(map);
+						} else {
+							// 插入客户兑换记录
+							BypCommodityDetail bcdl = new BypCommodityDetail(
+									null, null, bcd.getPrid(), uid, 1,
+									new Date(), null, null, null,
+									selectMemberInfoByUid.getAddress());
+							bypCommodityDetailDAO.insertSelective(bcdl);
+							map.put("address", true);
+							br.setMap(map);
+						}
+						// 发送站内信
+						//根据UID和创建查询用户礼品
+						BypCommodityDetail bypCommodityDetail=  bypCommodityDetailDAO.selectConvertGiftByUid(uid);
+						DrMemberMsg msg = new DrMemberMsg(uid, 0, 1, "恭喜您成功领取"+bypCommodityDetail.getPrizeName()+"奖励！", new Date(), 0,0, "恭喜您在“双旦活动-壕礼欢乐送”成功领取"+bypCommodityDetail.getPrizeName()+"，奖励于活动结束后3-15个工作日统一发放，别忘了填写正确的邮寄地址，有疑问请联系客服：400-066-8969，奖励可以多次领取哦！");
+						drMemberMsgDAO.insertDrMemberMsg(msg);
+						br.setSuccess(true);
+					} else {
+						br.setErrorCode("1003");
+						br.setErrorMsg("用户没有那么多积分");
+						log.error("用户" + uid + "产品id" + pid + "：存在强制提交，马上禁用此用户");
+					}
+				} else {
+					br.setErrorCode("1002");
+					br.setErrorMsg("系统繁忙稍后重试");
+					log.error("用户" + uid + "产品id" + pid + "：存在强制提交，马上禁用此用户");
+				}
+			} else {
+				br.setErrorMsg("活动已过期");
+				br.setSuccess(false);
+				br.setErrorCode("9997");
+				return br;
+			}
+		} catch (Exception e) {
+			log.error("双旦兑换实物", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			e.printStackTrace();
+		} finally {
+			if (lockFlag) {
+                redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert()+uid,value);//解锁
+			}
+		}
+		
+		return br;
+	}
+
+}

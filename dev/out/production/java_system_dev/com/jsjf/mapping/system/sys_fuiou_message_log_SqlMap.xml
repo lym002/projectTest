@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.system.SysFuiouMessageLogDAO">
+	<resultMap id="sysFuiouMessageLogResult" type="com.jsjf.model.system.SysFuiouMessageLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="VARCHAR" />
+		<result column="check_file_name" property="checkFileName" jdbcType="VARCHAR" />
+		<result column="upload_time" property="uploadTime" jdbcType="TIMESTAMP" />
+		<result column="overcheck_file_name" property="overcheckFileName" jdbcType="VARCHAR" />
+		<result column="download_time" property="downloadTime"	jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="business_type" property="businessType" jdbcType="VARCHAR" />
+		<result column="reportCount" property="reportCount" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<insert id="insert" parameterType="com.jsjf.model.system.SysFuiouMessageLog" useGeneratedKeys="true" keyProperty="id">
+		insert into sys_fuiou_message_log (id, type, check_file_name, upload_time, status, business_type,remark,reportCount)
+		values(#{id},#{type},#{checkFileName},now(),#{status},#{businessType},#{remark},#{reportCount})
+	</insert> 
+	<!-- 更新日志 -->
+	<update id="updateOvercheck"  parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open="" close="" separator=";">  
+			update sys_fuiou_message_log 
+			<trim prefix="set" suffixOverrides=",">
+				download_time = now(),
+				<if test=" item.overcheckFileName !=null and item.overcheckFileName !=''"> overcheck_file_name = #{item.overcheckFileName},</if>
+				<if test=" item.status !=null "> status = #{item.status},</if>
+				<if test=" item.remark !=null and item.remark !=''"> remark = #{item.remark},</if>
+			</trim>         
+			where id = #{item.id}
+        </foreach>  
+	</update>
+	
+	<select id = "getSysFuiouMessageLogByParam" resultMap="sysFuiouMessageLogResult" parameterType="java.util.HashMap">
+		select * from sys_fuiou_message_log 
+		<where>
+			<if test = "status != null">
+				 and status = #{status}
+			</if>
+		</where>
+	</select>
+	<!-- 更新返回报文 -->
+	<update id="batchUpdateJzhMessageResult" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open="" close="" separator=";">  
+	        update ${item.tableName}   
+	        <set>  
+		        <if test="item.fileStatus != null">
+		        	fileStatus=#{item.fileStatus},
+		        </if> 
+		        <if test="item.failureCause != null">
+		        	failureCause=#{item.failureCause,jdbcType=VARCHAR},
+		        </if>
+	        </set>  
+	        <where>
+	        	<if test="item.fuiouMessageNo != null">
+	        		and fuiouMessageNo = #{item.fuiouMessageNo,jdbcType=VARCHAR} 
+	        	</if>
+	        </where>
+         </foreach>  
+	</update>
+	
+	<!-- 更新投资数据返回报文 -->
+	<update id="batchUpdateInvestJzhMessageResult" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open="" close="" separator=";">  
+	        update ${item.tableName}   
+	        <set>  
+		        <if test="item.fileStatus != null">
+		        	fileStatus=#{item.fileStatus},
+		        </if> 
+		        <if test="item.failureCause != null">
+		        	failureCause=#{item.failureCause,jdbcType=VARCHAR},
+		        </if>
+		        <if test="item.fullFileStatus != null">
+		        	fullFileStatus=#{item.fullFileStatus},
+		        </if> 
+		        <if test="item.fullFailureCause != null">
+		        	fullFailureCause=#{item.fullFailureCause,jdbcType=VARCHAR},
+		        </if>
+	        </set>  
+	        <where>
+	        	<if test="item.fuiouMessageNo != null">
+	        		and fuiouMessageNo = #{item.fuiouMessageNo,jdbcType=VARCHAR} 
+	        	</if>
+	        	<if test="item.fullFuiouMessageNo != null">
+	        		and fullFuiouMessageNo = #{item.fullFuiouMessageNo,jdbcType=VARCHAR} 
+	        	</if>
+	        </where>
+         </foreach>  
+	</update>
+
+</mapper>

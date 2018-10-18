@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsOpenDayDAO">
+
+	<select id="selectJsOpenDayById" resultType="com.jsjf.model.activity.JsOpenDay" parameterType="java.lang.Integer">
+		select * from js_open_day where id = #{id}
+	</select>
+	<select id="selectJsOpenDayByParam" resultType="com.jsjf.model.activity.JsOpenDay" parameterType="java.util.HashMap">
+		select * from js_open_day
+		<where>
+			<if test = "status != null">
+			and status = #{status}
+			</if>
+		</where>
+		order by addDate desc
+		<if test ="offset != null and limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<select id="selectJsOpenDayCountByParam" resultType="java.lang.Integer" parameterType="java.util.HashMap">
+		select count(1) from js_open_day
+		<where>
+			<if test = "status != null">
+			and status = #{status}
+			</if>
+		</where>
+	</select>
+</mapper>

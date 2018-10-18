@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsGratitudeBlessingDAO">
+
+	<select id="selectJsGratitudeBlessingList" resultType="com.jsjf.model.activity.JsGratitudeBlessing">
+		select a.*,concat(substring(b.mobilePhone,1,3),"****",substring(b.mobilePhone,8)) as mobilePhone
+		 from js_gratitude_blessing a
+			left join dr_member b on a.uid = b.uid
+		<where>
+			<if test = "status != null">
+				and a.status = #{status}
+			</if>
+			<if test = "uid != null">
+				and a.uid = #{uid}
+			</if>
+			<if test = "order != null and order != ''">
+				${order}
+			</if>
+			<if test = "limit != null">
+				LIMIT #{limit}
+			</if>
+		</where>
+	</select>
+	
+	<select id="selectJsGratitudeBlessingByUid" resultType="com.jsjf.model.activity.JsGratitudeBlessing">
+		select * from js_gratitude_blessing where uid = #{uid}
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.JsGratitudeBlessing">
+		INSERT INTO js_gratitude_blessing (`uid`, `blessing`, `status`, `addtime`, `updatetime`, `split`,`splitaddtime`)
+		VALUES (#{uid}, #{blessing}, #{status}, #{addtime}, #{updatetime}, #{split},#{splitaddtime});
+	</insert>
+	
+	<update id="update" parameterType="com.jsjf.model.activity.JsGratitudeBlessing">
+		update js_gratitude_blessing
+		<set>
+			<if test="uid != null"> uid = #{uid:INTEGER},</if>
+			<if test="blessing != null"> blessing = #{blessing:VARCHAR},</if>
+			<if test="status != null"> status = #{status:VARCHAR},</if>
+			<if test="updatetime != null"> updatetime = #{updatetime:VARCHAR},</if>
+			<if test="addtime != null"> addtime = #{addtime:VARCHAR},</if>
+			<if test="split != null"> split = #{split:DECIMAL},</if>
+			<if test="splitaddtime != null"> splitaddtime = #{splitaddtime:VARCHAR},</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+</mapper>

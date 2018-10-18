@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberLotteryLogDAO">
+	<resultMap id="DrMemberLotteryLogResult" type="com.jsjf.model.member.DrMemberLotteryLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="aid" property="aid" jdbcType="INTEGER" />		
+		<result column="investId" property="investId" jdbcType="INTEGER" />		
+		<result column="giftId" property="giftId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />	
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />	
+		<result column="investAmount" property="investAmount" jdbcType="DECIMAL" />	
+	</resultMap>	
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMemberLotteryLog" keyProperty="id" useGeneratedKeys="true">
+		insert into dr_member_lottery_log (uid,aid,giftId,addTime,investId,investAmount,updateTime)
+		values (#{uid}, #{aid}, #{giftId}, #{addTime}, #{investId}, #{investAmount},#{updateTime})
+	</insert>
+	<select id="selectListByParam" parameterType="java.util.HashMap" resultMap="DrMemberLotteryLogResult">
+		select * from dr_member_lottery_log 
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="giftId != null "> 
+				<if test="giftId != -1">
+					and giftId = #{gigtId}
+				</if>
+				<if test="giftId == -1">
+					and giftId is null
+				</if>
+			</if>
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="aid != null"> and aid = #{aid}</if>
+			<if test="addtime != null and addtime != ''"> and DATE_FORMAT(addtime,'%Y-%m-%d') = DATE_FORMAT(#{addtime},'%Y-%m-%d')</if>
+		</trim>
+		<if test="orders != null  and orders !='' ">
+			order by ${orders}
+		</if>
+		<if test="orders == null  or orders =='' ">
+			order by giftid desc
+		</if>
+	</select>
+	
+	<select id="selectDrMemberLotteryLogByMap" resultType="com.jsjf.model.member.DrMemberLotteryLog">
+		select concat(substring(dm.mobilePhone, 1, 3),"****",substring(dm.mobilePhone, 8)) as mobilePhone,
+		dlp.giftName from dr_member_lottery_log dml 
+		LEFT JOIN dr_lottery_param dlp on dml.aid = dlp.id
+		left join dr_member dm on dm.uid = dml.uid
+		where DATE_FORMAT(dml.addtime ,'%Y-%m-%d')>='2016-08-04'
+		order by dml.addtime desc
+	</select>
+	
+	<select id="getLotteryCountByUid" parameterType="int" resultType="int">
+		select (select case when count(1)>5 then 5 else count(1) end  from dr_product_invest dpi 
+		LEFT JOIN dr_product_info dpif on dpi.pid = dpif.id
+		where dpi.uid = #{uid} and  
+		DATE_FORMAT(dpi.investTime ,'%Y-%m-%d')=CURDATE() and 
+		dpi.amount >=5000 and dpif.deadline>=15) - (select case when count(1)>5 then 5 else count(1) end from dr_member_lottery_log dml 
+		where dml.uid= #{uid} and DATE_FORMAT(dml.addtime ,'%Y-%m-%d')=CURDATE())
+	</select>
+	
+	<select id="getLotteryCount" parameterType="int" resultType="int">
+		select count(1) from dr_member_lottery_log dml 
+		where dml.uid= #{uid} and DATE_FORMAT(dml.addtime ,'%Y-%m-%d')=CURDATE()
+	</select>
+		
+	<select id="selectDrMemberLotteryLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberLotteryLog">
+		select dlp.giftName,dml.addTime from dr_member_lottery_log dml 
+		LEFT JOIN dr_lottery_param dlp on dml.aid = dlp.id
+		left join dr_member dm on dm.uid = dml.uid
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null "> and dml.uid = #{uid}</if>
+			and DATE_FORMAT(dml.addtime ,'%Y-%m-%d')>='2016-08-04'
+		</trim>
+		order by dml.addtime desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selectDrMemberLotteryLogListCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_member_lottery_log dml 
+		LEFT JOIN dr_lottery_param dlp on dml.aid = dlp.id
+		left join dr_member dm on dm.uid = dml.uid
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null "> and dml.uid = #{uid}</if>
+			and DATE_FORMAT(dml.addtime ,'%Y-%m-%d')>='2016-08-04'
+		</trim>
+	</select>
+	<update id="update" parameterType="com.jsjf.model.member.DrMemberLotteryLog">
+		UPDATE dr_member_lottery_log 
+		<set>
+			updateTime = now()			
+			<if test="giftId !=null">, giftId = #{giftId}</if>
+		</set>
+		 WHERE id=#{id}
+	</update>
+	 <!-- 查询最近的中奖 -->
+	<select id="selectGiftName"  parameterType="int" resultType="String">
+		select dlp.giftName from dr_member_lottery_log dml 
+			LEFT JOIN dr_lottery_param dlp ON dml.giftId = dlp.id
+		where dml.uid = #{uid} and dml.giftId IS not NULL ORDER BY dml.updateTime DESC  LIMIT 1
+	</select>	
+	<!-- 双蛋抽奖次数 -->
+	<select id="getDoubleAGGLotteryCountByUid" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from `dr_member_lottery_log` dml where 1=1 
+		<if test="uid != null">
+			and dml.uid = #{uid} 
+		</if>
+		<choose>
+			<when test="updateTime != null">
+				and dml.updateTime != null
+			</when>
+			<otherwise>
+				and dml.updateTime is null
+			</otherwise>
+		</choose>
+	</select>
+	
+		<!-- 双蛋抽奖假数据 -->
+	<select id="getDoubleAGGListCountByUid" parameterType="int" resultType="com.jsjf.model.member.DrMemberLotteryLog">
+		select concat(substring(dmi.mobilePhone, 1, 3),"****",substring(dmi.mobilePhone, 8)) userName ,dlp.`giftName` amount from `dr_member_lottery_log` dmll 
+			left join `dr_member` dmi on dmi.`uid` = dmll.`uid`
+			left join `dr_lottery_param` dlp on dlp.`id` = dmll.`giftId` and dlp.`aid` = dmll.`aid`
+			where dmll.`updateTime` is not null 
+	</select>
+	<select id="selectLotteryLogByAid"  resultType="com.jsjf.model.member.DrMemberLotteryLog">
+		select concat(substring(c.mobilePhone, 1, 3),"****",substring(c.mobilePhone, 8)) mobilePhone,a.updateTime,ifnull(b.name,'') as name from dr_member_lottery_log a
+				left join js_activity_reward b on a.giftId = b.id
+				left join dr_member c on a.uid = c.uid
+			   where a.aid = 4 order by a.updateTime desc limit 30
+	</select>
+	
+</mapper>

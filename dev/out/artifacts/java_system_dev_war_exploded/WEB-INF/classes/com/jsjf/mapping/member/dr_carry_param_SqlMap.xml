@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrCarryParamDAO">
+	<resultMap id="DrCarryParamResult" type="com.jsjf.model.member.DrCarryParam">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="dayCounts" property="dayCounts" jdbcType="INTEGER" />		
+		<result column="monthCounts" property="monthCounts" jdbcType="INTEGER" />
+		<result column="fourElementCount" property="fourElementCount" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />		
+		<result column="smsChanel" property="smsChanel" jdbcType="VARCHAR" />		
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+	</resultMap>
+
+	<!-- 获取提现设置列表 -->
+	<select id="getDrCarryParamList" resultType="com.jsjf.model.member.DrCarryParam">
+		select dcp.*,su.name as name from dr_carry_param dcp
+		LEFT JOIN sys_users su on dcp.addUser = su.user_ky
+	</select>
+	
+	<!-- 获取提现设置总数 -->
+	<select id="getDrCarryParamCounts" resultType="java.lang.Integer">
+		SELECT count(1) FROM dr_carry_param 
+	</select>
+	
+	<!-- 添加提现设置 -->
+	<insert id="insertDrCarryParam" parameterType="com.jsjf.model.member.DrCarryParam" >
+	  insert into dr_carry_param (amount,dayCounts,monthCounts,fourElementCount,status,addDate,addUser,updDate)
+	  values (#{amount:INTEGER},#{dayCounts:INTEGER},#{monthCounts:INTEGER},#{fourElementCount:INTEGER},
+	  #{status:INTEGER},SYSDATE(),#{addUser:INTEGER},DATE_ADD(SYSDATE(), INTERVAL 1 YEAR))
+	</insert>
+	
+	<!-- 根据id得到提现设置-->
+	<select id="getDrCarryParamByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.member.DrCarryParam">
+		SELECT * FROM dr_carry_param
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 修改提现设置信息 -->
+	<update id="updateDrCarryParam" parameterType="com.jsjf.model.member.DrCarryParam">
+		update dr_carry_param
+		<set>
+			<if test="amount != null"> amount = #{amount:DECIMAL},</if>
+			<if test="dayCounts != null"> dayCounts = #{dayCounts:INTEGER},</if>
+			<if test="monthCounts != null"> monthCounts = #{monthCounts:INTEGER},</if>
+			<if test="fourElementCount != null"> fourElementCount = #{fourElementCount:INTEGER},</if>
+			updDate = sysdate(),
+			<if test="updUser != null"> updUser = #{updUser:INTEGER},</if>
+			<if test="smsChanel != null"> smsChanel = #{smsChanel:INTEGER},</if>
+			<if test="autoReleaseProductLimit != null"> autoReleaseProductLimit = #{autoReleaseProductLimit:DECIMAL},</if>
+			<if test="autoReleaseProduct != null and autoReleaseProduct !='' "> autoReleaseProduct = #{autoReleaseProduct:VARCHAR}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+</mapper>

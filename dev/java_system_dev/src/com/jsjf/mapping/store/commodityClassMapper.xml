@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.store.CommodityClassDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.store.CommodityClass">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="type_code" jdbcType="VARCHAR" property="typeCode" />
+    <result column="type_name" jdbcType="VARCHAR" property="typeName" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, type_code, type_name
+  </sql>
+  <select id="queryCommodityClassList" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_commodity_class
+     where 1=1
+    <if test="limit !=null">
+			 limit #{offset},#{limit}
+		</if>
+  </select>
+   <select id="queryCommodityClassListCount"  parameterType="java.util.Map" resultType="Integer">
+    select 
+    count(0)
+    from byp_commodity_class
+   
+  </select>
+  <delete id="deleteCommodityClass" parameterType="java.lang.Integer">
+    delete from byp_commodity_class
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.store.CommodityClass">
+    insert into byp_commodity_class (id, type_code, type_name
+      )
+    values (#{id,jdbcType=INTEGER}, #{typeCode,jdbcType=VARCHAR}, #{typeName,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="addCommodityClass" parameterType="com.jsjf.model.store.CommodityClass">
+    insert into byp_commodity_class
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="typeCode != null">
+        type_code,
+      </if>
+      <if test="typeName != null">
+        type_name,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="typeCode != null">
+        #{typeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="typeName != null">
+        #{typeName,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateCommodityClass" parameterType="com.jsjf.model.store.CommodityClass">
+    update byp_commodity_class
+    <set>
+      <if test="typeCode != null">
+        type_code = #{typeCode,jdbcType=VARCHAR},
+      </if>
+      <if test="typeName != null">
+        type_name = #{typeName,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.store.CommodityClass">
+    update byp_commodity_class
+    set type_code = #{typeCode,jdbcType=VARCHAR},
+      type_name = #{typeName,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+   <select id="queryDd"  resultMap="BaseResultMap">
+    select 
+     type_code,type_name
+    from byp_commodity_class
+   
+  </select>
+  
+</mapper>

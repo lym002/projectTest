@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysMenuVoDAO" >
+  <resultMap id="abatorgenerated_SysMenuVoResult" type="com.jsjf.model.system.SysMenuVo" >
+    <result column="MENU_KY" property="menuKy" jdbcType="BIGINT" />
+    <result column="NAME" property="name" jdbcType="VARCHAR" />
+    <result column="URL" property="url" jdbcType="VARCHAR" />
+    <result column="PARENT" property="parent" jdbcType="DECIMAL" />
+    <result column="IMAGE" property="image" jdbcType="VARCHAR" />
+    <result column="GRADE" property="grade" jdbcType="INTEGER" />
+    <result column="POSITION" property="position" jdbcType="DECIMAL" />
+    <result column="STATUS" property="status" jdbcType="DECIMAL" />
+    
+  </resultMap>
+ 
+ 
+<!--   用户登录显示权限  查询1级菜单 -->
+  <select id="findByListMenu" resultMap="abatorgenerated_SysMenuVoResult" parameterType="java.lang.Long" >
+  select m1.MENU_KY, m1.NAME, m1.URL, m1.PARENT, m1.IMAGE, m1.GRADE, m1.POSITION, m1.STATUS  from sys_menu m1,
+  sys_role_menu as rm
+	where m1.menu_ky = rm.menu_ky and rm.role_ky  in 
+	(SELECT ur.ROLE_KY FROM sys_user_role AS ur,sys_role AS sr WHERE ur.ROLE_KY=sr.ROLE_KY AND
+		  ur.USER_KY=#{userKy,jdbcType=BIGINT} AND ur.STATUS!=0 AND sr.status!=0) 
+	and m1.GRADE=1 and m1.STATUS!=0 and m1.itsSystem = 0
+	order by m1.position asc
+  </select>
+  
+  
+  
+<!--   根据用户已分配的一级菜单ID（parent）与 该用户ID,返回该一级下所包含该用户权限的二级和三级 的集合 -->
+  <select id="getMapMenuList_2_3" resultMap="abatorgenerated_SysMenuVoResult" parameterType="java.util.HashMap" >
+	select m2.MENU_KY, m2.NAME, m2.URL, m2.PARENT, m2.IMAGE, m2.GRADE, m2.POSITION, m2.STATUS 
+	from sys_menu m2 where m2.MENU_KY in 
+		(select m.menu_ky from sys_menu m 
+		left JOIN sys_role_menu rm on m.MENU_KY=rm.MENU_KY where rm.ROLE_KY in 
+			(SELECT ur.ROLE_KY FROM sys_user_role AS ur,sys_role AS sr WHERE ur.ROLE_KY=sr.ROLE_KY AND 
+  			ur.USER_KY=#{userKy,jdbcType=BIGINT} 
+ 			AND ur.STATUS!=0 AND sr.status!=0)
+		and m.STATUS!=0 and m.grade=2 AND m.itsSystem = 0
+		order by m.position asc) 
+	UNION ALL 
+	select m.MENU_KY, m.NAME, m.URL, m.PARENT, m.IMAGE, m.GRADE, m.POSITION, m.STATUS from sys_menu m 
+	left JOIN sys_role_menu rm on m.MENU_KY=rm.MENU_KY where rm.ROLE_KY in 
+	(SELECT ur.ROLE_KY FROM sys_user_role AS ur,sys_role AS sr WHERE ur.ROLE_KY=sr.ROLE_KY AND 
+  		ur.USER_KY=#{userKy,jdbcType=BIGINT}  
+ 		AND ur.STATUS!=0 AND sr.status!=0)  
+ 	and m.STATUS!=0 and m.grade=3 AND m.itsSystem = 0
+  </select>
+  
+  <update id="updateByExampleSelective" parameterType="com.jsjf.model.system.SysMenuVo">
+    update sys_menu
+    <set>
+    	<if test="name != null and name != '' ">
+    		name = #{name,jdbcType=VARCHAR},
+    	</if>
+    	<if test="url != null ">
+    		url = #{url,jdbcType=VARCHAR},
+    	</if>
+    	<if test="parent != null ">
+    		parent = #{parent,jdbcType=DECIMAL},
+    	</if>
+    	<if test="position != null ">
+    		position = #{position,jdbcType=DECIMAL},
+    	</if>
+    	<if test="status != null ">
+    		status = #{status,jdbcType=DECIMAL},
+    	</if>
+    	<if test="grade != null ">
+    		grade = #{grade,jdbcType=INTEGER},
+    	</if>
+    	<if test="itsSystem != null ">
+    		itsSystem = #{itsSystem,jdbcType=INTEGER},
+    	</if>
+    </set>
+      where MENU_KY = #{menuKy,jdbcType=INTEGER}
+  </update>
+  
+  <insert id="insert" parameterType="com.jsjf.model.system.SysMenuVo">
+  		insert into sys_menu(name, url, parent, grade, status,itsSystem) values 
+  		(#{name,jdbcType=VARCHAR},#{url,jdbcType=VARCHAR},#{parent,jdbcType=DECIMAL},#{grade,jdbcType=INTEGER},#{status,jdbcType=INTEGER},#{itsSystem,jdbcType=INTEGER})
+  </insert>
+  <select id="findList" parameterType="java.lang.Long" resultMap="abatorgenerated_SysMenuVoResult" >
+    SELECT m.MENU_KY, m.NAME, m.URL, m.PARENT, m.IMAGE, m.GRADE, m.POSITION, m.STATUS ,m.itsSystem
+	FROM sys_menu AS m where m.STATUS!=0 
+   	order by m.position asc
+  </select>
+  
+  	<!-- 根据父节点拿到子节点 -->
+	<select id="getMenuTree" parameterType="int" resultMap="abatorgenerated_SysMenuVoResult" >
+	    SELECT * FROM sys_menu where STATUS!=0 and parent=#{parentId}
+	
+  	</select>
+</mapper>

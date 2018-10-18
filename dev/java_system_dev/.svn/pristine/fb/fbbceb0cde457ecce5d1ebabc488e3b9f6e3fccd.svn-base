@@ -1,0 +1,67 @@
+package com.jsjf.service.member.impl;
+
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import com.jsjf.controller.task.ActivityReversalTask;
+import com.jsjf.model.member.DrMemberFundsRecord;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.dao.member.DrMemberFundsDAO;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.service.member.DrMemberFundsService;
+
+@Service
+@Transactional
+public class DrMemberFundsServiceImpl implements DrMemberFundsService {
+    private static Logger log = Logger.getLogger(ActivityReversalTask.class);
+    @Autowired
+	private DrMemberFundsDAO drMemberFundsDAO;
+	
+	@Override
+	public DrMemberFunds selectDrMemberFundsByUid(Integer uid) {
+		return drMemberFundsDAO.queryDrMemberFundsByUid(uid);
+	}
+
+	@Override
+	public void updateDrMemberFunds(DrMemberFunds drMemberFunds)throws SQLException {
+		drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+	}
+
+	@Override
+	public List<DrMemberFunds> selectListByUids(String uids) {
+		return drMemberFundsDAO.selectListByUids(uids);
+	}
+
+    @Override
+    public void updateRepairWithdrawal(String s, BigDecimal bigDecimal) {
+	    try {
+            Map<String ,Object> param =new HashMap<>();
+            param.put("paymentnum",s);
+            param.put("mchnt_txn_ssn",s);
+            param.put("withdrawal",bigDecimal);
+            //查询记录表id
+            Integer id =drMemberFundsDAO.selectCarryId(param);
+            param.put("id",id);
+            //修复用户提现记录表
+            drMemberFundsDAO.updateMemberCarry(param);
+            //修复恒丰存管日志表
+            drMemberFundsDAO.updateFuiouNotice(param);
+            //修复用户资金表
+            drMemberFundsDAO.updateMemberFunds(param);
+            //修复用户资金交易记录表
+            drMemberFundsDAO.insertMemberFundsRecord(param);
+            Integer rid = drMemberFundsDAO.selectRecordId(param);
+            param.put("rid",rid);
+            drMemberFundsDAO.insertMemberFundsLog(param);
+            log.info("执行成功");
+        }catch (Exception e){
+	        log.error("执行失败:----->"+"流水号:"+s+e.getMessage());
+        }
+    }
+}

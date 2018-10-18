@@ -1,0 +1,932 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.cpa.DrChannelInfoDAO">
+	<resultMap id="DrChannelInfoResult" type="com.jsjf.model.cpa.DrChannelInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="isParticipation" property="isParticipation" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />	
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 获取渠道信息列表 -->
+	<select id="getDrChannelInfoList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select dci.*,su.name as addUserName,ssu.name as updUserName,scp.cnvalue as typeName  from dr_channel_info dci
+		LEFT JOIN sys_users su on su.user_ky = dci.addUser
+		LEFT JOIN sys_users ssu on ssu.user_ky = dci.updUser
+		LEFT JOIN sys_chooseoption scp on scp.code=dci.type and scp.category='channelType'
+		<where>
+			<if test="code != null and code != ''"> 
+				and instr(dci.code, #{code:VARCHAR} )>0
+			</if>
+			<if test="name != null and name != ''">
+				and instr(dci.name, #{name:VARCHAR} )>0
+			</if>			
+			<if test="status != null">
+				and dci.status = ${status}
+			</if>			
+		</where>
+		<![CDATA[ order by dci.status desc,dci.addDate desc ]]>
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取渠道信息总数 -->
+	<select id="getDrChannelInfoCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_channel_info
+		<where>
+			<if test="code != null and code != ''"> 
+				and instr(code, #{code:VARCHAR} )>0
+			</if>
+			<if test="name != null and name != ''">
+				and instr(name, #{name:VARCHAR} )>0
+			</if>	
+			<if test="status != null">
+				and status = ${status}
+			</if>		
+		</where>
+	</select>
+	
+	<!-- 添加渠道信息 -->
+	<insert id="insertDrChannelInfo" parameterType="com.jsjf.model.cpa.DrChannelInfo">
+		insert into dr_channel_info(code,name,status,addDate,addUser,isParticipation,type)
+		values (#{code:VARCHAR},#{name:VARCHAR},#{status:INTEGER},sysdate(),#{addUser:INTEGER},#{isParticipation:INTEGER},#{type:INTEGER})
+	</insert>
+	<!-- 修改渠道信息 -->
+	<update id="updateDrChannelInfo" parameterType="com.jsjf.model.cpa.DrChannelInfo">
+		update dr_channel_info
+		<set>
+			<if test="code != null"> code = #{code:VARCHAR},</if>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="isParticipation != null"> isParticipation = #{isParticipation:INTEGER},</if>
+			updDate = sysdate(),
+			<if test="updUser != null"> updUser = #{updUser:INTEGER},</if>
+			<if test="type != null"> type = #{type:INTEGER}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<!-- 根据id得到渠道信息 -->
+	<select id="getDrChannelInfoByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select * from dr_channel_info
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 根据Map得到渠道信息 -->
+	<select id="getDrChannelInfoListForMap" resultType="com.jsjf.model.cpa.DrChannelInfo" parameterType="java.util.HashMap">
+		select * from dr_channel_info
+		<where>
+			<if test="code != null and code != ''"> 
+				INSTR(#{code},code) =1 
+			</if>
+			<if test="inverted != null and inverted != ''">
+				or LOCATE(code,#{code}) =1 
+			</if>
+			<if test="status != null">
+				and status = #{status}
+			</if>
+			<if test="cids != null">
+				and id in 
+				<foreach collection="cids" item="item" separator="," close=")" open="(">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		<if test="orders != null and orders!=''">
+			ORDER BY ${orders}
+		</if>
+	</select>
+	
+	<!-- 获取渠道用户列表 -->
+	<select id="getDrChannelInfoUserList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select DISTINCT dm.uid,
+		concat(substring(dbi.realname,1,1),"*") AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,dm.regip ,dm.isFuiou
+		from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and LOCATE(dci.code,dm.toFrom) is not null and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>	
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+		</where>
+		<![CDATA[ order by dm.regdate desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<!-- 获取渠道用户总数 -->
+	<select id="getDrChannelInfoUserCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1 
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and LOCATE(dci.code,dm.toFrom) is not null and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>		
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取渠道订单列表 -->
+	<select id="getDrChannelInfoOrderList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select DISTINCT dm.uid,
+		concat(substring(dbi.realname,1,1),"*") AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId,dpi.repayType as repayType
+ 		from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+		RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+		LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null  and dpi.type != 5 <!-- and dpv.id in (select min(id) from dr_product_invest GROUP BY uid) --> 
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>			
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		<![CDATA[ order by dpv.investTime desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 获取首投渠道订单列表 -->
+	<select id="getFirstDrChannelInfoOrderList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select DISTINCT dm.uid,
+		concat(substring(dbi.realname,1,1),"*") AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId
+ 		FROM
+			dr_member dm
+		LEFT JOIN dr_member_base_info dbi ON dm.uid = dbi.uid
+		LEFT JOIN dr_channel_info dci ON LOCATE(dci. CODE, dm.toFrom) = 1
+		LEFT JOIN (
+			SELECT
+				min(dpv1.id) minid,
+				dpv1.uid
+			FROM
+				dr_product_invest dpv1
+			LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+			WHERE
+				dpi1.type != '1'
+			AND if(dpi1.atid or dpi1.prizeId,0,1)
+			AND dpi1.deadline  in(30,35,60,180) 
+			AND dpi1.atid IS NULL
+			GROUP BY
+				dpv1.uid
+				
+			<if test="flag_7_newHand !=null and  flag_7_newHand == 1">
+				UNION ALL  
+				SELECT
+					min(dpv1.id) minid,
+					dpv1.uid
+				FROM
+					dr_product_invest dpv1
+				LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+				WHERE
+					dpi1.type = 3
+				AND if(dpi1.atid or dpi1.prizeId,0,1)
+				AND dpi1.deadline in(7) 
+				AND dpi1.atid IS NULL
+				GROUP BY
+					dpv1.uid	
+			</if>
+		) T ON T.uid = dm.uid
+		LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+		LEFT JOIN dr_product_info dpi ON dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>		
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null ">
+				and dpi.repayType= #{repayType}
+			</if>	
+		</where>
+		<![CDATA[ order by dpv.investTime desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<!-- 获取渠道订单总数 -->
+	<select id="getDrChannelInfoOrderCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+	select count(1)	from (select distinct dm.uid,
+		concat(substring(dbi.realname,1,1),"*") AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+		RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+		LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null and dpi.type != 5 <!-- and dpv.id in (select min(id) from dr_product_invest GROUP BY uid) --> 
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>			
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null ">
+				and dpi.repayType= #{repayType}
+			</if>	
+		</where>
+		)a
+	</select>
+	<!-- 获取首投渠道订单总数 -->
+	<select id="getFirstDrChannelInfoOrderCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) FROM
+			dr_member dm
+		LEFT JOIN dr_member_base_info dbi ON dm.uid = dbi.uid
+		LEFT JOIN dr_channel_info dci ON LOCATE(dci. CODE, dm.toFrom) = 1
+		LEFT JOIN (
+			SELECT
+				min(dpv1.id) minid,
+				dpv1.uid
+			FROM
+				dr_product_invest dpv1
+			LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+			WHERE
+				dpi1.type != '1'
+			AND if(dpi1.atid or dpi1.prizeId,0,1)
+			AND dpi1.deadline  in(30,35,60,180) 
+			AND dpi1.atid IS NULL
+			GROUP BY
+				dpv1.uid
+			<if test="flag_7_newHand !=null and  flag_7_newHand == 1">
+				UNION ALL  
+				SELECT
+					min(dpv1.id) minid,
+					dpv1.uid
+				FROM
+					dr_product_invest dpv1
+				LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+				WHERE
+					dpi1.type = 3
+				AND if(dpi1.atid or dpi1.prizeId,0,1)
+				AND dpi1.deadline in(7) 
+				AND dpi1.atid IS NULL
+				GROUP BY
+					dpv1.uid	
+			</if>
+		) T ON T.uid = dm.uid
+		LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+		LEFT JOIN dr_product_info dpi ON dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null <!--  and dpv.id in (select min(id) from dr_product_invest GROUP BY uid) --> 
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>		
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+	</select>
+	<!-- 获取用户渠道订单列表（首投） -->
+	<select id="getDrChannelInfoOrderListFirst" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		SELECT DISTINCT
+			dm.uid,
+			concat(
+				substring(dbi.realname, 1, 1),
+				"*"
+			) AS realname,
+			concat(
+				substring(dm.mobilePhone, 1, 3),
+				"***",
+				substring(dm.mobilePhone, 8)
+			) AS mobilePhone,
+			dm.regdate,
+			ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+			dm.toFrom,
+			dpv.amount,
+			dpi.fullName,
+			dpi.deadline,
+			dpv.investTime,
+			dpi.repayType as repayType
+		FROM
+			dr_member dm
+		LEFT JOIN dr_member_base_info dbi ON dm.uid = dbi.uid
+		LEFT JOIN dr_channel_info dci ON LOCATE(dci. CODE, dm.toFrom) = 1
+		LEFT JOIN (
+			SELECT
+				min(dpv1.id) minid,
+				dpv1.uid
+			FROM
+				dr_product_invest dpv1
+			LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+			WHERE
+				dpi1.type != '1'
+			AND if(dpi1.atid or dpi1.prizeId,0,1)
+			AND dpi1.deadline in(30,35,60,180) 
+			AND dpi1.atid IS NULL
+			GROUP BY
+				dpv1.uid
+			<if test="flag_7_newHand !=null and  flag_7_newHand == 1">
+				UNION ALL  
+				SELECT
+					min(dpv1.id) minid,
+					dpv1.uid
+				FROM
+					dr_product_invest dpv1
+				LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+				WHERE
+					dpi1.type = 3
+				AND if(dpi1.atid or dpi1.prizeId,0,1)
+				AND dpi1.deadline in(7) 
+				AND dpi1.atid IS NULL
+				GROUP BY
+					dpv1.uid	
+			</if>
+		) T ON T.uid = dm.uid
+		LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+		LEFT JOIN dr_product_info dpi ON dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			  dm.toFrom is NOT NULL  and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>		
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="isUpdate == 1 ">
+				and dm.toFrom in ('byp')
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		<![CDATA[ order by dpv.investTime desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 获取用户渠道订单总数（首投） -->
+	<select id="getDrChannelInfoOrderCountsFirst" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from (
+			SELECT DISTINCT dm.uid,dpv.investTime
+			FROM
+				dr_member dm
+			LEFT JOIN dr_member_base_info dbi ON dm.uid = dbi.uid
+			LEFT JOIN dr_channel_info dci ON LOCATE(dci. CODE, dm.toFrom) = 1
+			LEFT JOIN (
+				SELECT
+					min(dpv1.id) minid,
+					dpv1.uid
+				FROM
+					dr_product_invest dpv1
+				LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+				WHERE
+					dpi1.type != '1'
+				AND if(dpi1.atid or dpi1.prizeId,0,1)
+				AND dpi1.deadline in (30,35,60,180)
+				AND dpi1.atid IS NULL
+				GROUP BY
+					dpv1.uid
+				<if test="flag_7_newHand !=null and  flag_7_newHand == 1">
+					UNION ALL  
+					SELECT
+						min(dpv1.id) minid,
+						dpv1.uid
+					FROM
+						dr_product_invest dpv1
+					LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+					WHERE
+						dpi1.type = 3
+					AND if(dpi1.atid or dpi1.prizeId,0,1)
+					AND dpi1.deadline in(7) 
+					AND dpi1.atid IS NULL
+					GROUP BY
+						dpv1.uid	
+				</if>
+			) T ON T.uid = dm.uid
+			LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+			LEFT JOIN dr_product_info dpi ON dpi.id = dpv.pid
+			LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>			
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="isUpdate == 1 ">
+				and dm.toFrom in ('byp')
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		) as FirstCount
+	</select>
+	
+	<!-- 渠道订单查询 全名称显示 -->
+	<select id="getDrChannelInfoOrderListNew" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select DISTINCT dm.uid,concat(substring(dbi.realname,1,1),"**") AS realname,concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8))as mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId,dpi.repayType as repayType,
+		dm.recommCodes as recommCodes
+ 		from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+		RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+		LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null  and dpi.type != 5 <!-- and dpv.id in (select min(id) from dr_product_invest GROUP BY uid) --> 
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>			
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		<![CDATA[ order by dpv.investTime desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<select id="getDrChannelInfoOrderCountsNew" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+	select count(1)	from (select distinct dm.uid,dbi.realname,dm.mobilePhone, 
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId from dr_member dm
+		LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+		left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+		RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+		LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null and dpi.type != 5 <!-- and dpv.id in (select min(id) from dr_product_invest GROUP BY uid) --> 
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>			
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		)a
+	</select>
+	
+	<select id="getFirstDrChannelInfoOrderListNew" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfo">
+		select DISTINCT dm.uid,
+		concat(substring(dbi.realname,1,1),"**")  AS realname,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,  
+		dm.regdate,ifnull(dci.`name`,'币优铺理财') name,ifnull(dci.code,dm.toFrom) code,
+		dpi.fullName,dpv.amount,dpi.deadline,dpv.investTime,dpv.id as investId
+ 		FROM
+			dr_member dm
+		LEFT JOIN dr_member_base_info dbi ON dm.uid = dbi.uid
+		LEFT JOIN dr_channel_info dci ON LOCATE(dci. CODE, dm.toFrom) = 1
+		LEFT JOIN (
+			SELECT
+				min(dpv1.id) minid,
+				dpv1.uid
+			FROM
+				dr_product_invest dpv1
+			LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+			WHERE
+				dpi1.type != '1'
+			AND if(dpi1.atid or dpi1.prizeId,0,1)
+			AND dpi1.deadline >= 30
+			AND dpi1.atid IS NULL
+			GROUP BY
+				dpv1.uid
+		) T ON T.uid = dm.uid
+		LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+		LEFT JOIN dr_product_info dpi ON dpi.id = dpv.pid
+		LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+		<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null
+			<if test="mobilephone != null and mobilephone != ''">
+				and instr(dm.mobilephone, #{mobilephone:VARCHAR} )>0
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="code != null and code != ''"> 
+				and LOCATE(#{code},dm.toFrom) =1
+			</if>		
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="startInvestDate != null and startInvestDate !='' "> 
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+			</if>
+			<if test="endInvestDate != null and endInvestDate !='' ">
+				<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate} ]]>
+			</if>
+			<!-- 未绑卡 -->
+			<if test="isbank ==0">
+				and (dbi.realname is  null or dbi.realname='')
+			</if>
+			<!-- 已绑卡 -->
+			<if test="isbank ==1">
+				and dbi.realname is not null and dbi.realname!=''
+			</if>
+			<if test="deadline != null ">
+				and dpi.deadline = #{deadline}
+			</if>
+			<if test="investId != null ">
+				and dpv.id = #{investId}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType =#{repayType}
+			</if>
+		</where>
+		<![CDATA[ order by dpv.investTime desc ]]>
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<select id="getDrChannelInfoSum" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	select '本页合计' as investId,  (CASE  when a.byAmount is null then 0 else a.byAmount end) as realName,
+			'总计' as mobilephone , (CASE  when b.zjAmount is null then 0 else b.zjAmount end) as fullName
+ 		from(
+	 		select sum(dpv.amount) as byAmount
+		 		from dr_member dm
+				LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+				left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+				RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+				LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+				LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+			<where>
+			dm.toFrom is NOT NULL  and recomm.referrerId is null  and dpi.type != 5 
+					<if test="startInvestDate != null and startInvestDate !='' "> 
+						and <![CDATA[( DATE_FORMAT(dpv.investTime,'%Y-%m-%d') >= #{startInvestDate}]]>
+					</if>
+					<if test="endInvestDate != null and endInvestDate !='' ">
+						<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') <= #{endInvestDate}) ]]>
+					</if>
+					
+					<if test="startInvestDate == null or startInvestDate =='' "> 
+						and <![CDATA[( DATE_FORMAT(dpv.investTime,'%Y-%m-%d') = '1970-01-01 00:00:00']]>
+					</if>
+					<if test="endInvestDate == null or endInvestDate =='' ">
+						<![CDATA[and DATE_FORMAT(dpv.investTime,'%Y-%m-%d') = '1970-01-01 00:00:00') ]]>
+					</if>
+			</where>
+					) a ,
+					(select sum(dpv.amount) as zjAmount from dr_member dm
+						LEFT JOIN dr_member_base_info dbi on dm.uid = dbi.uid
+						left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+						RIGHT  join dr_product_invest dpv on dpv.uid = dm.uid
+						LEFT JOIN dr_product_info dpi on dpi.id = dpv.pid
+						LEFT JOIN dr_member_recommended recomm on dm.uid=recomm.uid 
+						<where>
+							dm.toFrom is NOT NULL  and recomm.referrerId is null  and dpi.type != 5 
+							<if test="cids != null and cids.length>0">
+								and dci.id in
+								<foreach collection="cids" item="item" open="(" close=")" separator=",">
+									#{item}
+								</foreach>
+							</if>
+							<if test="cids == null or cids.length==0">
+								and dci.id in
+								(00)
+							</if>
+							) AS b
+						</where>
+	</select>
+	
+	
+	
+</mapper>

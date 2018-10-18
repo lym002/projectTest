@@ -1,0 +1,470 @@
+package com.jsjf.service.activity.impl;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.SystemConstant;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.dao.activity.BypCommodityDetailDAO;
+import com.jsjf.dao.activity.BypMemberIntegralDAO;
+import com.jsjf.dao.activity.DrMemberFavourableDAO;
+import com.jsjf.dao.integral.UserDetailIntegralDao;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.dao.member.JsMemberInfoDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.model.activity.BypCommodityDetail;
+import com.jsjf.model.activity.BypMemberIntegral;
+import com.jsjf.model.activity.DrMemberFavourable;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberMsg;
+import com.jsjf.model.member.JsMemberInfo;
+import com.jsjf.service.activity.BypCommodityDetailService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@Service
+@Transactional
+public class BypCommodityDetailServiceImpl implements BypCommodityDetailService {
+    private Logger log = Logger.getLogger(this.getClass());
+    @Autowired
+    private BypCommodityDetailDAO bypCommodityDetailDAO;
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    private BypCommodityDAO bypCommodityMapper;
+    @Autowired
+    public DrMemberDAO drMemberDAO;
+    @Autowired
+    private BypCommodityDAO bypCommodityDAO;
+    @Autowired
+    private BypMemberIntegralDAO bypMemberIntegralDAO;
+    @Autowired
+    private JsMemberInfoDAO jsMemberInfoDAO;
+    @Autowired
+    public DrMemberMsgDAO drMemberMsgDAO;
+    @Autowired
+    private UserDetailIntegralDao userDetailIntegralDao;
+    @Autowired
+    private DrMemberFavourableDAO drMemberFavourableDAO;
+
+    @Override
+    public List<BypCommodityDetail> doubleTwelve(Integer uid) {
+        return bypCommodityDetailDAO.doubleTwelve(uid);
+    }
+
+    @Override
+    public Map<String, Object> selectDoubleTwelve(Integer uid) {
+        return bypCommodityDetailDAO.selectDoubleTwelve(uid);
+    }
+
+    @Override
+    public List<BypCommodityDetail> selectTopIntegralLog() {
+        return bypCommodityDetailDAO.selectTopIntegralLog();
+    }
+
+    @Override
+    public List<BypCommodityDetail> selectMyIntegralLog(Integer uid) {
+        return bypCommodityDetailDAO.selectMyIntegralLog(uid);
+    }
+
+    @Override
+    public void insertSelective(BypCommodityDetail bcdl) {
+        bypCommodityDetailDAO.insertSelective(bcdl);
+    }
+
+    @Override
+    public BaseResult insertConvertByUserAndPid(Integer uid, String pid) {
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<String, Object>();
+        String value = null;
+        try {
+            if (Utils.isObjectEmpty(uid) && Utils.isObjectEmpty(pid)) {
+                br.setErrorMsg("uid不能为空,或者兑换金额不能为空");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return br;
+            }
+            String doubleDanStartDate = redisClientTemplate
+                    .getProperties("doubleDanStartDate");
+            String doubleDanEndDate = redisClientTemplate
+                    .getProperties("doubleDanEndDate");
+            Date nowDate = new Date();
+            if (nowDate.after(Utils.parseDate(doubleDanStartDate,
+                    "yyyy-MM-dd HH:mm:ss"))
+                    && nowDate.before(Utils.parseDate(doubleDanEndDate,
+                    "yyyy-MM-dd HH:mm:ss"))) {
+
+                // 查询用户是否拥有满足条件的积分
+                BypCommodity bcd = bypCommodityMapper.selectIntegralByPid(pid);
+                value = String.valueOf(System.currentTimeMillis());
+                boolean lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, SystemConstant.TIME_OUT,
+                        TimeUnit.SECONDS, true, value);
+                if (lockFlag) {
+                    DrMember dm = drMemberDAO.selectForUpDateByPrimaryKey(uid);
+                    if (dm.getUser_integral().compareTo(bcd.getNeedPoints()) >= 0) {
+                        //修改客户积分
+                        BigDecimal nwdBcsub = Utils.nwdBcsub(dm.getUser_integral(), bcd.getNeedPoints());
+                        BigDecimal integral = Utils.setScale(nwdBcsub);
+                        dm.setUser_integral(integral);
+                        drMemberDAO.updateByPrimaryKey(dm);
+                        BypMemberIntegral bmi = new BypMemberIntegral(null, 1,
+                                uid, new BigDecimal("-" + bcd.getNeedPoints().toString()), new Date(), 1);
+
+                        bypMemberIntegralDAO.insert(bmi);
+                        //查询客户是否有地址
+                        JsMemberInfo selectMemberInfoByUid = jsMemberInfoDAO.selectMemberInfoByUid(uid);
+                        if (Utils.isObjectEmpty(selectMemberInfoByUid)) {
+                            //插入客户兑换记录
+                            BypCommodityDetail bcdl = new BypCommodityDetail(null, null, bcd.getPrid(), uid, 1, new Date(), null, null, null, null);
+                            insertSelective(bcdl);
+                            br.setErrorMsg("用户地址表空");
+                            map.put("address", false);
+                            br.setMap(map);
+                        } else {
+                            //插入客户兑换记录
+                            BypCommodityDetail bcdl = new BypCommodityDetail(null, null, bcd.getPrid(), uid, 1, new Date(), null, null, null, selectMemberInfoByUid.getAddress());
+                            bypCommodityDetailDAO.insertSelective(bcdl);
+                            map.put("address", true);
+                            br.setMap(map);
+                        }
+                        //插入站内信
+                        DrMemberMsg msg = new DrMemberMsg(uid, 0, 1, "恭喜您成功领取" + bcd.getPrizename() + "奖励！", new Date(), 0, 0, "恭喜您在“捕鱼达人活动-4月有豪礼”成功领取" +
+                                bcd.getPrizename() +
+                                "，奖励于活动结束后3-15个工作日统一发放，别忘了填写正确的邮寄地址，有疑问请联系客服：400-820-4684，奖励可以多次领取！");
+                        drMemberMsgDAO.insertDrMemberMsg(msg);
+                        br.setSuccess(true);
+                    } else {
+                        br.setErrorCode("1003");
+                        br.setErrorMsg("用户没有那么多优币");
+                        log.error("用户" + uid + "产品id" + pid + "：存在强制提交，马上禁用此用户");
+                    }
+                } else {
+                    br.setErrorCode("1002");
+                    br.setErrorMsg("系统繁忙稍后重试");
+                    log.error("用户" + uid + "产品id" + pid + "：存在强制提交，马上禁用此用户");
+                }
+            } else {
+                br.setErrorMsg("活动已过期");
+                br.setSuccess(false);
+                br.setErrorCode("9997");
+                return br;
+            }
+        } catch (Exception e) {
+            log.error("双旦兑换实物", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            e.printStackTrace();
+        } finally {
+            redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert() + uid, value);
+        }
+        return br;
+    }
+
+    @Override
+    public List<BypCommodityDetail> selectMyAward(Map<String, Object> map) {
+        // TODO Auto-generated method stub
+        return bypCommodityDetailDAO.selectMyAward(map);
+    }
+
+    /**
+     * 积分商城实物兑换
+     *
+     * @param uid
+     * @param pid
+     * @return
+     */
+    @Override
+    public BaseResult updateIntegralConvertGiftByUidAndPid(Integer uid, String pid, Integer number) {
+        DrMember dm = null;
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        try {
+            // 查询用户是否拥有满足条件的积分
+            BypCommodity bcd = bypCommodityDAO.selectCommodityByPid(Integer.parseInt(pid));
+            log.info("奖品积分:" + bcd.getNeedPoints());
+            dm = drMemberDAO.selectByPrimaryKey(uid);
+            if (dm.getUserIntegralUse().compareTo(bcd.getNeedPoints().multiply(new BigDecimal(number))) >=0 ) {
+                for (int i = 0; i < number; i++) {
+                    log.info("用户积分:" + dm.getUserIntegralUse());
+                    if (dm.getUserIntegralUse() == null) dm.setUserIntegralUse(new BigDecimal(0));
+                    if (dm.getUserIntegralUse().compareTo(bcd.getNeedPoints()) == 0 || dm.getUserIntegralUse().compareTo(bcd.getNeedPoints()) == 1) {
+                        // 修改客户积分
+                        BigDecimal nwdBcsub = Utils.nwdBcsub(dm.getUserIntegralUse(), bcd.getNeedPoints());
+                        BigDecimal integral = Utils.setScale(nwdBcsub);
+                        dm.setUserIntegralUse(integral);
+                        drMemberDAO.updateByPrimaryKey(dm);
+                        // 插入积分使用记录
+                        UserDetailIntegralBean bmi = new UserDetailIntegralBean(
+                                null, uid, 4, new BigDecimal("-" + bcd.getNeedPoints().toString()), new Date(), new Date(), null, null);
+                        userDetailIntegralDao.insert(bmi);
+                        // 查询客户是否有地址
+                        JsMemberInfo selectMemberInfoByUid = jsMemberInfoDAO
+                                .selectMemberInfoByUid(uid);
+                        if (Utils.isObjectEmpty(selectMemberInfoByUid)) {
+                            // 插入客户兑换记录
+                            BypCommodityDetail bcdl = new BypCommodityDetail(
+                                    null, null, bcd.getPrid(), uid, 1,
+                                    new Date(), null, null, null, null);
+                            insertSelective(bcdl);
+                            br.setErrorMsg("用户地址表空");
+                            map.put("address", false);
+                            br.setMap(map);
+                        } else {
+                            // 插入客户兑换记录
+                            BypCommodityDetail bcdl = new BypCommodityDetail(
+                                    null, null, bcd.getPrid(), uid, 1,
+                                    new Date(), null, null, null,
+                                    selectMemberInfoByUid.getAddress());
+                            bypCommodityDetailDAO.insertSelective(bcdl);
+                            map.put("address", true);
+                            br.setMap(map);
+                        }
+                        // 发送站内信
+//						//根据UID和创建查询用户礼品
+//						BypCommodityDetail bypCommodityDetail = bypCommodityDetailDAO.selectConvertGiftByUid(uid);
+//						DrMemberMsg msg = new DrMemberMsg(uid, 0, 1, "恭喜您成功兑换" + bypCommodityDetail.getPrizeName() + "！", new Date(), 0, 0, "恭喜成功兑换" + bypCommodityDetail.getPrizeName() + "，积分商品在3-15个工作日统一发放，别忘了填写正确的邮寄地址，有疑问请联系客服：400-066-8969，物品可以多次兑换哦！");
+//						drMemberMsgDAO.insertDrMemberMsg(msg);
+                        br.setSuccess(true);
+
+                    } else {
+                        br.setErrorCode("1003");
+                        br.setErrorMsg("用户没有那么多优币");
+                        log.error("用户" + uid + "产品id" + pid + "：用户积分不足");
+                        break;
+                    }
+                }
+            }else {
+                br.setErrorCode("1003");
+                br.setErrorMsg("用户没有那么多优币");
+                log.error("用户" + uid + "产品id" + pid + "：用户积分不足");
+            }
+        } catch (Exception e) {
+            log.error("积分商城实物兑换", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            e.printStackTrace();
+        }
+
+        return br;
+    }
+
+    /**
+     * 积分商城红包兑换
+     *
+     * @param uid
+     * @param pid
+     * @return
+     */
+    @Override
+    public BaseResult updateIntegralRedPacketByUidAndPid(Integer uid, String pid, Integer number) {
+
+        DrMember dm = null;
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        try {
+            // 查询用户是否拥有满足条件的积分
+            BypCommodity bcd = bypCommodityDAO.selectCommodityByPid(Integer.parseInt(pid));
+            log.info("奖品积分:" + bcd.getNeedPoints());
+            dm = drMemberDAO.selectForUpDateByPrimaryKey(uid);
+            if (dm.getUserIntegralUse().compareTo(bcd.getNeedPoints().multiply(new BigDecimal(number))) >=0 ) {
+                for (int i = 0; i < number; i++) {
+                log.info("用户积分:" + dm.getUserIntegralUse());
+                if (dm.getUserIntegralUse() == null) dm.setUserIntegralUse(new BigDecimal(0));
+                if (dm.getUserIntegralUse().compareTo(bcd.getNeedPoints()) == 0 || dm.getUserIntegralUse().compareTo(bcd.getNeedPoints()) == 1) {
+                    // 修改客户积分
+                    BigDecimal nwdBcsub = Utils.nwdBcsub(dm.getUserIntegralUse(), bcd.getNeedPoints());
+                    BigDecimal integral = Utils.setScale(nwdBcsub);
+                    dm.setUserIntegralUse(integral);
+                    drMemberDAO.updateByPrimaryKey(dm);
+                    // 插入积分使用记录
+                    UserDetailIntegralBean bmi = new UserDetailIntegralBean(null, uid, 4, new BigDecimal("-" + bcd.getNeedPoints().toString()), new Date(), new Date(), null, null);
+                    userDetailIntegralDao.insert(bmi);
+                    //领取红包
+                    map.put("uid", uid);
+                    map.put("remark", "");
+                    map.put("code", bcd.getCode());
+                    DrMemberFavourable favourable = drMemberFavourableDAO.getMemberFavourableByCode(map);
+                    favourable.setRemark("优币兑换");
+                    drMemberFavourableDAO.insertIntoInfo(favourable);
+//					// 查询客户是否有地址
+//					JsMemberInfo selectMemberInfoByUid = jsMemberInfoDAO
+//							.selectMemberInfoByUid(uid);
+//					if (Utils.isObjectEmpty(selectMemberInfoByUid)) {
+//						// 插入客户兑换记录
+//						BypCommodityDetail bcdl = new BypCommodityDetail(
+//								null, null, bcd.getPrid(), uid, 1,
+//								new Date(), null, null, null, null);
+//						insertSelective(bcdl);
+//						br.setErrorMsg("用户地址表空");
+//						map.put("address", false);
+//						br.setMap(map);
+//					} else {
+                    // 插入客户兑换记录
+                    BypCommodityDetail bcdl = new BypCommodityDetail(
+                            null, bcd.getCode(), bcd.getPrid(), uid, 1,
+                            new Date(), null, null, null,
+                            null);
+                    bypCommodityDetailDAO.insertSelective(bcdl);
+                    map.put("address", true);
+                    br.setMap(map);
+//					}
+                    // 发送站内信
+                    //根据UID和创建查询用户礼品
+//						BypCommodityDetail bypCommodityDetail = bypCommodityDetailDAO.selectConvertGiftByUid(uid);
+//						DrMemberMsg msg = new DrMemberMsg(uid, 0, 1, "恭喜您成功兑换" + bypCommodityDetail.getPrizeName() + "！", new Date(), 0, 0, "恭喜您在成功兑换" + bypCommodityDetail.getPrizeName() + "，有疑问请联系客服：400-066-8969，红包可以多次兑换哦！");
+//						drMemberMsgDAO.insertDrMemberMsg(msg);
+                    br.setSuccess(true);
+                    } else {
+                        br.setErrorCode("1003");
+                        br.setErrorMsg("用户没有那么多优币");
+                        log.error("用户" + uid + "产品id" + pid + "：用户积分不足");
+                        break;
+                    }
+                }
+            }else {
+                br.setErrorCode("1003");
+                br.setErrorMsg("用户没有那么多优币");
+                log.error("用户" + uid + "产品id" + pid + "：用户积分不足");
+            }
+        } catch (Exception e) {
+            log.error("积分商城实物兑换", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            e.printStackTrace();
+        }
+        return br;
+    }
+
+
+    @Override
+    public BaseResult getFruitsByUidAndPid(DrMember dm, String pid) {
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<String, Object>();
+        try {
+            BypCommodityDetail detail = bypCommodityDetailDAO.selectToHelpFarmersBypCommodity(dm.getUid(),Integer.parseInt(pid));
+            if (detail != null){
+                br.setErrorCode("9998");
+                br.setErrorMsg("已经兑换过了！");
+                return br;
+            }
+            // 查询用户是否拥有满足条件的积分
+            BypCommodity bcd = bypCommodityDAO.selectCommodityByPid(Integer.parseInt(pid));
+            dm = drMemberDAO.selectByPrimaryKey(dm.getUid());
+            log.info("用户爱心:" + dm.getUser_integral());
+            if (dm.getUser_integral() == null) dm.setUser_integral(new BigDecimal(0));
+            if (dm.getUser_integral().compareTo(new BigDecimal(5))>= 0) {
+                dm.setUser_integral(dm.getUser_integral().subtract(new BigDecimal(5)));
+                bcd.setRepertory(bcd.getRepertory().add(new BigDecimal(5)));
+                // 查询客户是否有地址
+                JsMemberInfo selectMemberInfoByUid = jsMemberInfoDAO
+                        .selectMemberInfoByUid(dm.getUid());
+                if (Utils.isObjectEmpty(selectMemberInfoByUid)) {
+                    // 插入客户兑换记录
+                    BypCommodityDetail bcdl = new BypCommodityDetail(
+                            null, null, bcd.getPrid(), dm.getUid(), 1,
+                            new Date(), null, null, null, null);
+                    insertSelective(bcdl);
+                    br.setErrorMsg("用户地址表空");
+                    map.put("address", false);
+                    br.setMap(map);
+                } else {
+                    // 插入客户兑换记录
+                    BypCommodityDetail bcdl = new BypCommodityDetail(
+                            null, bcd.getCode(), bcd.getPrid(), dm.getUid(), 1,
+                            new Date(), null, null, null,
+                            selectMemberInfoByUid.getAddress());
+                    bypCommodityDetailDAO.insertSelective(bcdl);
+                    map.put("address", true);
+                    br.setMap(map);
+                }
+                drMemberDAO.updateByPrimaryKey(dm);
+                bypCommodityDAO.updateByPrimaryKeySelective(bcd);
+                // 发送站内信
+                //根据UID和创建查询用户礼品
+//						BypCommodityDetail bypCommodityDetail = bypCommodityDetailDAO.selectConvertGiftByUid(uid);
+                DrMemberMsg msg = new DrMemberMsg(dm.getUid(), 0, 1, "您已成功兑换5斤猕猴桃！", new Date(), 0, 0, "感谢您对大秦岭果农的支持，耐心等待快递小哥上门，品尝果农收获的喜悦。分享给您的好友，一起来助力果农吧！");
+                drMemberMsgDAO.insertDrMemberMsg(msg);
+                br.setSuccess(true);
+            } else {
+                br.setErrorCode("1003");
+                br.setErrorMsg("用户没有那么多爱心");
+                log.error("用户" + dm.getUid() + "产品id" + pid + "：用户积分不足");
+            }
+        } catch (Exception e) {
+            log.error("公益活动猕猴桃兑换", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            e.printStackTrace();
+        }
+        return br;
+    }
+
+    @Override
+    public BaseResult getLoveByUidAndPid(DrMember dm, String pid, Integer number) {
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<String, Object>();
+        try {
+            // 查询用户是否拥有满足条件的积分
+            BypCommodity bcd = bypCommodityDAO.selectCommodityByPid(Integer.parseInt(pid));
+            dm = drMemberDAO.selectByPrimaryKey(dm.getUid());
+            log.info("用户爱心:" + dm.getUser_integral());
+            if (dm.getUser_integral() == null) dm.setUser_integral(new BigDecimal(0));
+            if (dm.getUser_integral().compareTo(new BigDecimal(1)) >= 0) {
+                dm.setUser_integral(dm.getUser_integral().subtract(new BigDecimal(number)));
+                bcd.setRepertory(bcd.getRepertory().add(new BigDecimal(number)));
+                // 插入客户兑换记录
+                BypCommodityDetail bcdl = new BypCommodityDetail(
+                        null, bcd.getCode(), bcd.getPrid(), dm.getUid(), 0,
+                        new Date(), null, null, null,
+                        null,number);
+                bypCommodityDetailDAO.insertSelective(bcdl);
+                map.put("address", true);
+                br.setMap(map);
+                drMemberDAO.updateByPrimaryKey(dm);
+                bypCommodityDAO.updateByPrimaryKeySelective(bcd);
+                // 发送站内信
+//                    根据UID和创建查询用户礼品
+//                    标题：您的“心益”已收到！
+//                    正文：感谢您对公益活动的支持，爱心值已增涨为5颗，献出您的爱心吧，不要让他们等太久！
+                DrMemberMsg msg = new DrMemberMsg(dm.getUid(), 0, 1, "您捐赠的“心益”已收到！", new Date(), 0, 0, "感谢您为聋哑儿童捐赠了"+number+"颗爱心，感谢您的爱心温暖了孩子们无声的世界。分享给您身边的好友，让更多的热心人来关注这群来自“星星的孩子”。");
+                drMemberMsgDAO.insertDrMemberMsg(msg);
+                br.setSuccess(true);
+            } else {
+                br.setErrorCode("1003");
+                br.setErrorMsg("用户没有那么多爱心");
+                log.error("用户" + dm.getUid() + "产品id" + pid + "：用户积分不足");
+            }
+        } catch (Exception e) {
+            log.error("公益活动爱心兑换", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            e.printStackTrace();
+        }
+        return br;
+    }
+
+    @Override
+    public List<Map<String,Object>> selectToHelpFarmersTop(Map<String, Object> map) {
+        return  bypCommodityDetailDAO.selectToHelpFarmersTop(map);
+    }
+
+    @Override
+    public List<Map<String,Object>> selectToHelpFarmers(Map<String, Object> map) {
+        return bypCommodityDetailDAO.selectToHelpFarmers(map);
+    }
+
+}

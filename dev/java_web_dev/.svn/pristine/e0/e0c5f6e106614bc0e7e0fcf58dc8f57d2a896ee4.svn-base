@@ -1,0 +1,22 @@
+package com.jsjf.dao.activity;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.BypCommodityDetail;
+
+public interface BypCommodityDetailDAO {
+
+	public List<BypCommodityDetail>  doubleTwelve(Integer uid);
+
+	public void insertSelective(BypCommodityDetail bcdl);
+
+	public List<BypCommodityDetail> selectTopIntegralLog();
+
+	/**根据UID查询礼品信息
+	 * @param uid
+	 * @return
+	 */
+	public BypCommodityDetail selectConvertGiftByUid(Integer uid);
+
+}

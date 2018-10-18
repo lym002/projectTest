@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFundsRecordDAO" >
+	<resultMap id="DrMemberFundsRecordResult" type="com.jsjf.model.member.DrMemberFundsRecord" >
+	<result column="id" property="id" jdbcType="INTEGER" />
+	<result column="pid" property="pid" jdbcType="INTEGER" />
+	<result column="investId" property="investId" jdbcType="INTEGER" />
+	<result column="tradeType" property="tradeType" jdbcType="INTEGER" />
+	<result column="uid" property="uid" jdbcType="INTEGER" />
+	<result column="type" property="type" jdbcType="INTEGER" />
+	<result column="amount" property="amount" jdbcType="DECIMAL" />
+	<result column="balance" property="balance" jdbcType="DECIMAL" />
+	<result column="status" property="status" jdbcType="INTEGER" />
+	<result column="remark" property="remark" jdbcType="VARCHAR" />
+	<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+	<result column="orderNo" property="orderNo" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMemberFundsRecord" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_member_funds_record (pid, investId, tradeType, uid, type, amount, balance, status, remark, addtime, orderNo)
+		values (#{pid}, #{investId}, #{tradeType}, #{uid}, #{type}, #{amount}, #{balance}, #{status}, #{remark}, SYSDATE(),#{orderNo})
+	</insert>
+	<select id="selectMemberFundsRecordListByParam" parameterType="java.util.HashMap" resultMap="DrMemberFundsRecordResult">
+		select pid, investId, tradeType, uid, type, amount, balance, status, remark, addtime, orderNo
+		from dr_member_funds_record
+		<trim prefix=" where " prefixOverrides="and">
+			amount > 0
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="startDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+			<if test="endDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+			<if test="tradeType != null "> and tradeType = #{tradeType} </if>
+		</trim>
+		order by addTime desc,id desc
+		limit #{offset},#{limit}
+	</select>
+    <select id="selectMemberFundsRecordListByParams" parameterType="java.util.HashMap" resultMap="DrMemberFundsRecordResult">
+        select dmfr.pid,dpi.fid,dmf.type dtype, dmfr.investId, dmfr.tradeType, dmfr.uid, dmfr.type,
+        case when dmf.type = 2 then dmfr.amount-dpi.amount-dmf.profitAmount  else dpi.factInterest end
+        as amount,dmf.profitAmount, dmfr.balance, dmfr.status, dmfr.remark, dmfr.addtime, dmfr.orderNo
+        from dr_member_funds_record dmfr
+        LEFT JOIN
+        dr_product_invest dpi on dpi.id=dmfr.investId
+        LEFT JOIN dr_member_favourable dmf on dmf.id=dpi.fid
+        LEFT JOIN dr_product_info dpf on dpf.id=dpi.pid
+        <trim prefix=" where " prefixOverrides="and">
+            dmfr.amount > 0
+            <if test="uid != null "> and dmfr.uid = #{uid}</if>
+            <if test="startDate != null"> and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+            <if test="endDate != null"> and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+            <if test="tradeType != null "> and dmfr.tradeType = #{tradeType} </if>
+            <if test="type != null "> and dmfr.type = #{type} </if>
+        </trim>
+    </select>
+    <select id="selectMemberFundsRecordByParam" parameterType="java.util.HashMap" resultMap="DrMemberFundsRecordResult">
+        select pid, investId, tradeType, uid, type, amount, balance, status, remark, addtime, orderNo
+        from dr_member_funds_record
+        <trim prefix=" where " prefixOverrides="and">
+            amount > 0
+            <if test="uid != null "> and uid = #{uid}</if>
+            <if test="type != null "> and type = #{type}</if>
+            <if test="startDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+            <if test="endDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+            and tradeType in(4,7)
+            <if test="notlike1 != null ">and remark not like CONCAT('%','${notlike1}','%' )</if>
+        </trim>
+    </select>
+	<select id="selectMemberFundsRecordListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(id)
+		from dr_member_funds_record
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="startDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+			<if test="endDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+			<if test="tradeType != null "> and tradeType = #{tradeType} </if>
+		</trim>
+	</select>
+	
+	<update id="updateStatusByNo" parameterType="com.jsjf.model.member.DrMemberFundsRecord" >
+    	update dr_member_funds_record
+	    <set>
+	    	<if test="status != null">
+			status = #{status:INTEGER},
+			</if>
+	    	<if test="balance != null">
+	      	balance = #{balance:DECIMAL}
+	      	</if>
+		</set> 
+   		where orderNo = #{orderNo:VARCHAR}
+  	</update>
+  	<!-- 累计收益记录 -->
+  	<select id="selectAccumulatedIncomeByUid" parameterType="com.jsjf.model.member.DrMemberFundsRecord" resultType="java.util.HashMap">
+			SELECT IF(record.tradeType IN(4,7),record.amount,(invest.factInterest)) AS amount,
+			SUBSTRING_INDEX(record.remark,"，",1) AS remark,record.addTime,record.tradeType
+			FROM `dr_member_funds_record` record
+			LEFT JOIN `dr_product_invest` invest ON record.investId = invest.id
+			WHERE record.tradeType IN(4,6,7) AND  record.`TYPE` =1 AND record.`STATUS` =3
+			<if test = "uid != null">
+				and record.uid = #{uid}
+			</if>
+			order by record.addTime desc
+			limit #{offset},#{limit}
+	</select>
+	<!-- 累计收益记录Count -->
+  	<select id="selectAccumulatedIncomeByUidCount" parameterType="com.jsjf.model.member.DrMemberFundsRecord" resultType="Integer">
+			SELECT count(1)
+			FROM `dr_member_funds_record` record
+			LEFT JOIN `dr_product_invest` invest ON record.investId = invest.id
+			WHERE record.tradeType IN(4,6,7) AND  record.`TYPE` =1 AND record.`STATUS` =3
+			<if test = "uid != null">
+				and record.uid = #{uid}
+			</if>
+	</select>
+	<!-- 累计收益 -->
+	<select id="selectAccumulatedIncomeSumByUid" parameterType="com.jsjf.model.member.DrMemberFundsRecord" resultType="DECIMAL">
+			SELECT 
+			ifNull(SUM(IF(record.tradeType IN(4,7),record.amount,(invest.factInterest))),0) AS sumAmount
+			FROM `dr_member_funds_record` record
+			LEFT JOIN `dr_product_invest` invest ON record.investId = invest.id and invest.status != 2
+			WHERE record.tradeType IN(4,6,7) AND  record.`TYPE` =1 AND record.`STATUS` =3
+			<if test = "uid != null">
+				and record.uid = #{uid}
+			</if>
+	</select>
+	<select id="selectInvestSumByOnlineTime" resultType="java.lang.Integer">
+		SELECT SUM(dri.amount) FROM dr_product_invest dri
+		JOIN dr_product_info dr ON dri.pid = dr.id
+		WHERE dri.uid = #{uid} AND dri.`status` != 2 and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{addTime},'%Y-%m-%d')
+		<if test="endTime != null">
+			and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endTime},'%Y-%m-%d')
+		</if>
+		and dr.type = 2 and dr.prizeId is null GROUP BY dri.uid
+	</select>
+	<select id="selectInvestListCountByParam" resultType="java.lang.Integer">
+		SELECT dri.id FROM dr_product_invest dri
+		JOIN dr_product_info dr ON dri.pid = dr.id
+		WHERE dri.uid = #{uid} AND dri.`status` != 2
+		and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d')
+		<if test="endDate != null">
+			and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d')
+		</if>
+		and dr.type = 2 and dr.prizeId is null limit 1
+	</select>
+	<select id="selectFristRechar" resultType="java.lang.Integer">
+		SELECT count(id) FROM dr_member_funds_record WHERE amount <![CDATA[ >= ]]>100 AND uid = #{uid} AND tradeType = #{tradeType} and addTime > #{addTime} ORDER BY `addTime`
+	</select>
+</mapper>

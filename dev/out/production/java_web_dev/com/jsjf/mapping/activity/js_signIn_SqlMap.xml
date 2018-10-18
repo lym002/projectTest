@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsSignInDAO">
+	<resultMap id="DrActivityParameterResult" type="com.jsjf.model.activity.JsSignIn">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="signNu" property="signNu" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	<update id="update" parameterType="com.jsjf.model.activity.JsSignIn">
+		update js_signIn 
+			<trim prefix="set" suffixOverrides="," >
+				<if test="signNu != null"> signNu = #{signNu},</if>
+				<if test="updateTime != null"> updateTime = #{updateTime},</if>
+			</trim>	
+		where id = #{id}
+	</update>
+	<insert id="insert" parameterType="com.jsjf.model.activity.JsSignIn">
+		INSERT INTO js_signIn ( type, signNu, uid, addtime, updateTime) 
+		VALUES ( #{type}, #{signNu}, #{uid}, #{addtime}, #{updateTime});
+	</insert>
+	<select id="selectObjectByMap" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.JsSignIn">
+		SELECT id,type,signNu,uid,addtime,updateTime from js_signIn  
+		<where>
+			<if test="type != null"> and type = #{type} </if>
+			<if test="uid != null"> and uid = #{uid}</if>
+			<if test="signInTime != null"> and DATE_FORMAT(addtime,'%Y%m') = DATE_FORMAT(#{signInTime},'%Y%m') </if>
+			<if test="updateTime != null"> and DATE_FORMAT(updateTime,'%Y%m%d') = DATE_FORMAT(#{updateTime},'%Y%m%d') </if>
+		</where>
+	</select>
+	
+	<!--  -->
+	<select id="updateSignInTop" parameterType="Integer" resultType="java.util.HashMap">
+		SELECT CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.mobilePhone,a.signNu,a.uid from (
+			SELECT CONCAT(LEFT(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) mobilePhone,jsi.signNu,jsi.updateTime,jsi.uid from js_signIn jsi 
+			LEFT JOIN dr_member dm ON jsi.uid = dm.uid
+			where  DATE_FORMAT(jsi.addtime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') and jsi.type = #{type}
+			)a,(SELECT @rownum:=0) r
+		 ORDER BY a.signNu desc ,a.updateTime limit 10			
+	</select>
+	<!--当月老用户投资情况  -->
+	<select id="updateOldMemberTop"  resultType="java.util.HashMap">
+		SELECT CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.uid,a.mobilePhone,a.interest from (
+			SELECT dm.uid,CONCAT(LEFT(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) mobilePhone,TRUNCATE(SUM(dpi.amount*dp.deadline/360),2) as interest,MAX(dpi.id) as investId from dr_member dm 
+			LEFT JOIN dr_product_invest dpi ON dpi.uid = dm.uid AND DATE_FORMAT(dpi.investTime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') and dpi.status > 0 and dpi.status !=2
+			LEFT JOIN dr_product_info dp on dp.id = dpi.pid  AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and dp.deadline in (30,35,60,180)
+			WHERE DATE_FORMAT(NOW(),'%Y%m') > DATE_FORMAT(dm.regdate,'%Y%m')  and dp.id GROUP BY dm.uid 
+		)a,(SELECT @rownum:=0) r
+		ORDER BY a.interest desc,a.investId 
+	</select>
+	<!--  -->
+	<select id="updateNewMemberTop" resultType="java.util.HashMap">
+		SELECT CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.uid,a.mobilePhone,a.interest from (
+			SELECT dm.uid,CONCAT(LEFT(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) mobilePhone,TRUNCATE(SUM(dpi.amount*dp.deadline/360),2) as interest,MAX(dpi.id) as investId from dr_member dm 
+			LEFT JOIN dr_product_invest dpi ON dpi.uid = dm.uid AND DATE_FORMAT(dpi.investTime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m')  and dpi.status > 0 and dpi.status !=2
+			LEFT JOIN dr_product_info dp on dp.id = dpi.pid  AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and dp.deadline in (30,35,60,180)
+			WHERE DATE_FORMAT(dm.regdate,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') and dp.id GROUP BY dm.uid 
+		)a,(SELECT @rownum:=0) r
+		ORDER BY a.interest desc,a.investId 
+	</select>
+	<!--  -->
+	<select id="updateRecommMemberTop"  resultType="java.util.HashMap">
+		SELECT CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.uid,a.mobilePhone,a.recommNu from (
+			SELECT dm.uid,CONCAT(LEFT(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) as mobilePhone,COUNT(1) as recommNu,tdp.investId  
+			from dr_member_recommended dmr
+			LEFT JOIN dr_member dm on dm.uid = dmr.referrerId
+			LEFT JOIN 
+			(	SELECT dpi.uid,MAX(dpi.id) as investId from dr_product_invest dpi  
+					LEFT JOIN dr_product_info dp ON dp.id = dpi.pid  AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and dp.deadline in (30,35,60,180)
+					where  dp.id AND DATE_FORMAT(dpi.investTime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') and dpi.status > 0 and dpi.status !=2 GROUP BY dpi.uid
+			)tdp ON tdp.uid = dmr.uid
+			where dmr.referrerId and tdp.uid and DATE_FORMAT(dmr.addtime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') GROUP BY dm.uid
+		)a,(SELECT @rownum:=0) r ORDER BY a.recommNu desc,a.investId 
+	</select>
+	
+		
+</mapper>

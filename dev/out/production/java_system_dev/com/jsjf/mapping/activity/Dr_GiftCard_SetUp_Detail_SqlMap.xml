@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrGiftCardSetUpDetailDAO">
+	<resultMap id="DrDrGiftCardSetUpResult" type="com.jsjf.model.activity.DrGiftCardSetUpDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="parentId" property="parentId" jdbcType="INTEGER" />
+		<result column="giftCard" property="giftCard" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="issueTime" property="issueTime" jdbcType="TIMESTAMP" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="getDrGiftCardSetUpDetailListByParentId" parameterType="java.util.HashMap" resultMap="DrDrGiftCardSetUpResult">
+		select l.*,u.name as addName
+		 from  dr_giftCard_setUp_detail l 
+		LEFT JOIN sys_users u ON l.addUser = u.user_ky
+		<where>
+			<if test="parentId != null"> and parentId = #{parentId}</if>
+		</where>
+		order by l.status desc
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getDrGiftCardSetUpDetailList"  parameterType="java.util.HashMap" resultMap="DrDrGiftCardSetUpResult">
+		select l.id,l.parentId,concat(substring(l.giftCard,1,LENGTH(l.giftCard)-4),"****") as giftCard,
+		l.status,l.investId,l.issueTime,l.uid,l.addTime,h.`name` as name,c.`name` as channelName,
+		concat(LEFT(m.mobilePhone,3),"****",RIGHT(m.mobilePhone,4)) mobilePhone,
+		pi.amount as investAmount,p.deadline as deadline,u.name as addName
+		 from  dr_giftCard_setUp_detail l 
+		left JOIN dr_giftCard_setUp h ON  l.parentId = h.id
+		LEFT JOIN dr_channel_info c ON h.channelId = c.id
+		LEFT JOIN dr_member m ON l.uid = m.uid
+		LEFT JOIN dr_product_invest pi ON l.investId = pi.id
+		LEFT JOIN dr_product_info p ON pi.pid = p.id
+		LEFT JOIN sys_users u ON l.addUser = u.user_ky
+		<where>
+			<if test="parentId != null">
+				and l.parentId = #{parentId}
+			</if>
+			<if test="channelId != null">
+				and h.channelId = #{channelId}
+			</if>
+			<if test="name != null">
+				and instr(h.name, #{name} )>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and DATE_FORMAT(l.issueTime,'%Y%m%d') >= DATE_FORMAT(#{startDate},'%Y%m%d') ]]>
+			</if>
+			<if test="endDate != null and endDate !=''">
+				<![CDATA[ and DATE_FORMAT(l.issueTime,'%Y%m%d') <= DATE_FORMAT(#{endDate},'%Y%m%d') ]]>
+			</if>
+		</where>
+		order by l.status desc
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getDrGiftCardSetUpDetailCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(1) from  dr_giftCard_setUp_detail l 
+		left JOIN dr_giftCard_setUp h ON  l.parentId = h.id
+		<where>
+			<if test="parentId != null">
+				and l.parentId = #{parentId}
+			</if>
+			<if test="channelId != null">
+				and h.channelId = #{channelId}
+			</if>
+			<if test="name != null">
+				and instr(h.name, #{name} )>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[ and DATE_FORMAT(l.issueTime,'%Y%m%d') >= DATE_FORMAT(#{startDate},'%Y%m%d') ]]>
+			</if>
+			<if test="endDate != null and endDate !=''">
+				<![CDATA[ and DATE_FORMAT(l.issueTime,'%Y%m%d') <= DATE_FORMAT(#{endDate},'%Y%m%d') ]]>
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertDrGiftCardSetUpDetail" parameterType="com.jsjf.model.activity.DrGiftCardSetUp" keyProperty="id" useGeneratedKeys="true">
+		insert into dr_giftCard_setUp_detail(parentId,giftCard,status,investId,issueTime,uid,addUser,addTime)
+		values(#{parentId},#{giftCard},1,#{investId},#{issueTime},#{uid},#{addUser},sysdate())
+	</insert>
+	
+	<insert id="batchInsert">
+		<foreach collection="list" item="item" separator=";" >
+			insert into dr_giftCard_setUp_detail(parentId,giftCard,status,investId,issueTime,uid,addUser,addTime)
+			values(#{item.parentId},#{item.giftCard},1,#{item.investId},#{item.issueTime},#{item.uid},#{item.addUser},sysdate())
+		</foreach>
+	</insert>
+	
+	<select id="getDrGiftCardSetUpDetailById" parameterType="Integer" resultType="com.jsjf.model.activity.DrGiftCardSetUpDetail">
+		select * from dr_giftCard_setUp_detail where id =#{id}
+	</select>
+	
+	<update id="updateDrGiftCardSetUpDetailStatus" parameterType="Integer">
+		update dr_giftCard_setUp_detail set status=0 where id=#{id:INTEGER}
+	</update>
+</mapper>

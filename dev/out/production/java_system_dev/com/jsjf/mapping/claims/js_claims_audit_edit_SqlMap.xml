@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.JsClaimsAuditEditDAO">
+	<resultMap id="JsClaimsAuditEditResult" type="com.jsjf.model.claims.JsClaimsAuditEdit">
+		<result	column="id" property="id" jdbcType="INTEGER"/>
+		<result	column="lid" property="lid" jdbcType="INTEGER"/>
+		<result	column="type" property="type" jdbcType="INTEGER"/>
+		<result	column="status" property="status" jdbcType="INTEGER"/>
+		<result	column="addTime" property="addTime" jdbcType="TIMESTAMP"/>
+		<result	column="updateTime" property="updateTime" jdbcType="TIMESTAMP"/>
+		<result	column="updateUserKy" property="updateUserKy" jdbcType="INTEGER"/>
+		<result	column="addUserKy" property="addUserKy" jdbcType="INTEGER"/>
+		
+		<result	column="cache" property="cache" jdbcType="VARCHAR"/>
+	
+	</resultMap>
+	<sql id="Base_sql">
+		id,lid,type,addTime,updateTime,addUserKy,updateUserKy,cache
+	</sql>
+	
+	
+	<select id="selectByPrimaryKey" resultMap="JsClaimsAuditEditResult"	parameterType="int">
+		select <include refid="Base_sql"/> from js_claims_audit_edit where id=#{id}
+	</select>
+	<update id="update" parameterType="com.jsjf.model.claims.JsClaimsAuditEdit">
+		update js_claims_audit_edit 
+		<trim prefix="set" suffixOverrides="," >
+			updateTime = now(), 
+			<if test=" lid != null "> lid = #{lid},   </if>
+			<if test=" type != null "> type = #{type},   </if>
+			<if test=" status != null "> status = #{status},   </if>
+			<if test=" addUserKy != null "> addUserKy = #{addUserKy},   </if>
+			<if test=" updateUserKy != null "> updateUserKy = #{updateUserKy},   </if>
+			<if test=" cache != null "> cache = #{cache},   </if>
+		</trim>
+		where id = #{id}
+	</update>
+	
+	<insert id="insert" parameterType="com.jsjf.model.claims.JsClaimsAuditEdit">
+		insert js_claims_audit_edit (lid,type,status,addTime,updateTime,addUserKy,updateUserKy,cache)		
+								values(#{lid},#{type},#{status},now(),null,#{addUserKy},null,#{cache})
+	</insert>
+	<select id="selectByMap" resultMap="JsClaimsAuditEditResult"	parameterType="java.util.HashMap">
+		select <include refid="Base_sql"/> from js_claims_audit_edit
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id !=null">
+				and  id = #{id}
+			</if>
+			<if test="lid !=null">
+				and  lid = #{lid}
+			</if>
+			<if test="type !=null"> and type =#{type}</if>
+			<if test="status !=null"> and status = #{status} </if>
+			<if test="statuses !=null">
+				and status in 
+				<foreach collection="statuses" item="item" open="(" close=")" separator="," index="index">
+				 #{item}
+				</foreach>
+			
+			</if>
+			
+		</trim>
+		<if test="orders !=null and orders !='' ">
+			ORDER BY ${orders}
+		</if>
+		<if test="offset !=null and limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+
+	
+
+</mapper>

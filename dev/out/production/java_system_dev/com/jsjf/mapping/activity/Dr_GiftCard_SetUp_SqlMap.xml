@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrGiftCardSetUpDAO">
+	<resultMap id="DrDrGiftCardSetUpResult" type="com.jsjf.model.activity.DrGiftCardSetUp">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="channelId" property="channelId" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="onceQty" property="onceQty" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<select id="getDrGiftCardSetUpList"  parameterType="java.util.HashMap" resultMap="DrDrGiftCardSetUpResult">
+		select h.id,h.name,h.code,c.`name` channelName,c.`code` channelCode,h.`status`,h.startTime,h.endTime,count(l.id) totalQty,
+		sum(CASE when l.`status`=2 then 1 else 0 END) useQty,sum(CASE when l.`status`=1 then 1 ELSE 0 END) validQty,
+		sum(case when l.`status`=0 then 1 else 0 end) failureQty,h.onceQty,u1.`name` addName,h.addTime,u2.`name` updateName,h.updateTime
+		from dr_giftCard_setUp h 
+		left JOIN dr_channel_info c ON h.channelId = c.id
+		left join dr_giftCard_setUp_detail l ON h.id = l.parentId
+		left join sys_users u1 ON h.adduser = u1.user_ky
+		LEFT JOIN sys_users u2 on h.updateUser = u2.user_ky
+		<where>
+			<if test="name != null and name !=''">
+				and h.name = #{name}
+			</if>
+			<if test="channelId != null and channelId != ''">
+				and h.channelId = #{channelId}
+			</if>
+		</where>
+		GROUP BY h.id
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getDrGiftCardSetUpCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(1)
+		from dr_giftCard_setUp 
+		<where>
+			<if test="name != null and name !=''">
+				and name = #{name}
+			</if>
+			<if test="channelId != null and channelId != ''">
+				and channelId = #{channelId}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insertDrGiftCardSetUp" parameterType="com.jsjf.model.activity.DrGiftCardSetUp" keyProperty="id" useGeneratedKeys="true">
+		insert into dr_giftCard_setUp(name,code,channelId,status,startTime,endTime,onceQty,remark,addUser,addTime)
+		values(#{name},#{code},#{channelId},#{status},#{startTime},#{endTime},#{onceQty},#{remark},#{addUser},#{addTime})
+	</insert>
+	
+	<select id="getDrGiftCardSetUpById" parameterType="Integer"  resultType="com.jsjf.model.activity.DrGiftCardSetUp">
+		select * from dr_giftCard_setUp where id = #{id:INTEGER}
+		LIMIT 0,1
+	</select>
+	
+	<update id="updateDrGiftCardSetUp" parameterType="com.jsjf.model.activity.DrGiftCardSetUp">
+		update dr_giftCard_setUp 
+		<set>
+			<if test="name != null and name != ''">name=#{name},</if>
+			<if test="channelId != null and channelId != ''">channelId=#{channelId},</if>
+			<if test="status != null ">status=#{status},</if>
+			<if test="startTime != null and startTime != ''">startTime=#{startTime},</if>
+			<if test="endTime != null and endTime != ''">endTime=#{endTime},</if>
+			<if test="onceQty != null and onceQty != ''">onceQty=#{onceQty},</if>
+			<if test="remark != null and remark != ''">remark=#{remark},</if>
+			<if test="updateUser != null and updateUser != ''">updateUser=#{updateUser},</if>
+			updateTime = sysdate()
+		</set>
+		<where>
+			 id=#{id:INTEGER}
+		</where>
+	</update>
+</mapper>

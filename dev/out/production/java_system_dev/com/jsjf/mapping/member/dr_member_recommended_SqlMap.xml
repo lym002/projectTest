@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberRecommendedDAO">
+	<resultMap id="DrMemberRecommendedResult" type="com.jsjf.model.member.DrMemberRecommended">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="referrerId" property="referrerId" jdbcType="INTEGER" />
+		<result column="investTime" property="investTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="referrerReward" property="referrerReward" jdbcType="DECIMAL" />
+		<result column="addTime" property="type" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	
+	<select id="selectByPrimaryKey" parameterType="Integer" resultType="com.jsjf.model.member.DrMemberRecommended">
+		select * from dr_member_recommended where uid = #{uid}
+	</select>
+	
+	<!-- 插入推荐关系 -->
+	<insert id="insertMemberRecommended" parameterType="com.jsjf.model.member.DrMemberRecommended" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO dr_member_recommended(uid,referrerId,investTime,amount,addTime)
+		VALUES(#{uid},#{referrerId},#{investTime},#{amount},sysdate())
+	</insert>
+	
+	<!-- 获取好友列表 -->
+	<select id="getDrMemberRecommended" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberRecommended">
+		select dmr.id,dmr.uid,dm.mobilePhone,dmbi.realname,dmr.referrerId,dmr.investTime,dmr.amount,dmr.referrerReward,dmr.addTime
+		FROM dr_member_recommended dmr
+		LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dm.uid = dmbi.uid
+		<where>
+			<if test="uid != null"> and dmr.uid = #{uid}</if>
+			<if test="mobilephone != null"> and dm.mobilePhone=#{mobilephone}</if>
+			<if test="referrerId != null"> and dmr.referrerId=#{referrerId}</if>
+		</where>
+		order by dmr.referrerReward desc
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<!-- 获取好友汇总 -->
+	<select id="getDrMemberRecommendedCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(1)
+		FROM dr_member_recommended dmr
+		LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dm.uid = dmbi.uid
+		<where>
+			<if test="uid != null"> and dm.uid = #{uid}</if>
+			<if test="mobilephone"> and dm.mobilePhone=#{mobilephone}</if>
+			<if test="referrerId != null"> and dmr.referrerId=#{referrerId}</if>
+		</where>
+	</select>
+	
+	<!-- 更新好友首投记录和推荐奖励 -->
+	<update id="updateDrMemberRecommendedByUid" parameterType="com.jsjf.model.member.DrMemberRecommended">
+		update dr_member_recommended
+		<set>
+			<if test="investTime != null"> investTime = #{investTime},</if>
+			<if test="amount != null"> amount = #{amount},</if>
+			<if test="referrerReward != null"> referrerReward = #{referrerReward},</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+	
+	<!-- 根据手机号码获取用户推荐好友汇总信息 -->
+	<select id="getDrMemberRecommendedStat" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberRecommended">
+		select s.firendTotal,s.rewards ,sum(i.factAmount) as investTotal,count(f.id) as ticketTotal 
+		from (
+			select m.uid as uid,count(r.id) as firendTotal, sum(r.referrerReward) as rewards 
+			from dr_member m
+			LEFT JOIN dr_member_recommended r ON m.uid = r.referrerId
+			where m.mobilePhone=#{mobilephone}) as s 
+		LEFT JOIN dr_member_recommended rs ON s.uid = rs.referrerId
+		LEFT JOIN dr_product_invest i ON rs.uid = i.uid and i.`status` != 2
+		LEFT JOIN dr_member_favourable f ON s.uid = f.id and f.source = 2
+	</select>
+	
+	<update id="batchUpdate" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			update dr_member_recommended 
+			<trim prefix=" set " suffixOverrides=",">
+				<if test="item.investTime != null "> investTime = #{item.investTime},  </if>
+				<if test="item.amount != null "> amount = #{item.amount},  </if>
+				<if test="item.referrerReward != null "> referrerReward = #{item.referrerReward}, </if>
+			</trim>
+			<where>
+				uid = #{item.uid}
+			</where>
+		</foreach>
+	</update>
+</mapper>

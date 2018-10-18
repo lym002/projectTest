@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.integral.TaskIntegralRulesDao">
+    <resultMap id="BaseResultMap" type="com.jsjf.model.integral.TaskIntegralRules">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="task_type" jdbcType="VARCHAR" property="taskType"/>
+        <result column="task_integral" jdbcType="DECIMAL" property="taskIntegral"/>
+        <result column="task_money_require" jdbcType="DECIMAL" property="taskMoneyRequire"/>
+        <result column="is_first_task" jdbcType="INTEGER" property="isFirstTask"/>
+        <result column="add_time" jdbcType="TIMESTAMP" property="addTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+        <result column="is_open" jdbcType="INTEGER" property="isOpen"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+    id, task_type, task_integral, is_first_task,task_money_require, add_time, update_time, is_open
+  </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from byp_task_integral_rules
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <select id="selectByTaskName" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from byp_task_integral_rules
+        where task_type = #{taskType} and is_open = 0
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_task_integral_rules
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" parameterType="com.jsjf.model.integral.TaskIntegralRules">
+    insert into byp_task_integral_rules (id, task_type, task_integral, 
+      is_first_task, add_time, update_time, is_open
+      )
+    values (#{id,jdbcType=INTEGER}, #{taskType,jdbcType=VARCHAR}, #{taskIntegral,jdbcType=DECIMAL}, 
+      #{isFirstTask,jdbcType=INTEGER}, #{addTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{isOpen,jdbcType=INTEGER}
+      )
+  </insert>
+    <insert id="insertSelective" parameterType="com.jsjf.model.integral.TaskIntegralRules">
+        insert into byp_task_integral_rules
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                id,
+            </if>
+            <if test="taskType != null">
+                task_type,
+            </if>
+            <if test="taskIntegral != null">
+                task_integral,
+            </if>
+            <if test="isFirstTask != null">
+                is_first_task,
+            </if>
+            <if test="addTime != null">
+                add_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+            <if test="isOpen != null">
+                is_open,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=INTEGER},
+            </if>
+            <if test="taskType != null">
+                #{taskType,jdbcType=VARCHAR},
+            </if>
+            <if test="taskIntegral != null">
+                #{taskIntegral,jdbcType=DECIMAL},
+            </if>
+            <if test="isFirstTask != null">
+                #{isFirstTask,jdbcType=INTEGER},
+            </if>
+            <if test="addTime != null">
+                #{addTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isOpen != null">
+                #{isOpen,jdbcType=INTEGER},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.integral.TaskIntegralRules">
+        update byp_task_integral_rules
+        <set>
+            <if test="taskType != null">
+                task_type = #{taskType,jdbcType=VARCHAR},
+            </if>
+            <if test="taskIntegral != null">
+                task_integral = #{taskIntegral,jdbcType=DECIMAL},
+            </if>
+            <if test="isFirstTask != null">
+                is_first_task = #{isFirstTask,jdbcType=INTEGER},
+            </if>
+            <if test="addTime != null">
+                add_time = #{addTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isOpen != null">
+                is_open = #{isOpen,jdbcType=INTEGER},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.jsjf.model.integral.TaskIntegralRules">
+    update byp_task_integral_rules
+    set task_type = #{taskType,jdbcType=VARCHAR},
+      task_integral = #{taskIntegral,jdbcType=DECIMAL},
+      is_first_task = #{isFirstTask,jdbcType=INTEGER},
+      add_time = #{addTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      is_open = #{isOpen,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+    <select id="selectByType" resultMap="BaseResultMap">
+        select * from byp_task_integral_rules btir
+        <where>
+            <if test="type != null">
+                and btir.is_first_task = #{type}
+            </if>
+            and btir.is_open = 0
+        </where>
+    </select>
+    <select id="queryNextTaskByTaskMoney" resultType="com.jsjf.model.integral.TaskIntegralRules">
+        SELECT
+        id,task_type as taskType,task_integral as taskIntegral,is_first_task as isFirstTask,task_money_require as taskMoneyRequire,add_time as addTime,update_time as updateTime,is_open as isOpen
+         FROM byp_task_integral_rules WHERE task_money_require <![CDATA[ > ]]> #{amount} AND is_open = 0 AND task_type LIKE concat(concat('%',#{taskType}),'%') ORDER BY task_money_require  LIMIT 1
+    </select>
+    <select id="queryTaskList" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+         FROM byp_task_integral_rules WHERE task_money_require <![CDATA[ > ]]> #{amount} AND task_money_require <![CDATA[ <= ]]> #{maxAmount} AND is_open = 0 AND task_type LIKE concat(concat('%',#{taskType}),'%')  ORDER BY task_money_require
+    </select>
+</mapper>

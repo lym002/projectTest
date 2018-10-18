@@ -1,0 +1,31 @@
+package com.jsjf.dao.vip;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.BypCommodityDetailBean;
+import com.jsjf.model.vip.VipEquities;
+import org.apache.ibatis.annotations.Param;
+
+public interface VipEquitiesDao {
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(VipEquities record);
+
+    VipEquities selectByPrimaryKey(Integer id);
+
+    int updateVipInfo(VipEquities record);
+
+    int updateByPrimaryKey(VipEquities record);
+
+	List<VipEquities> queryQy();
+
+	List<VipEquities> queryVipEquitiesList(Map<String, Object> param);
+
+	Integer queryVipEquitiesListCount(Map<String, Object> param);
+
+	void addVipEquities(VipEquities bean);
+
+    VipEquities selectByEquitiesName(@Param("equitiesName") String equitiesName);
+
+}

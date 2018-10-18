@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.JsMemberInfoDAO">
+	<resultMap id="JsMemberInfo" type="com.jsjf.model.member.JsMemberInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR"/>
+		<result column="phone" property="phone" jdbcType="VARCHAR"/>
+		<result column="address" property="address" jdbcType="VARCHAR"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<update id="updateJsMemberInfo" parameterType="com.jsjf.model.member.JsMemberInfo" >
+    	update js_member_info
+    <set>
+    	<if test="uid != null"> uid = #{uid:INTEGER},</if>
+    	<if test="name != null"> name = #{name:CHAR},</if>
+    	<if test="phone != null"> phone = #{phone:CHAR},</if>
+    	<if test="address != null"> address = #{address:CHAR},</if>
+    	<if test="investId != null"> investId = #{investId:INTEGER},</if>
+    	updateTime = sysdate()
+    </set>
+	<where>
+		<choose>
+			<when test="id != null">
+				and id = #{id}
+			</when>
+			<otherwise>
+				<if test="uid != null"> and uid = #{uid:INTEGER} </if>
+				<if test="investId != null"> and investId = #{investId}</if>
+			</otherwise>
+		</choose>
+	</where>
+  </update>
+  
+  <insert id = "insertJsMemberInfo" parameterType = "com.jsjf.model.member.JsMemberInfo" keyProperty="id" useGeneratedKeys="true">
+  		INSERT INTO js_member_info (uid,name,phone,address,addTime,investId)
+		VALUES(#{uid},#{name},#{phone},#{address},sysdate(),#{investId})
+  </insert>
+  
+  <select id = "selectMemberInfoByUid" resultType="com.jsjf.model.member.JsMemberInfo" parameterType="int">
+  		select `name`,phone,address from js_member_info where uid = #{uid}
+  </select>
+  
+   <select id = "selectMemberInfoByMap" resultType="com.jsjf.model.member.JsMemberInfo" parameterType="java.util.HashMap">
+  		select `name`,phone,address from js_member_info 
+  		<where>
+	  		<if test = "uid != null"> and uid = #{uid} </if>
+	  		<if test = "investId != null"> and investId = #{investId} </if>
+	  		<if test = "prizeType != null">
+	  			and if(#{prizeType}=1,phone is not null and (`name` IS NULL or `name` = '') and (address IS NULL or address =''),phone is not null and phone !='' and `name` is not null and `name` !='' and address is not null and address !='')
+	  		</if>
+  		</where>
+  		order by `addTime` DESC 
+  		LIMIT 1
+  </select>
+  <select id = "selectOldAddressByUid" resultType="com.jsjf.model.member.JsMemberInfo" parameterType="int">
+  		select * from `js_member_info` where uid = #{uid} and (investId = 0 or investId is null)
+  </select>
+	
+</mapper>

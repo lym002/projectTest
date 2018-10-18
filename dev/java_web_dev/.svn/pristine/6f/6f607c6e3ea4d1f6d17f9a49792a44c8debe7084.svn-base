@@ -1,0 +1,17 @@
+package com.jsjf.dao.claims;
+
+import com.jsjf.model.claims.DrClaimsLoan;
+
+public interface DrClaimsLoanDAO {
+	
+	public DrClaimsLoan selectByPrimaryKey(Integer id);
+	
+	/**
+ 	 * 根据id得到贷款项目基本信息
+ 	 * @param id
+ 	 * @return DrClaimsLoan
+ 	 */
+     public DrClaimsLoan getDrClaimsLoanByid(Integer id);
+
+    DrClaimsLoan selectByPrimaryKey1(Object pid);
+}

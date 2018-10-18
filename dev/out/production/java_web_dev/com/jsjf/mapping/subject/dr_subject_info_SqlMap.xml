@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.subject.DrSubjectInfoDAO">
+	<resultMap id="DrSubjectInfoResult" type="com.jsjf.model.subject.DrSubjectInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />		
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="surplusAmount" property="surplusAmount" jdbcType="DECIMAL" />	
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+	</resultMap>
+
+</mapper>

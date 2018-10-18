@@ -1,0 +1,21 @@
+﻿
+
+
+.pact { font-family: sans-serif; margin:30px 10px; background-color: white; background: url(images/bh_xx.png) center center repeat-y; }
+.pact h1 ,
+.pact h2 ,
+.pact h3 ,
+.pact h4 {font-family:"黑体","宋体"; }
+.pact h2 { font-size: 18px;}
+.pact h4 {  font-size: 16px; line-height: 40px;}
+.pact p {font-family:"宋体";line-height:25px; text-indent: 2em;  }
+.pact p.noindent { text-indent: 0px;}
+table td,
+table{border:1px solid #000;border-collapse: collapse;border-spacing: 0} 
+table td { text-indent:0.8em; line-height:25px;}
+table td.td-r {
+    padding: 0 2em;
+    text-align: right;
+    text-indent: -4em;
+}
+.showdlog { cursor: pointer; } 

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInfoRepayDetailDAO">
+	<resultMap id="DrProductInfoRepayDetailResult" type="com.jsjf.model.product.DrProductInfoRepayDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="periods" property="periods" jdbcType="INTEGER"/>
+		<result column="status" property="status" jdbcType="INTEGER"/>
+		<result column="shouldTime" property="shouldTime" jdbcType="TIMESTAMP"/>
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP"/>
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP"/>
+	</resultMap>
+	
+	<insert id="batchInsert">
+		<foreach collection="list" item="item" separator=";" >
+			insert into dr_product_info_repay_detail (pid, periods, shouldTime, addDate)
+			values
+			(#{item.pid},#{item.periods},#{item.shouldTime},SYSDATE())
+		</foreach>
+	</insert>
+	<sql id="select">  
+	    select  
+	    *  
+	    from  
+	    dr_product_info_repay_detail  
+	</sql>  
+	<select id="selectByPid" resultMap="DrProductInfoRepayDetailResult">
+		<include refid="select" /> 
+		where pid = #{pid}
+	</select>
+	<!-- 查询按月付息产品最早未还款的期数 -->
+	<select id="selectEarliestUnreimbursement" resultMap="DrProductInfoRepayDetailResult">
+		<include refid="select" /> 
+		where pid = #{pid} 
+			and status = 1
+			and DATE_FORMAT(shouldTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(SYSDATE(),'%Y-%m-%d')
+	</select>
+	<select id="selectById" resultMap="DrProductInfoRepayDetailResult" >
+		select * from dr_product_info_repay_detail where id = #{id}
+	</select>
+	
+	<update id="updateById" parameterType="com.jsjf.model.product.DrProductInfoRepayDetail">
+		update dr_product_info_repay_detail
+			set status = #{status},
+				updDate = SYSDATE()
+		where id = #{id}
+	</update>
+	
+</mapper>

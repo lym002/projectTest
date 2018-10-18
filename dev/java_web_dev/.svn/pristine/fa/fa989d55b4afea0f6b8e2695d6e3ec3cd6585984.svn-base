@@ -1,0 +1,9 @@
+package com.jsjf.dao.activity;
+
+import com.jsjf.model.activity.BypCommodity;
+
+public interface BypCommodityDAO {
+
+	 BypCommodity selectIntegralByPid(String pid);
+
+}

@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInfoDAO">
+    <resultMap id="DrProductInfoResult" type="com.jsjf.model.product.DrProductInfo">
+        <result column="id" property="id" jdbcType="INTEGER"/>
+        <result column="sid" property="sid" jdbcType="INTEGER"/>
+        <result column="fid" property="fid" jdbcType="INTEGER"/>
+        <result column="code" property="code" jdbcType="VARCHAR"/>
+        <result column="fullName" property="fullName" jdbcType="VARCHAR"/>
+        <result column="simpleName" property="simpleName" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="intermediary" property="intermediary" jdbcType="INTEGER"/>
+        <result column="isSid" property="isSid" jdbcType="INTEGER"/>
+        <result column="amount" property="amount" jdbcType="DECIMAL"/>
+        <result column="alreadyRaiseAmount" property="alreadyRaiseAmount" jdbcType="DECIMAL"/>
+        <result column="surplusAmount" property="surplusAmount" jdbcType="DECIMAL"/>
+        <result column="rate" property="rate" jdbcType="DECIMAL"/>
+        <result column="activityRate" property="activityRate" jdbcType="DECIMAL"/>
+        <result column="repayType" property="repayType" jdbcType="INTEGER"/>
+        <result column="deadline" property="deadline" jdbcType="INTEGER"/>
+        <result column="leastaAmount" property="leastaAmount" jdbcType="DECIMAL"/>
+        <result column="increasAmount" property="increasAmount" jdbcType="DECIMAL"/>
+        <result column="maxAmount" property="maxAmount" jdbcType="DECIMAL"/>
+        <result column="raiseDeadline" property="raiseDeadline" jdbcType="INTEGER"/>
+        <result column="startDate" property="startDate" jdbcType="TIMESTAMP"/>
+        <result column="expireDate" property="expireDate" jdbcType="TIMESTAMP"/>
+        <result column="introduce" property="introduce" jdbcType="VARCHAR"/>
+        <result column="borrower" property="borrower" jdbcType="VARCHAR"/>
+        <result column="repaySource" property="repaySource" jdbcType="VARCHAR"/>
+        <result column="windMeasure" property="windMeasure" jdbcType="VARCHAR"/>
+        <result column="isShow" property="isShow" jdbcType="INTEGER"/>
+        <result column="isHot" property="isHot" jdbcType="INTEGER"/>
+        <result column="isDeductible" property="isDeductible" jdbcType="INTEGER"/>
+        <result column="isInterest" property="isInterest" jdbcType="INTEGER"/>
+        <result column="isCash" property="isCash" jdbcType="INTEGER"/>
+        <result column="isDouble" property="isDouble" jdbcType="INTEGER"/>
+        <result column="establish" property="establish" jdbcType="TIMESTAMP"/>
+        <result column="accept" property="accept" jdbcType="VARCHAR"/>
+        <result column="acceptPic" property="acceptPic" jdbcType="VARCHAR"/>
+        <result column="addDate" property="addDate" jdbcType="TIMESTAMP"/>
+        <result column="addUser" property="addUser" jdbcType="INTEGER"/>
+        <result column="updDate" property="updDate" jdbcType="TIMESTAMP"/>
+        <result column="updUser" property="updUser" jdbcType="INTEGER"/>
+        <result column="atid" property="atid" jdbcType="INTEGER"/>
+        <result column="atid" property="atid" jdbcType="INTEGER"/>
+        <result column="pert" property="pert"/>
+        <result column="isPrize" property="isPrize"/>
+        <result column="principleId" property="principleId"/>
+        <result column="principleH5" property="principleH5"/>
+        <result column="principlePC" property="principlePC"/>
+    </resultMap>
+    <sql id="main_Column_list">
+        id,sid,code, fullName, simpleName, type, status, amount, alreadyRaiseAmount,
+        surplusAmount,isDeductible,isInterest,isCash,activityRate,expireDate,
+        rate, repayType, deadline, interestType, leastaAmount, increasAmount, maxAmount, raiseDeadline,
+        REPLACE(introduce,'^','') as introduce,
+        REPLACE(borrower,'^','') as borrower, REPLACE(repaySource,'^','') as repaySource, REPLACE(windMeasure,'^','') as
+        windMeasure, startDate,
+        isInterest, isCash, isDeductible,IFNULL(cast((alreadyRaiseAmount/amount*100) as decimal(18,2)),0) as
+        pert,isDouble,establish,accept,acceptPic,atid,prizeId
+        ,project_no
+    </sql>
+    <select id="selectProductByPrimaryKey" parameterType="java.lang.Integer" resultMap="DrProductInfoResult">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info
+        where id = #{id}
+    </select>
+    <select id="selectProductInfo" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info
+        where atid is null
+        <if test="status != null and status !='' ">
+            and status = #{status}
+        </if>
+        <if test="deadline != null and deadline !='' ">
+            and deadline = #{deadline} and deadline !=45 and deadline !=75 <!-- 排除端午节标的 -->
+        </if>
+        <if test="type != null and type !='' ">
+            and type = #{type}
+        </if>
+        <if test="isShow != null ">
+            and isShow = #{isShow}
+        </if>
+        order by updDate
+    </select>
+    <!-- 获取新手标信息 -->
+    <select id="selectNewHandInfo" resultType="com.jsjf.model.product.DrProductInfo" parameterType="java.util.HashMap">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info where status in(5,6,8,9) and isShow = 1
+        <if test="type!=null ">and type = #{type}</if>
+        order by status ASC,establish DESC,fullDate DESC,startDate asc limit 0,1
+    </select>
+    <!-- 产品列表 -->
+    <select id="selectProductInfoListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        select
+        dpi.id,dpi.sid,dpi.`code`,dpi.amount,dpi.alreadyRaiseAmount,dpi.fullName,dpi.simpleName,dpi.type,dpi.`status`,dpi.surplusAmount,dpi.rate,dpi.rate,dpi.raiseDeadline,
+        dpi.activityRate,
+        dpi.repayType,dpi.deadline,dpi.leastaAmount,dpi.increasAmount,dpi.interestType,dpi.startDate,dsi.type as
+        billType,isInterest,dpi.isHot, isCash, isDeductible,dsi.lid,dpi.maxAmount,
+        cast((dpi.alreadyRaiseAmount/dpi.amount*100) as decimal(18,2)) as
+        pert,dpi.isDouble,dpi.establish,dpi.accept,dpi.acceptPic,atid,
+        prizeId,jsp.remark,
+        if(dpi.prizeId is null,if((SELECT 1 FROM `js_activity_product` WHERE pid = dpi.id),'投资送iphone7',''),'投即送')
+        investSendLabel,
+        if(dpi.atid is not null,'投资白送iPhone7',jsp.name) prizeName
+        from dr_product_info dpi
+        LEFT JOIN dr_subject_info dsi on dpi.sid = dsi.id
+        LEFT JOIN `js_product_prize` jsp ON dpi.prizeId = jsp.id
+        where dpi.isShow = 1 and dpi.startDate <![CDATA[ <= ]]> NOW()
+        <if test="excludeAtid !=null and excludeAtid !=''">${excludeAtid}</if>
+        <if test="type != null">and dpi.type = #{type}</if>
+        <if test="deadline != null">and dpi.deadline = #{deadline}</if>
+        <if test="types != null">
+            and dpi.type in
+            <foreach item="item" index="index" collection="types" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="atid == 1">
+                and (dpi.atid is not null or dpi.prizeId is not null)
+            </when>
+            <when test="atid == 2">
+                and dpi.atid is null and dpi.prizeId is null
+            </when>
+        </choose>
+        <if test="repayTypes !=null">
+            and repayType in
+            <foreach collection="repayTypes" close=")" item="item" open="(" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="status != null">and dpi.status = #{status}</if>
+        <if test="statuses != null">
+            and dpi.status in
+            <foreach item="item" index="index" collection="statuses" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="orderStr !=null and orderStr !=''">
+            <![CDATA[order by ${orderStr}  ]]>
+        </if>
+        limit #{offset},#{limit}
+    </select>
+
+
+    <select id="selectProductInfoListCountByParam" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+        select count(id) from dr_product_info
+        where isShow = 1 and startDate <![CDATA[ <= ]]> NOW()
+        <if test="type != null">and type = #{type}</if>
+        <if test="types != null">
+            and type in
+            <foreach item="item" index="index" collection="types" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="atid == 1">
+                and (atid is not null or prizeId is not null)
+            </when>
+            <when test="atid == 2">
+                and atid is null and prizeId is null
+            </when>
+        </choose>
+        <if test="repayTypes !=null">
+            and repayType in
+            <foreach collection="repayTypes" close=")" item="item" open="(" separator=",">
+                #{item}
+            </foreach>
+        </if>
+
+        <if test="status != null">and status = #{status}</if>
+        <if test="statuses != null">
+            and status in
+            <foreach item="item" index="index" collection="statuses" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="selectProductDetailByPid" parameterType="java.lang.Integer" resultMap="DrProductInfoResult">
+        select
+        dpi.principleId,dpi.principleH5,dpi.principlePC,
+        dpi.id,dpi.sid,dpi.fid,dpi.`code`,dpi.amount,dpi.alreadyRaiseAmount,dpi.maxAmount,dpi.fullName,dpi.simpleName,dpi.type,dpi.activityRate,dpi.isInterest,dpi.isCash,
+        dpi.`status`,dpi.surplusAmount,dpi.rate,dpi.rate,dpi.raiseDeadline,dpi.isHot,dpi.isDouble,dpi.establish,
+        dpi.expireDate,dpi.accept,dpi.acceptPic,
+        dpi.repayType,dpi.deadline,dpi.leastaAmount,dpi.increasAmount,dpi.interestType,dpi.startDate,dsi.type as
+        billType,dsi.lid,dpi.fid,
+        REPLACE(dpi.introduce,'^','') as introduce, REPLACE(dpi.borrower,'^','') as borrower,
+        REPLACE(dpi.repaySource,'^','') as repaySource, REPLACE(dpi.windMeasure,'^','') as windMeasure,
+        cast((dpi.alreadyRaiseAmount/dpi.amount*100) as decimal(18,2)) as pert,dpi.atid,dpi.prizeId,
+        IF(jap.id IS NULL,0,IF(jap.status = 3,1,2)) AS isPrize
+        from dr_product_info dpi
+        LEFT JOIN dr_subject_info dsi on dpi.sid = dsi.id
+        left join `js_activity_product` jap on dpi.id = jap.pid
+        where dpi.isShow = 1 and dpi.startDate <![CDATA[ <= ]]> NOW()
+        <if test="id != null">and dpi.id = #{id}</if>
+    </select>
+    <select id="selectProductDetailById" parameterType="java.lang.Integer" resultMap="DrProductInfoResult">
+        select
+        dpi.fullDate,dpi.id,dpi.sid,dpi.fid,dpi.`code`,dpi.amount,dpi.alreadyRaiseAmount,dpi.maxAmount,
+        dpi.fullName,dpi.simpleName,dpi.type,dpi.activityRate,
+        dpi.isInterest,dpi.isCash,dpi.introduce, dpi.borrower, dpi.repaySource, dpi.windMeasure,
+        dpi.`status`,dpi.surplusAmount,dpi.rate,dpi.rate,dpi.raiseDeadline,dpi.isHot,dpi.isDouble,dpi.establish,
+        dpi.expireDate,dpi.accept,dpi.acceptPic,
+        dpi.repayType,dpi.deadline,dpi.leastaAmount,dpi.increasAmount,dpi.interestType,dpi.startDate,dsi.type as
+        billType,dsi.lid,
+        cast((dpi.alreadyRaiseAmount/dpi.amount*100) as decimal(18,2)) as pert,dpi.atid,dpi.prizeId
+        from dr_product_info dpi
+        LEFT JOIN dr_subject_info dsi on dpi.sid = dsi.id
+        where dpi.id = #{id}
+    </select>
+
+    <update id="updateProductSelective" parameterType="com.jsjf.model.product.DrProductInfo">
+        update dr_product_info
+        <trim prefix=" set " suffixOverrides=",">
+            <if test="surplusAmount != null ">surplusAmount = #{surplusAmount} ,</if>
+            <if test="alreadyRaiseAmount != null ">alreadyRaiseAmount = #{alreadyRaiseAmount},</if>
+            <if test="fullDate != null">fullDate = #{fullDate} ,</if>
+            <if test="status != null">status = #{status} ,</if>
+            <if test="establish != null">establish = #{establish} ,</if>
+            <if test="startDate != null">startDate = #{startDate} ,</if>
+            <if test="expireDate != null">expireDate = #{expireDate} ,</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <select id="selectHotProductInfo" resultMap="DrProductInfoResult">
+        select
+        id,code, fullName, simpleName, status, amount,rate, deadline,leastaAmount,activityRate,
+        from dr_product_info
+        where isHot = 1
+        and status = 5
+        order by startDate
+        limit 0,2
+    </select>
+
+    <select id="selectProductInfoRecommend" resultMap="DrProductInfoResult">
+        SELECT
+        IFNULL(cast((alreadyRaiseAmount/amount*100) as decimal(18,2)),0) as pert,id,deadline,MIN(startDate) startDate
+        ,rate,amount,alreadyRaiseAmount,fullName,sid,code,raiseDeadline
+        from dr_product_info
+        where
+        `status` = 5
+        and type = 2
+        and isshow = 1
+        and deadline % 30 = 0
+        GROUP BY deadline
+    </select>
+    <!-- 查询活动产品 -->
+    <select id="selectJSProductActive" resultMap="DrProductInfoResult">
+        SELECT dpi.*,IFNULL(cast((dpi.alreadyRaiseAmount/dpi.amount*100) as decimal(18,2)),0) as pert from
+        dr_product_info dpi
+        WHERE dpi.`status` in (5,6,8,9) and dpi.atid is not null and dpi.isShow = 1
+        order by dpi.status,dpi.startDate DESC,dpi.fullDate DESC
+        LIMIT 0,1
+    </select>
+
+    <select id="selectProductbyMap" resultMap="DrProductInfoResult">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info
+        where isShow = 1 and startDate <![CDATA[ <= ]]> NOW()
+        <if test="repayType !=null">and repayType =#{repayType}</if>
+        <if test="deadline !=null">
+            and deadline = #{deadline}
+            and if(atid or prizeId,0,1) and deadline not in(45,75) and repayType not IN(3,4)
+        </if>
+        <if test="deadlines !=null">
+            and deadline  <![CDATA[ >= ]]> #{deadlines}
+            and if(atid or prizeId,0,1) and deadline not in(45,75) and repayType not IN(3,4)
+        </if>
+        <if test="status !=null">and status = #{status}</if>
+        <if test="type !=null">and type = #{type}</if>
+        <if test="atid !=null and atid !=''">${atid}</if>
+        <if test="statuses != null ">
+            and status in
+            <foreach collection="statuses" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="repayTypes != null ">
+            and repayType in
+            <foreach collection="repayTypes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <![CDATA[ ${orderStr} ]]>
+        <if test="offset != null and limit != null">
+            limit #{offset},#{limit}
+        </if>
+    </select>
+    <select id="selectProductCountbyMap" resultType="int">
+        select count(1) from dr_product_info
+        where isShow = 1 and startDate <![CDATA[ <= ]]> NOW()
+        <if test="repayType !=null">and repayType =#{repayType}</if>
+        <if test="deadline !=null">
+            and deadline = #{deadline}
+            and if(atid or prizeId,0,1)
+        </if>
+        <if test="deadlines !=null">
+            and deadline  <![CDATA[ >= ]]> #{deadlines}
+            and if(atid or prizeId,0,1)
+        </if>
+        <if test="status !=null">and status = #{status}</if>
+        <if test="type !=null">and type = #{type}</if>
+        <if test="atid !=null and atid !=''">${atid}</if>
+        <if test="statuses != null ">
+            and status in
+            <foreach collection="statuses" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+        <if test="repayTypes != null ">
+            and repayType in
+            <foreach collection="repayTypes" item="item" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </if>
+
+        <![CDATA[ ${orderStr} ]]>
+        <if test="offset != null and limit != null">
+            limit #{offset},#{limit}
+        </if>
+    </select>
+
+    <!-- 体验标详情 -->
+    <select id="selectExperienceDetail" resultMap="DrProductInfoResult">
+        select * from dr_product_info dpi where dpi.status= 5 and dpi.type = 5
+    </select>
+
+    <select id="doubleEggList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        (SELECT
+        dpi.id,dpi.fullName,dpi.simpleName,dpi.status,dpi.rate,dpi.deadline,dpi.amount,IFNULL(cast((dpi.alreadyRaiseAmount/dpi.amount*100)
+        as decimal(18,2)),0) as pert,dpi.type FROM dr_product_info dpi
+        WHERE dpi.`deadline` = 60 AND dpi.status in (5,6,7) and dpi.isShow = 1 ORDER BY dpi.`status` ASC,dpi.`startDate`
+        DESC LIMIT 1 )
+        UNION All
+        (SELECT
+        dp.id,dp.fullName,dp.simpleName,dp.status,dp.rate,dp.deadline,dp.amount,IFNULL(cast((dp.alreadyRaiseAmount/dp.amount*100)
+        as decimal(18,2)),0) as pert,dp.type FROM dr_product_info dp
+        WHERE dp.`deadline`=180 AND dp.status in (5,6,7) and dp.isShow = 1 ORDER BY dp.`status` ASC,dp.`startDate` DESC
+        LIMIT 1)
+
+    </select>
+
+
+    <select id="selectPreferredInvest" resultType="com.jsjf.model.product.DrProductInfo"
+            parameterType="java.util.HashMap">
+        SELECT
+        ifNull(MIN(rate),0) minRate,
+        ifNull(MAX(rate),0) maxRate,
+        MIN(deadline) minDeadline,
+        IF(COUNT(isCash)= 0,0,1) isCash,
+        IF(COUNT(isInterest)=0,0,1) isInterest,
+        IF(COUNT(isDouble)=0,0,1) isDouble,
+        ifNull(MAX(activityRate),0) activityRate
+        FROM dr_product_info
+        <where>
+            <if test="types != null">
+                and `type` in
+                <foreach collection="types" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="statuss != null">
+                and `status` in
+                <foreach collection="statuss" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="deadline != null">
+                and deadline <![CDATA[ < ]]>  #{deadline}
+            </if>
+            <if test="equalDeadline != null">
+                and deadline <![CDATA[ = ]]>  #{equalDeadline}
+            </if>
+        </where>
+    </select>
+    <!--查询利率最高的产品详情-->
+    <select id="selectMaxRateInvest" resultType="com.jsjf.model.product.DrProductInfo"
+            parameterType="java.util.HashMap">
+        SELECT
+        <include refid="main_Column_list"/>
+        FROM dr_product_info
+        <where>
+            1=1
+            <if test="types != null">
+                and `type` in
+                <foreach collection="types" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="statuss != null">
+                and `status` in
+                <foreach collection="statuss" item="item" open="(" close=")" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="deadline != null">
+                and deadline <![CDATA[ < ]]>  #{deadline}
+            </if>
+            <if test="equalDeadline != null">
+                and deadline <![CDATA[ = ]]>  #{equalDeadline}
+            </if>
+        </where>
+        GROUP BY rate desc LIMIT 1
+    </select>
+    <select id="getIn_cust_noByProductId" parameterType="Integer" resultType="String">
+        SELECT dcc.phone from dr_claims_customer dcc
+        LEFT JOIN dr_subject_info dsi ON dcc.lid = dsi.lid
+        LEFT JOIN dr_product_info dp ON dp.sid = dsi.id
+        where dp.id = #{id}
+    </select>
+    <!-- 获取产品的利率区间 -->
+    <select id="getProductRateInterval" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+        select MAX(rate) maxRate,MIN(rate) minRate,MIN(deadline) minDeadline from dr_product_info
+        <trim prefix="where" prefixOverrides="and">
+            isShow = 1
+            <if test="type !=null">and type =#{type}</if>
+            <if test="isActivity ==1">and (atid or prizeId)</if>
+            <if test="isActivity ==0">and if(atid or prizeId,0,1)</if>
+            <if test="repayTypes !=null">
+                and repayType in
+                <foreach collection="repayTypes" close=")" item="item" open="(" separator=",">
+                    #{item}
+                </foreach>
+            </if>
+        </trim>
+
+
+    </select>
+
+    <select id="getActivityProductInfo" resultType="java.util.HashMap">
+        SELECT COUNT(1) AS `count`
+        FROM dr_product_info dpi WHERE dpi.isShow = 1 and dpi.startDate <![CDATA[ <= ]]> NOW() and (dpi.atid IS NOT NULL
+        OR dpi.prizeId IS NOT NULL) AND dpi.status = 5
+    </select>
+
+    <select id="getProductInfoByDealine" resultType="java.util.HashMap" parameterType="java.lang.Integer">
+        SELECT
+        id,
+        type,
+        fullName,
+        rate,
+        activityRate,
+        deadline,
+        surplusAmount,
+        alreadyRaiseAmount,
+        CAST((alreadyRaiseAmount/amount*100) AS DECIMAL(18,2)) AS pert,
+        amount
+        FROM dr_product_info
+        WHERE isShow = 1 AND startDate <![CDATA[ <= ]]> NOW()
+        AND deadline = #{deadline} and status =5 ORDER BY startDate limit 1
+    </select>
+
+
+    <select id="selectPorductClassifyByDeadline" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+
+        (SELECT
+        <include refid="main_Column_list"/>
+        from dr_product_info where
+        isShow = 1
+        and project_no ='jzh'
+        and deadline = #{deadlineOne}
+        <if test="amount !=null">and surplusAmount <![CDATA[ >= ]]> #{amount}</if>
+        and `status` in (5,6,8,9)
+        and IF(prizeId or atid ,0,1)
+        ORDER BY status ASC,startDate DESC,addDate asc LIMIT 1)
+        UNION ALL
+        (SELECT
+        <include refid="main_Column_list"/>
+        from dr_product_info where
+        isShow = 1
+        and project_no ='jzh'
+        and deadline = #{deadlineTwo}
+        <if test="amount !=null">and surplusAmount <![CDATA[ >= ]]> #{amount}</if>
+        and `status` in (5,6,8,9)
+        and IF(prizeId or atid ,0,1)
+        ORDER BY status ASC,startDate DESC,addDate asc LIMIT 1)
+        UNION ALL
+        (SELECT
+        <include refid="main_Column_list"/>
+        from dr_product_info where
+        isShow = 1
+        and project_no ='jzh'
+        and deadline = #{deadlineThree}
+        <if test="amount !=null">and surplusAmount <![CDATA[ >= ]]> #{amount}</if>
+        and `status` in (5,6,8,9)
+        and IF(prizeId or atid ,0,1)
+        ORDER BY status ASC,startDate DESC,addDate asc LIMIT 1)
+
+    </select>
+    <select id="selectZeroBuy" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info
+        <where>
+            1=1
+            <if test="amount!=null">and amount=#{amount}</if>
+            <if test="deadline!=null">and deadline=#{deadline}</if>
+            and status=5
+        </where>
+    </select>
+    <select id="selectToHelpFarmers" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+        select
+        <include refid="main_Column_list"/>
+        from dr_product_info
+        <where>
+            1=1
+            <if test="fullName!=null">and `fullName` LIKE '%${fullName}%' </if>
+            and status=5
+        </where>
+            limit 1
+    </select>
+</mapper>

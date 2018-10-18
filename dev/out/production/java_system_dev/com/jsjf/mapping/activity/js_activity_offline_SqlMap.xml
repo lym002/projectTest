@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityOfflineDAO">
+
+	
+	 <select id="getJsActivityOfflineList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.JsActivityOffline">
+	 	select id,type,status,activityTime,title,LEFT(summary,100) as summary,LEFT(content,100) as content
+	 		from js_activity_offline  
+	 		<where>
+	 			1=1
+ 				<if test="title !=null and title !=''">
+	 				and instr(title,#{title})
+	 			</if>
+ 				<if test="status !=null ">
+	 				and status  = #{status}
+	 			</if>
+	 			<if test="startDate !=null and startDate !=''">
+	 				and date_format(openDayDate,'%Y-%m-%d') >= date_format(#{startDate},'%Y-%m-%d') 
+	 			</if>
+	 			<if test="endDate !=null and endDate !=''">
+	 				and <![CDATA[ date_format(openDayDate,'%Y-%m-%d') <= date_format(#{endDate},'%Y-%m-%d') ]]>
+	 			</if>
+	 		</where>
+	 		order by id desc
+	 		<if test="limit !=null">
+				limit #{offset},#{limit}
+			</if>
+	 </select>
+	 
+	 <select id="getJsActivityOfflineCount" parameterType="java.util.Map" resultType="int">
+	 	select count(1)
+	 		from js_activity_offline jao 
+	 		<where>
+	 			1=1
+	 			<if test="title !=null and title !=''">
+	 				and instr(jao.title,#{title})
+	 			</if>
+	 			<if test="status !=null ">
+	 				and status  = #{status}
+	 			</if>
+	 			<if test="startDate !=null and startDate !=''">
+	 				and date_format(jao.addtime,'%Y-%m-%d') >= date_format(#{startDate},'%Y-%m-%d') 
+	 			</if>
+	 			<if test="endDate !=null and endDate !=''">
+	 				and <![CDATA[ date_format(jao.addtime,'%Y-%m-%d') <= date_format(#{endDate},'%Y-%m-%d') ]]>
+	 			</if>
+	 		</where>
+	 </select>
+	
+	<!-- 查询扩展图片 -->	
+	<select id="selectJsActivityExtendPicsList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.JsActivityExtendPic">
+		select 
+			id,extendId,type,status,imgUrl,showSort
+ 		from 
+ 			js_activity_extend_pic where  extendId = #{extendId} and type  = #{type} 
+			<if test="status !=null">
+				and status = #{status}
+			</if>
+	</select>
+	 <!-- 根据id 查 -->
+	<select id="selectJsActivityOfflineById" parameterType="Integer" resultType="com.jsjf.model.activity.JsActivityOffline">
+		select 
+			id,type,status,activityTime,pcBanner,h5Banner,h5ListBanner,videoUrl,imgUrl,titleList,title,summary,content,addtime
+		from 
+			js_activity_offline
+		where id = #{id}
+	</select> 
+	 
+	<insert id="insertJsActivityExtendPic" parameterType="com.jsjf.model.activity.JsActivityExtendPic" >
+	 	INSERT INTO js_activity_extend_pic ( extendId, type, status, imgUrl, showSort, addDate) 
+		VALUES ( #{extendId}, #{type}, 1, #{imgUrl}, #{showSort}, now());
+	</insert>
+	 
+	<update id="updateJsActivityExtendPic"  parameterType="com.jsjf.model.activity.JsActivityExtendPic">
+		UPDATE 	js_activity_extend_pic 
+		<trim prefix="set" suffixOverrides=",">
+			<if test="status !=null">status=#{status},		</if>
+			<if test="imgUrl !=null and imgUrl !=''">imgUrl=#{imgUrl},		</if>
+			<if test="showSort !=null">showSort=#{showSort},		</if>
+		</trim>
+		WHERE id=#{id}
+	</update>
+	
+
+	<delete id="deleteJsActivityExtendPicById" parameterType="int" >
+		delete from js_activity_extend_pic where id = #{id}
+	</delete>
+	 
+ 	<delete id="deleteJsActivityExtendPicByExtendIdAndType" >
+		delete from js_activity_extend_pic where extendId = #{extendId} and type = #{type}
+	</delete>
+	 
+	<insert id="insertJsActivityOffline" parameterType="com.jsjf.model.activity.JsActivityOffline" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO js_activity_offline ( status, activityTime, pcBanner, h5Banner, h5ListBanner, videoUrl, imgUrl, titleList, title, summary, content, addtime) 
+		VALUES (  #{ status}, #{ activityTime}, #{ pcBanner}, #{ h5Banner}, #{ h5ListBanner}, #{ videoUrl}, #{ imgUrl}, #{ titleList}, #{ title}, #{ summary}, #{ content},NOW());
+	</insert>
+	
+	<update id="updateJsActivityOffline" parameterType="com.jsjf.model.activity.JsActivityOffline">
+		UPDATE js_activity_offline 
+			<trim prefix="set" suffixOverrides=",">
+				<if test="status !=null "> status = #{status},</if>
+				<if test="activityTime !=null and activityTime !=''"> activityTime = #{activityTime},</if>
+				<if test="pcBanner !=null and pcBanner !=''"> pcBanner = #{pcBanner},</if>
+				<if test="h5Banner !=null and h5Banner !=''"> h5Banner = #{h5Banner},</if>
+				<if test="h5ListBanner !=null and h5ListBanner !=''"> h5ListBanner = #{h5ListBanner},</if>
+				<if test="videoUrl !=null and videoUrl !=''"> videoUrl = #{videoUrl},</if>
+				<if test="imgUrl !=null and imgUrl !=''"> imgUrl = #{imgUrl},</if>
+				<if test="titleList !=null and titleList !=''"> titleList = #{titleList},</if>
+				<if test="title !=null and title !=''"> title = #{title},</if>
+				<if test="summary !=null and summary !=''"> summary = #{summary},</if>
+				<if test="content !=null and content !=''"> content = #{content},</if>
+			</trim>
+		WHERE id=#{id}
+	</update>
+	 
+</mapper>

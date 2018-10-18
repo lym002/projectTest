@@ -1,0 +1,103 @@
+package com.jsjf.interceptor;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.member.DrMemberAppLoginLogDAO;
+import com.jsjf.dao.system.DrAppClientLogDAO;
+import com.jsjf.model.member.DrMemberAppLoginLog;
+import com.jsjf.model.system.DrAppClientLog;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 记录请求参数
+ * @author 
+ *
+ */
+@Component
+public class ParamHandleInterceptor extends HandlerInterceptorAdapter {
+	
+	@Autowired
+	private DrAppClientLogDAO drAppClientLogDAO;
+	@Autowired
+	private DrMemberAppLoginLogDAO drMemberAppLoginLogDAO;
+	@Autowired 
+	private RedisClientTemplate redisClientTemplate;
+	
+	@SuppressWarnings("rawtypes")
+	@Override
+	public boolean preHandle(HttpServletRequest request,
+			HttpServletResponse response, Object handler) throws Exception {
+		Enumeration enu=request.getParameterNames();  
+		JSONObject json  = new JSONObject();
+		while(enu.hasMoreElements()){  
+			String paraName=(String)enu.nextElement();  
+			json.put(paraName, request.getParameter(paraName));
+		}
+		if(Utils.isObjectNotEmpty(request.getParameter("mobilephone"))){
+			if(redisClientTemplate.sismember("DenyMobile", request.getParameter("mobilephone").toString())){
+				BaseResult br = new BaseResult();
+				br.setErrorCode("9999");
+				response.getWriter().write(JSON.toJSONString(br));
+				response.flushBuffer();
+				return false;
+			}
+		}
+		//记录用户请求参数
+		DrAppClientLog clientLog = new DrAppClientLog(request.getRequestURL().toString(), json.toJSONString(),
+				request.getParameter("version")==null?"":request.getParameter("version").toString(),
+				request.getParameter("channel")==null?"":request.getParameter("channel").toString(),
+				request.getParameter("mobilephone")==null?"":request.getParameter("mobilephone").toString(),
+				Utils.getIpAddr(request),request.getParameter("uid"));
+		drAppClientLogDAO.insert(clientLog);
+		String uid = json.getString("uid");
+		//判断登录用户是否失效
+		//TODO 备注这里是防止客户重复登录的地方
+		if(StringUtils.isNotBlank(uid)){
+			String token = json.getString("token");
+			DrMemberAppLoginLog apploginLog = drMemberAppLoginLogDAO.selectValidLog(Integer.parseInt(uid));
+			if(Utils.isObjectEmpty(apploginLog) || !apploginLog.getToken().equals(token)){
+				BaseResult br = new BaseResult();
+				br.setErrorCode("9998");
+				response.getWriter().write(JSON.toJSONString(br));
+				response.flushBuffer();
+				return false;
+			}
+		}else if(StringUtils.isBlank(uid) && request.getRequestURL().toString().contains("register/sendRegMsg.do")){
+			if(Utils.strIsNull(request.getParameter("mobilephone"))){
+				BaseResult br = new BaseResult();
+				br.setErrorCode("9999");
+				response.getWriter().write(JSON.toJSONString(br));
+				response.flushBuffer();
+				return false;
+			}
+			Map<String, String> map = new HashMap<String, String>();
+			map.put("url", request.getRequestURL().toString());
+			map.put("phone", request.getParameter("mobilephone").toString());
+			int sendRegMsgCount =  drAppClientLogDAO.getTotal(map);
+			if(sendRegMsgCount>10){
+				redisClientTemplate.sadd("DenyMobile",request.getParameter("mobilephone").toString());
+				BaseResult br = new BaseResult();
+				br.setErrorCode("9999");
+				response.getWriter().write(JSON.toJSONString(br));
+				response.flushBuffer();
+				return false;
+			}
+
+		}
+		return true;
+		
+	}
+
+}

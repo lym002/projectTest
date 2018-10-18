@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFundsDAO">
+	<resultMap id="DrMemberFundsResult" type="com.jsjf.model.member.DrMemberFunds">
+		<id column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="crushcount" property="crushCount" jdbcType="DECIMAL" />
+		<result column="carrycount" property="carryCount" jdbcType="DECIMAL" />
+		<result column="investAmount" property="investAmount" jdbcType="DECIMAL" />
+		<result column="balance" property="balance" jdbcType="DECIMAL" />
+		<result column="freeze" property="freeze" jdbcType="DECIMAL" />
+		<result column="wprincipal" property="wprincipal" jdbcType="DECIMAL" />
+		<result column="winterest" property="winterest" jdbcType="DECIMAL" />
+		<result column="wpenalty" property="wpenalty" jdbcType="DECIMAL" />
+		<result column="investProfit" property="investProfit" jdbcType="DECIMAL" />
+		
+		<result column="fuiou_crushcount" property="fuiou_crushcount" jdbcType="DECIMAL" />
+		<result column="fuiou_carrycount" property="fuiou_carrycount" jdbcType="DECIMAL" />
+		<result column="fuiou_investAmount" property="fuiou_investAmount" jdbcType="DECIMAL" />
+		<result column="fuiou_balance" property="fuiou_balance" jdbcType="DECIMAL" />
+		<result column="fuiou_freeze" property="fuiou_freeze" jdbcType="DECIMAL" />
+		<result column="fuiou_wprincipal" property="fuiou_wprincipal" jdbcType="DECIMAL" />
+		<result column="fuiou_winterest" property="fuiou_winterest" jdbcType="DECIMAL" />
+		<result column="fuiou_wpenalty" property="fuiou_wpenalty" jdbcType="DECIMAL" />
+		<result column="fuiou_investProfit" property="fuiou_investProfit" jdbcType="DECIMAL" />
+		<result column="fuiou_spreadProfit" property="fuiou_spreadProfit" jdbcType="DECIMAL" />
+		
+	</resultMap>
+	
+	<!-- 根据uid传入变动金额changeAmount,在原有的金额上加上变动金额 -->
+	<update id="updateYsmemberFundsSelfAdd" parameterType="com.jsjf.model.member.DrMemberFunds">
+		update dr_member_funds set
+			balance = balance + #{changeAmount:DECIMAL}
+		where uid = #{uid:INTEGER}
+	</update>
+	<select id="queryDrMemberFundsByUid" parameterType="java.lang.Integer" resultMap="DrMemberFundsResult">
+		select * from dr_member_funds
+	    <where>
+		uid = #{uid} 
+	    </where>
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMemberFunds">
+		insert into dr_member_funds (uid, crushcount, carrycount,
+		investAmount, balance, freeze,
+		wprincipal, winterest, wpenalty,fuiou_crushcount,
+		
+		fuiou_carrycount,fuiou_investAmount,fuiou_balance,
+		fuiou_freeze,fuiou_wprincipal,fuiou_winterest,
+		fuiou_wpenalty,fuiou_investProfit,fuiou_spreadProfit
+		)
+		values (#{uid,jdbcType=INTEGER}, #{crushCount,jdbcType=DECIMAL},
+		#{carryCount,jdbcType=DECIMAL},
+		#{investAmount,jdbcType=DECIMAL}, #{balance,jdbcType=DECIMAL}, #{freeze,jdbcType=DECIMAL},
+		#{wprincipal,jdbcType=DECIMAL}, #{winterest,jdbcType=DECIMAL},
+		#{wpenalty,jdbcType=DECIMAL},
+		
+		#{fuiou_carrycount}, #{fuiou_investAmount}, #{fuiou_balance},
+		#{fuiou_freeze}, #{fuiou_wprincipal}, #{fuiou_winterest},
+		#{fuiou_wpenalty}, #{fuiou_investProfit}, #{fuiou_spreadProfit}
+		)
+	</insert>
+	<update id="updateDrMemberFunds" parameterType="com.jsjf.model.member.DrMemberFunds">
+		update dr_member_funds
+		<set>
+			<if test="crushCount != null">
+				crushcount = #{crushCount,jdbcType=DECIMAL},
+			</if>
+			<if test="carryCount != null">
+				carrycount = #{carryCount,jdbcType=DECIMAL},
+			</if>
+			<if test="investAmount != null">
+				investAmount = #{investAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="balance != null">
+				balance = #{balance,jdbcType=DECIMAL},
+			</if>
+			<if test="freeze != null">
+				freeze = #{freeze,jdbcType=DECIMAL},
+			</if>
+			<if test="wprincipal != null">
+				wprincipal = #{wprincipal,jdbcType=DECIMAL},
+			</if>
+			<if test="winterest != null">
+				winterest = #{winterest,jdbcType=DECIMAL},
+			</if>
+			<if test="wpenalty != null">
+				wpenalty = #{wpenalty,jdbcType=DECIMAL},
+			</if>
+			<if test="investProfit != null">
+				investProfit = #{investProfit,jdbcType=DECIMAL},
+			</if>
+			<if test="spreadProfit != null">
+				spreadProfit = #{spreadProfit,jdbcType=DECIMAL},
+			</if>
+			
+			<if test="fuiou_crushcount != null"> fuiou_crushcount = #{fuiou_crushcount},</if>
+			<if test="fuiou_carrycount != null"> fuiou_carrycount = #{fuiou_carrycount},</if>
+			<if test="fuiou_investAmount != null"> fuiou_investAmount = #{fuiou_investAmount},</if>
+			<if test="fuiou_balance != null"> fuiou_balance = #{fuiou_balance},</if>
+			<if test="fuiou_freeze != null"> fuiou_freeze = #{fuiou_freeze},</if>
+			<if test="fuiou_wprincipal != null"> fuiou_wprincipal = #{fuiou_wprincipal},</if>
+			<if test="fuiou_winterest != null"> fuiou_winterest = #{fuiou_winterest},</if>
+			<if test="fuiou_wpenalty != null"> fuiou_wpenalty = #{fuiou_wpenalty},</if>
+			<if test="fuiou_investProfit != null"> fuiou_investProfit = #{fuiou_investProfit},</if>
+			<if test="fuiou_spreadProfit != null"> fuiou_spreadProfit = #{fuiou_spreadProfit},</if>
+		</set>
+		where uid = #{uid,jdbcType=INTEGER}
+	</update>
+	<select id="getNeedPayDrMemberFundsList" resultMap="DrMemberFundsResult">
+		select f.* from dr_member_funds f
+		left join dr_financial_invest_payment
+		p on p.uid = f.uid
+		where 1= 1 <![CDATA[ and DATE_FORMAT(payTime,'%Y-%m-%d') <= DATE_FORMAT(now(),'%Y-%m-%d')]]>
+	</select>
+	
+	<update id="batchUpdateDrMemberFunds" parameterType="java.util.List">
+		<foreach collection="list" item="item" open="" close=""
+			separator=";">
+			update dr_member_funds
+			<set>
+				<if test="item.investAmount != null">
+					investAmount = #{item.investAmount:DECIMAL},
+				</if>
+				<if test="item.balance != null">
+					balance = #{item.balance:DECIMAL},
+				</if>
+				<if test="item.freeze != null">
+					freeze = #{item.freeze:DECIMAL},
+				</if>
+				<if test="item.wprincipal != null ">
+					wprincipal = #{item.wprincipal:DECIMAL},
+				</if>
+				<if test="item.winterest != null">
+					winterest = #{item.winterest:DECIMAL},
+				</if>
+				<if test="item.wpenalty != null ">
+					wpenalty = #{item.wpenalty:DECIMAL},
+				</if>
+				<if test="item.investProfit != null">
+					investProfit = #{item.investProfit,jdbcType=DECIMAL},
+				</if>
+				<if test="item.spreadProfit != null">
+					spreadProfit = #{item.spreadProfit,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_crushcount != null">
+					fuiou_crushcount = #{item.fuiou_crushcount,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_carrycount != null">
+					fuiou_carrycount = #{item.fuiou_carrycount,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_investAmount != null">
+					fuiou_investAmount = #{item.fuiou_investAmount,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_balance != null">
+					fuiou_balance = #{item.fuiou_balance,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_freeze != null">
+					fuiou_freeze = #{item.fuiou_freeze,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_wprincipal != null">
+					fuiou_wprincipal = #{item.fuiou_wprincipal,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_winterest != null">
+					fuiou_winterest = #{item.fuiou_winterest,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_wpenalty != null">
+					fuiou_wpenalty = #{item.fuiou_wpenalty,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_investProfit != null">
+					fuiou_investProfit = #{item.fuiou_investProfit,jdbcType=DECIMAL},
+				</if>
+				<if test="item.fuiou_spreadProfit != null">
+					fuiou_spreadProfit = #{item.fuiou_spreadProfit,jdbcType=DECIMAL},
+				</if>
+			</set>
+			<where>
+				uid = #{item.uid:INTEGER}
+			</where>
+		</foreach>
+	</update>
+	
+	<!-- 当前可提现总额  -->
+	<select id="getDrMemberBalanceSum" resultType="Double">		
+		select sum(balance) from dr_member_funds 	
+	</select>
+	
+	<!-- 当前富有可提现总额  -->
+	<select id="getDrMemberBalanceSumByFuiou" resultType="Double">		
+		select sum(fuiou_balance) from dr_member_funds 	
+	</select>
+	
+	<!-- 明日到期总额 -->
+	<select id="getDrMemberExpireSum"  resultType="Double">		
+		select sum(ifnull(shouldPrincipal,0)+ifnull(shouldInterest,0)) from dr_product_invest_repayinfo 
+		where DATE_FORMAT(shouldTime,'%Y%m%d')=DATE_FORMAT(DATE_ADD(SYSDATE(),INTERVAL 1 DAY),'%Y%m%d') 	
+	</select>
+	
+</mapper>

@@ -1,0 +1,181 @@
+package com.jsjf.controller.index;
+
+import com.alibaba.fastjson.JSON;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.integral.BypCommodityRepertoryDao;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.system.SysArticle;
+import com.jsjf.model.system.SysBanner;
+import com.jsjf.service.activity.BypCommodityService;
+import com.jsjf.service.integral.TaskIntegralRulesService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.SysArticleService;
+import com.jsjf.service.system.SysBannerService;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@RequestMapping("/discover")
+@Controller
+public class DiscoverController {
+    private Logger log = Logger.getLogger(this.getClass());
+    @Autowired
+    private SysBannerService sysBannerService;
+    @Autowired
+    private SysArticleService sysArticleService;
+    @Autowired
+    private TaskIntegralRulesService taskIntegralRulesServiceImpl;
+    @Autowired
+    private BypCommodityService BypCommodityServiceImpl;
+    @Autowired
+    private DrMemberService drMemberService;
+    @Autowired
+    private BypCommodityRepertoryDao bypCommodityRepertoryDao;
+    @RequestMapping(value="/indexDiscover", method = RequestMethod.POST)
+    @ResponseBody
+    public String discover(HttpServletRequest req){
+        BaseResult br = new BaseResult();
+        List<Object> maps = new ArrayList<>();
+        try {
+            String version = req.getParameter("version");
+            Map<String,Object> map = new HashMap<String, Object>();
+            String channel = req.getParameter("channel")==null?"":req.getParameter("channel").toString();
+            if(!"".equals(channel) && channel.equals("1")){
+                map.put("code", 5);
+            }else{
+                map.put("code", 4);
+            }
+            //首页banner*****
+            List<SysBanner> sbList = sysBannerService.indexBanner(map);
+            List<SysBanner> list = new ArrayList<SysBanner>();
+            getBanner(version, sbList, list);
+            //新闻咨询
+            Map<String, Object> params = new HashMap<String, Object>();
+            params.put("proId", 1);
+            List<SysArticle> lis = sysArticleService.getArticleByParam(params);
+            lis = lis.subList(0,2);
+            map.put("banner", list);
+            map.put("newsInformationList",lis);
+            //积分系统获取任务
+            String uid=req.getParameter("uid");
+            if (Utils.isObjectNotEmpty(uid)) {
+                maps = taskIntegralRulesServiceImpl.queryNewTask(Integer.parseInt(uid));
+                map.put("newUserTask", maps);
+
+            }else {
+                map.put("newUserTask", "");
+            }
+            if(Utils.isObjectNotEmpty(uid)){
+                DrMember m = drMemberService.selectByPrimaryKey(Integer.parseInt(uid));
+                map.put("getRealVerify",m.getIsFuiou());
+            }else {
+                map.put("getRealVerify",0);
+            }
+            List<BypCommodity> bypCommodities = BypCommodityServiceImpl.selectCommodityList(2);
+            if (Utils.isObjectNotEmpty(bypCommodities)){
+                map.put("floatList", bypCommodities);
+            }else {
+                map.put("floatList", "");
+            }
+            List<Map<String, Object>> resultMap = bypCommodityRepertoryDao.queryCommodityList();
+            map.put("inKindList", resultMap);
+            br.setMap(map);
+            br.setSuccess(true);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("获取数据失败", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+        }
+        return JSON.toJSONString(br);
+    }
+
+    public void getBanner(String version, List<SysBanner> sbList, List<SysBanner> list) {
+        if(!Utils.isEmptyList(sbList)){
+            for(int i=0 ;i<sbList.size();i++){
+                SysBanner sb = sbList.get(i);
+                if(Utils.isObjectNotEmpty(sb.getLocation())){
+                    StringBuffer url = new StringBuffer();
+                    if(sb.getLocation().indexOf("?")>=0){
+                        url.append(sb.getLocation()).append("&").append("upgrade=").append(
+                                Utils.compareVersion(version, sb.getMinVersion()==null?"1.0.0":sb.getMinVersion().trim()));
+                        sb.setLocation(url.toString());
+                    }else {
+                        url.append(sb.getLocation()).append("?").append("upgrade=").append(
+                                Utils.compareVersion(version, sb.getMinVersion()==null?"1.0.0":sb.getMinVersion().trim()));
+                        sb.setLocation(url.toString());
+                    }
+                }
+                list.add(sb);
+            }
+        }
+    }
+
+    @RequestMapping(value="/pastActivity", method = RequestMethod.POST)
+    @ResponseBody
+    public String pastActivity(HttpServletRequest req){
+        BaseResult br = new BaseResult();
+        //首页banner*****
+        try {
+            String version = req.getParameter("version");
+            Map<String,Object> map = new HashMap<String, Object>();
+            String channel = req.getParameter("channel")==null?"":req.getParameter("channel").toString();
+            if(!"".equals(channel) && channel.equals("1")){
+                map.put("code", 5);
+            }else{
+                map.put("code", 4);
+            }
+            //首页banner*****
+            List<SysBanner> sbList = sysBannerService.selectPastActivity(map);
+            List<SysBanner> list = new ArrayList<SysBanner>();
+            getBanner(version, sbList, list);
+            map.put("banner", list);
+            br.setMap(map);
+            br.setSuccess(true);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("获取数据失败", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+        }
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 查询客户签到的天数
+     * @param req
+     * @return
+     */
+    @RequestMapping(value="/querySignDays", method = RequestMethod.POST)
+    @ResponseBody
+    public String querySignDays(HttpServletRequest req,Integer uid){
+        BaseResult br = new BaseResult();
+        Map<String,Object> param = new HashMap<>();
+        try {
+            if (Utils.isObjectEmpty(uid)){
+                br.setSuccess(false);
+                br.setErrorCode("9999");
+                return JSON.toJSONString(br);
+            }
+            param.put("uid",uid);
+            br = drMemberService.selectDrmemberSignDays(param);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("获取数据失败", e);
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+        }
+        return JSON.toJSONString(br);
+    }
+}

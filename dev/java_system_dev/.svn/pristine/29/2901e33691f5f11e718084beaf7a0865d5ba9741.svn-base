@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.operate.DrUserAnalysisDAO">
+	<resultMap id="DrUserAnalysisResult" type="com.jsjf.model.operate.DrUserAnalysis">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="newUser" property="newUser" jdbcType="INTEGER" />		
+		<result column="totalUser" property="totalUser" jdbcType="INTEGER" />
+		<result column="newInvestUser" property="newInvestUser" jdbcType="INTEGER" />
+		<result column="totalInvestUser" property="totalInvestUser" jdbcType="INTEGER" />		
+		<result column="newInvestAmount" property="newInvestAmount" jdbcType="DECIMAL" />
+		<result column="totalInvestAmount" property="totalInvestAmount" jdbcType="DECIMAL" />														
+		<result column="pendRepaymentAmount" property="pendRepaymentAmount" jdbcType="DECIMAL" />
+		<result column="userAvgInvestAmount" property="userAvgInvestAmount" jdbcType="DECIMAL" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+	</resultMap>
+
+	<!-- 获取用户分析列表 -->
+	<select id="getDrUserAnalysisList" resultType="com.jsjf.model.operate.DrUserAnalysis" parameterType="java.util.HashMap">
+		select * from dr_user_analysis 
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(addDate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(addDate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+		</where>
+		order by addDate desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取用户分析总数 -->
+	<select id="getDrUserAnalysisCounts" resultType="java.lang.Integer">
+		SELECT count(1) FROM dr_user_analysis 
+		<where>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(addDate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(addDate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+		</where>
+	</select>
+</mapper>

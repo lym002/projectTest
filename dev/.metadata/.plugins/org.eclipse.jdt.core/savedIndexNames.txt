@@ -1,0 +1,15 @@
+INDEX VERSION 1.127+D:\BYPSVN\dev\.metadata\.plugins\org.eclipse.jdt.core
+1841964203.index
+21156131.index
+1671476569.index
+3938408542.index
+2862355144.index
+1505972308.index
+1308193551.index
+1765406557.index
+1420719090.index
+893988391.index
+3164457182.index
+551513651.index
+4043202862.index
+3488917806.index

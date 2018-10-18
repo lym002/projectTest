@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsCustomerDAO">
+	<resultMap id="DrClaimsCustomerResult" type="com.jsjf.model.claims.DrClaimsCustomer">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="companyName" property="companyName" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />	
+		<result column="certificateType" property="certificateType" jdbcType="INTEGER" />
+		<result column="certificateNo" property="certificateNo" jdbcType="VARCHAR" />
+		<result column="mechanismNo" property="mechanismNo" jdbcType="VARCHAR" />
+		<result column="industryType" property="industryType" jdbcType="VARCHAR" />
+		<result column="businessNo" property="businessNo" jdbcType="VARCHAR" />	
+		<result column="companyPhone" property="companyPhone" jdbcType="VARCHAR" />
+		<result column="companyMail" property="companyMail" jdbcType="VARCHAR" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+	</resultMap>
+	
+</mapper>

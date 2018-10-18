@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.cpa.DrChannelInfoAndroidInvestTailDao">
+
+	<!-- 获取渠道包下载跟踪信息 -->
+	<select id="queryAndroidInvestTailList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelInfoAndroidTailBean">
+		select dm.mobilephone as mobilePhone,dm.toFrom as toFrom ,(case when 
+			dm.regDate is not null then '是' else '否' end) as isReg,
+			(case when dmb.id is not null then '已绑定' else '未绑定' end) as isBuildCard,
+			dpi.amount as sumAmount,dm.regdate as regDate,dpi.investTime as investTime
+			from dr_member dm
+			LEFT JOIN dr_member_bank dmb on dm.uid=dmb.uid
+			LEFT JOIN dr_product_invest dpi on dm.uid=dpi.uid
+			left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+			where 1=1  and (dm.regfrom = 2  or dm.regfrom = 1)
+			<if test="mobilePhone != null and mobilePhone != ''"> 
+				and dm.mobilePhone = #{mobilePhone}
+			</if>
+			<if test="toFrom != null and toFrom != ''"> 
+				and dm.toFrom = #{toFrom}
+			</if>
+			<if test="isBuildCard != null and isBuildCard != ''">
+				<if test="isBuildCard == 1">
+					and dmb.id is not null
+				</if>	
+				<if test="isBuildCard == 2">
+					and dmb.id is null
+				</if>	
+			</if>
+			<if test="isReg != null and isReg != ''">
+				<if test="isReg == 1">
+					and dm.regDate is not null
+				</if>	
+				<if test="isReg == 2">
+					and dm.regDate is null
+				</if>	
+			</if>			
+			<if test="searchDrChannelInfoOrderStartDate != null and searchDrChannelInfoOrderStartDate != ''"> 
+				and dm.regDate <![CDATA[ >= ]]> #{searchDrChannelInfoOrderStartDate}
+			</if>	
+			<if test="searchDrChannelInfoOrderEndDate != null and searchDrChannelInfoOrderEndDate != ''"> 
+				and dm.regDate<![CDATA[ <= ]]> #{searchDrChannelInfoOrderEndDate}
+			</if>	
+			<if test="startInvestMoneyDate != null and startInvestMoneyDate != ''"> 
+				and dpi.investTime <![CDATA[ >= ]]> #{startInvestMoneyDate}
+			</if>	
+			<if test="endInvestMoneyDate != null and endInvestMoneyDate != ''"> 
+				and dpi.investTime<![CDATA[ <= ]]> #{endInvestMoneyDate}
+			</if>	
+			<!-- GROUP BY dm.uid 
+			having 1=1
+			-->
+			<if test="startInvestMoney != null and startInvestMoney != ''"> 
+				 and dpi.amount <![CDATA[ >= ]]> #{startInvestMoney}
+			</if>	
+			<if test="endInvestMoney != null and endInvestMoney != ''"> 
+				 and dpi.amount <![CDATA[ <= ]]> #{endInvestMoney}
+			</if>	
+			<if test="cid != null and cid.length>0">
+				and dci.id in
+				<foreach collection="cid" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			order by dm.regDate desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取渠道信息总数 -->
+	<select id="queryAndroidInvestTailListCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(0)
+		from dr_member dm
+			LEFT JOIN dr_member_bank dmb on dm.uid=dmb.uid
+			LEFT JOIN dr_product_invest dpi on dm.uid=dpi.uid
+			left join dr_channel_info dci on LOCATE(dci.code,dm.toFrom) =1
+			where 1=1 and (dm.regfrom = 2  or dm.regfrom = 1)
+			<if test="mobilePhone != null and mobilePhone != ''"> 
+				and dm.mobilePhone = #{mobilePhone}
+			</if>
+			<if test="toFrom != null and toFrom != ''"> 
+				and dm.toFrom = #{toFrom}
+			</if>
+			<if test="isBuildCard != null and isBuildCard != ''">
+				<if test="isBuildCard == 1">
+					and dmb.id is not null
+				</if>	
+				<if test="isBuildCard == 2">
+					and dmb.id is null
+				</if>	
+			</if>
+			<if test="isReg != null and isReg != ''">
+				<if test="isReg == 1">
+					and dm.regDate is not null
+				</if>	
+				<if test="isReg == 2">
+					and dm.regDate is null
+				</if>	
+			</if>			
+			<if test="searchDrChannelInfoOrderStartDate != null and searchDrChannelInfoOrderStartDate != ''"> 
+				and dm.regDate <![CDATA[ >= ]]> #{searchDrChannelInfoOrderStartDate}
+			</if>	
+			<if test="searchDrChannelInfoOrderEndDate != null and searchDrChannelInfoOrderEndDate != ''"> 
+				and dm.regDate<![CDATA[ <= ]]> #{searchDrChannelInfoOrderEndDate}
+			</if>	
+			<if test="startInvestMoneyDate != null and startInvestMoneyDate != ''"> 
+				and dpi.investTime <![CDATA[ >= ]]> #{startInvestMoneyDate}
+			</if>	
+			<if test="endInvestMoneyDate != null and endInvestMoneyDate != ''"> 
+				and dpi.investTime<![CDATA[ <= ]]> #{endInvestMoneyDate}
+			</if>	
+			<!-- GROUP BY dm.uid
+			having 1=1 -->
+			<if test="startInvestMoney != null and startInvestMoney != ''"> 
+				 and dpi.amount <![CDATA[ >= ]]> #{startInvestMoney}
+			</if>	
+			<if test="endInvestMoney != null and endInvestMoney != ''"> 
+				 and dpi.amount <![CDATA[ <= ]]> #{endInvestMoney}
+			</if>	
+						<if test="cid != null and cid.length>0">
+				and dci.id in
+				<foreach collection="cid" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			
+	</select>
+	
+</mapper>

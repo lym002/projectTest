@@ -1,0 +1,15 @@
+package com.jsjf.controller.store;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+/**
+ * 商品兑换管理
+ * @author cece
+ *
+ */
+@Controller
+@RequestMapping("/commodityEx")
+public class CommodityExchangeController {
+
+}

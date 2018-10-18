@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.VipMemberInfoDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.VipMemberInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="uid" jdbcType="INTEGER" property="uid" />
+    <result column="growth_value" jdbcType="DECIMAL" property="growthValue" />
+    <result column="vip_level" jdbcType="INTEGER" property="vipLevel" />
+    <result column="expiration_time" jdbcType="TIMESTAMP" property="expirationTime" />
+    <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="mobilePhone" jdbcType="VARCHAR" property="mobilePhone" />
+    <result column="sumAmount" jdbcType="DECIMAL" property="sumAmount" />
+    <result column="vip_name" jdbcType="VARCHAR" property="vipName" />
+    <result column="is_forbidden" jdbcType="INTEGER" property="isForbidden" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, uid, growth_value, vip_level
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_member_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_member_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.VipMemberInfo">
+    insert into byp_member_vip_info (id, uid, growth_value, 
+      vip_level)
+    values (#{id,jdbcType=INTEGER}, #{uid,jdbcType=INTEGER}, #{growthValue,jdbcType=DECIMAL}, 
+      #{vipLevel,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.vip.VipMemberInfo" keyProperty="id" useGeneratedKeys="true">
+    insert into byp_member_vip_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="uid != null">
+        uid,
+      </if>
+      <if test="growthValue != null">
+        growth_value,
+      </if>
+      <if test="vipLevel != null">
+        vip_level,
+      </if>
+       <if test="isForbidden != null">
+        is_forbidden,
+      </if>
+      <if test="addTime != null">
+        add_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="expirationTime != null">
+        expiration_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="uid != null">
+        #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="growthValue != null">
+        #{growthValue,jdbcType=DECIMAL},
+      </if>
+      <if test="vipLevel != null">
+        #{vipLevel,jdbcType=INTEGER},
+      </if>
+       <if test="isForbidden != null">
+        #{isForbidden,jdbcType=INTEGER},
+      </if>
+        <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+        <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+        <if test="expirationTime != null">
+        #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.vip.VipMemberInfo">
+    update byp_member_vip_info
+    <set>
+      <if test="uid != null">
+        uid = #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="growthValue != null">
+        growth_value = #{growthValue,jdbcType=DECIMAL},
+      </if>
+      <if test="vipLevel != null">
+        vip_level = #{vipLevel,jdbcType=INTEGER},
+      </if>
+       <if test="isForbidden != null">
+        is_forbidden = #{isForbidden,jdbcType=INTEGER},
+      </if>
+       <if test="addTime != null">
+        add_time = #{addTime,jdbcType=TIMESTAMP},
+      </if>
+       <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+       <if test="expirationTime != null">
+        expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.VipMemberInfo">
+    update byp_member_vip_info
+    set uid = #{uid,jdbcType=INTEGER},
+      growth_value = #{growthValue,jdbcType=DECIMAL},
+      vip_level = #{vipLevel,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+   <select id="queryVipMemberInfoList" parameterType="java.util.Map" resultMap="BaseResultMap">
+	select 
+	    bvi.id, bvi.uid, bvi.growth_value, bvi.vip_level,dm.mobilePhone as mobilePhone,
+	    bvi.expiration_time,bvi.add_time,bvi.update_time,info.vip_name,sum(dmfr.amount) as sumAmount
+	    from byp_member_vip_info bvi
+	    left join byp_vip_info info on bvi.vip_level = info.vip_level
+	    left join dr_member dm on bvi.uid = dm.uid
+			LEFT JOIN dr_member_funds_record dmfr on dmfr.uid = dm.uid
+			LEFT JOIN dr_product_info dpi on dmfr.pid = dpi.id
+	where dmfr.type=0 and dmfr.tradeType=3 and dpi.prizeId is null
+	 <if test="mobilePhone != null and mobilePhone != ''">
+				and dm.mobilePhone=#{mobilePhone}
+	</if>
+	<if test="startAddTime != null and startAddTime != ''">
+				and bvi.add_Time<![CDATA[ >= ]]>#{startAddTime}
+	</if>
+	<if test="endAddTime != null and endAddTime != ''">
+				and bvi.add_Time<![CDATA[ <= ]]>#{endAddTime}
+	</if>
+	<if test="vipLevel != null and vipLevel != ''">
+				and bvi.vip_level=#{vipLevel}
+	</if>
+	GROUP BY dm.uid
+   
+    <if test="limit !=null">
+			 limit #{offset},#{limit}
+		</if>
+  </select>
+  
+   <select id="queryVipMemberInfoListCount" parameterType="java.util.Map" resultType="Integer">
+   select count(0) from (
+   select 
+	    bvi.id, bvi.uid, bvi.growth_value, bvi.vip_level,dm.mobilePhone as mobilePhone,
+	    bvi.expiration_time,bvi.add_time,bvi.update_time,info.vip_name,sum(dmfr.amount) as sumAmount
+	    from byp_member_vip_info bvi
+	    left join byp_vip_info info on bvi.vip_level = info.vip_level
+	    left join dr_member dm on bvi.uid = dm.uid
+			LEFT JOIN dr_member_funds_record dmfr on dmfr.uid = dm.uid
+			LEFT JOIN dr_product_info dpi on dmfr.pid = dpi.id
+	where dmfr.type=0 and dmfr.tradeType=3 and dpi.prizeId is null
+	 <if test="mobilePhone != null and mobilePhone != ''">
+				and mobilePhone=#{mobilePhone}
+	</if>
+	<if test="startAddTime != null and startAddTime != ''">
+				and add_Time<![CDATA[ >= ]]>#{startAddTime}
+	</if>
+	<if test="endAddTime != null and endAddTime != ''">
+				and add_Time<![CDATA[ <= ]]>#{endAddTime}
+	</if>
+	<if test="vipEquitiesId != null and vipEquitiesId != ''">
+				and vip_equities_id=#{vipEquitiesId}
+	</if>
+	GROUP BY dm.uid
+	) a
+   
+  </select>
+</mapper>

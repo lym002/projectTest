@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.PrizeManageDao">
+
+	<sql id="colNameStr">
+		prid as prId , prizeName as prizeName , price as price , details as details ,status as status , type as type  
+	</sql>
+	
+	 <select id="queryPrizeManageList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.BypCommodityBean">
+	 	select  
+	 	<include refid="colNameStr"/>
+	 	from byp_commodity where 1=1
+	 	<if test="prizeName != null and prizeName != '' ">
+				and prizeName=#{prizeName}
+		</if>
+		<if test="status != null and status != ''">
+				and status = #{status}
+		</if>
+		<if test="type != null and type != ''">
+				and type=#{type}
+		</if>
+		<if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	 </select>
+	 
+	 <select id="queryPrizeManageListCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(0)
+	 	from byp_commodity where 1=1
+	 	<if test="prizeName != null ">
+				and prizeName=#{prizeName}
+		</if>
+		<if test="status != null ">
+				and status = #{status}
+		</if>
+		<if test="type != null ">
+				and type=#{type}
+		</if>
+	</select>
+	
+	<insert id="addDrPrizeManage" parameterType="com.jsjf.model.activity.BypCommodityBean"
+		keyProperty="prId" useGeneratedKeys="true">
+		insert into byp_commodity (
+		prizeName,
+		price,
+		details,
+		status,
+		type
+		)
+		values
+		(
+		#{prizeName},
+		#{price},
+		#{details},
+		#{status},
+		#{type}
+		)
+	</insert>
+	
+	 <select id="getDrPrizeManage"  parameterType="INTEGER" resultType="com.jsjf.model.activity.BypCommodityBean">
+		select 
+		<include refid="colNameStr"/>
+	 	from byp_commodity where 1=1
+				and prid=#{prId:INTEGER}
+	</select>
+	
+	 <update id="updateDrPrizeManage" parameterType="com.jsjf.model.activity.BypCommodityBean">
+	 	update byp_commodity
+	 		<set>
+		 		<if test="prizeName !=null and prizeName !=''">
+		 			 prizeName = #{prizeName},
+		 		</if>
+		 		<if test="price !=null and price !=''">
+		 			 price = #{price},
+		 		</if>
+		 		<if test="details !=null and details !=''">
+		 			 details = #{details},
+		 		</if>
+		 		status = #{status},
+		 		<if test="type !=null and type !=''">
+		 			 type = #{type}
+		 		</if>
+	 		</set>
+	 	where prid = #{prId:INTEGER}
+	 </update>
+	 
+	 <!-- 下拉框加载 -->
+	 <select id="queryPrize"  resultType="com.jsjf.model.activity.BypCommodityBean">
+		select 
+		prid as prId , prizeName as prizeName
+	 	from byp_commodity 
+	</select>
+	 
+	 <!-- 存储奖品图片地址 -->
+	 <update id="updateProductUrl" parameterType="com.jsjf.model.activity.BypCommodityBean">
+	 	update byp_commodity
+	 		<set>
+		 		<if test="productUrl !=null and productUrl !=''">
+		 			 product_url = #{productUrl},
+		 		</if>
+	 		</set>
+	 	where prid = #{prId:INTEGER}
+	 </update>
+</mapper>

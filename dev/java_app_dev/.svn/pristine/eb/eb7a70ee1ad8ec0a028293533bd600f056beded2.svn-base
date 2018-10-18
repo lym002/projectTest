@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberDAO">
+	<resultMap id="DrMemberResult" type="com.jsjf.model.member.DrMember">
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="password" property="passWord" jdbcType="CHAR" />
+		<result column="tpassword" property="tpassWord" jdbcType="CHAR" />
+		<result column="photo" property="photo" jdbcType="VARCHAR" />
+		<result column="isblack" property="isBlack" jdbcType="INTEGER" />
+		<result column="regip" property="regIp" jdbcType="CHAR" />
+		<result column="regdate" property="regDate" jdbcType="TIMESTAMP" />
+		<result column="lastloginip" property="lastLoginIp" jdbcType="CHAR" />
+		<result column="lastLoginTime" property="lastLoginTime"
+			jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="regfrom" property="regFrom" jdbcType="INTEGER" />
+		<result column="mobileverify" property="mobileVerify" jdbcType="INTEGER" />
+		<result column="realverify" property="realVerify" jdbcType="INTEGER" />
+		<result column="loginverify" property="loginVerify" jdbcType="INTEGER" />
+		<result column="emailverify" property="emailVerify" jdbcType="INTEGER" />
+		<result column="recommCodes" property="recommCodes" jdbcType="CHAR" />
+		<result column="mobilePhone" property="mobilephone" jdbcType="VARCHAR" />
+		<result column="email" property="email" jdbcType="VARCHAR" />
+		<result column="realname" property="realName" jdbcType="CHAR" />
+		<result column="idcards" property="idCards" jdbcType="VARCHAR" />
+		<result column="birthdate" property="birthdate" jdbcType="TIMESTAMP" />
+		<result column="balance" property="balance" jdbcType="DECIMAL" />
+		<result column="freeze" property="freeze" jdbcType="DECIMAL" />
+		<result column="crushcount" property="crushCount" jdbcType="DECIMAL" />
+		<result column="carrycount" property="carryCount" jdbcType="DECIMAL" />
+		<result column="investAmount" property="investAmount" jdbcType="DECIMAL" />
+		<result column="toFrom" property="toFrom" jdbcType="VARCHAR" />
+		<result column="user_integral" property="user_integral" jdbcType="INTEGER" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="user_integral_use" property="userIntegralUse" jdbcType="DECIMAL" />
+		<result column="last_sign_in_time" property="lastSignInTime" jdbcType="TIMESTAMP" />
+		<result column="sign_in_number_days" property="signInNumberDays" jdbcType="INTEGER" />
+	</resultMap>
+	<select id="selectByPrimaryKey" resultMap="DrMemberResult"
+		parameterType="com.jsjf.model.member.DrMember">
+		select m.uid, m.password, m.tpassword, m.photo,
+		m.isblack,m.toFrom,
+		m.regip, m.regdate, m.lastloginip, m.lastlogintime,
+		m.type, m.status,
+		m.regfrom, m.mobileverify, m.realverify,
+		m.loginverify, m.emailverify,
+		m.recommCodes,
+		m.mobilePhone,b.email,b.realname,b.birthdate,b.idcards,b.sex,m.isFuiou,
+		m.user_integral,
+		m.user_integral_use,m.last_sign_in_time,m.sign_in_number_days
+		from dr_member m left join
+		dr_member_base_info b on m.uid=b.uid
+		where
+		m.uid = #{uid:INTEGER}
+	</select>
+	<select id="selectForUpDateByPrimaryKey" resultMap="DrMemberResult"
+		parameterType="com.jsjf.model.member.DrMember">
+		select m.uid, m.password, m.tpassword, m.photo,
+		m.isblack,m.toFrom,
+		m.regip, m.regdate, m.lastloginip, m.lastlogintime,
+		m.type, m.status,
+		m.regfrom, m.mobileverify, m.realverify,
+		m.loginverify, m.emailverify,
+		m.recommCodes,
+		m.mobilePhone,b.email,b.realname,b.birthdate,b.idcards,b.sex,m.isFuiou,
+		m.user_integral,
+		m.user_integral_use,m.last_sign_in_time,m.sign_in_number_days
+		from dr_member m left join
+		dr_member_base_info b on m.uid=b.uid
+		where
+		m.uid = #{uid:INTEGER}
+		for update
+	</select>
+
+	<!-- 五天前没有回款，算首投 -->
+	<select id="selectFirstPayMent" resultType="int" parameterType="int">
+		select count(r.id) from dr_product_invest_repayinfo r
+		left join
+		dr_product_info p ON r.pid = p.id
+		where p.type=2 and uid = #{uid} AND
+		shouldTime &gt;= '2016-11-25'
+		AND shouldTime &lt;
+		DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 5
+		DAY),'%Y-%m-%d')
+	</select>
+
+	<select id="isExistsMobilphone" resultType="java.lang.Integer">
+		select count(1) from
+		dr_member where mobilephone = #{mobilephone}
+	</select>
+
+	<select id="selectDrMemberByUid" resultMap="DrMemberResult"
+		parameterType="java.lang.Integer">
+		select m.uid, m.password, m.tpassword, m.photo,
+		m.isblack,
+		m.regip, m.regdate, m.lastloginip, m.lastlogintime, m.type,
+		m.status,
+		m.regfrom, m.mobileverify, m.realverify, m.loginverify,
+		m.emailverify,
+		m.recommCodes
+		from dr_member m
+		where m.uid = #{uid}
+	</select>
+
+	<insert id="insertDrMember" useGeneratedKeys="true" keyProperty="uid"
+		parameterType="com.jsjf.model.member.DrMember">
+		insert into dr_member (mobilephone, password, tpassword,
+		isblack,
+		regdate,status, mobileverify, realverify, loginverify,regFrom,
+		emailverify,level, recommCodes,
+		toFrom,regip,tid,lastloginip,lastlogintime)
+		values (#{mobilephone},
+		#{passWord:CHAR}, #{tpassWord:CHAR},
+		#{isBlack:INTEGER},
+		#{regDate:TIMESTAMP}, #{status:INTEGER},
+		#{mobileVerify:INTEGER},
+		#{realVerify:INTEGER},
+		#{loginVerify:INTEGER}, #{regFrom},
+		#{emailVerify:INTEGER},
+		#{level:INTEGER},#{recommCodes:CHAR},#{toFrom:VARCHAR},#{regIp:VARCHAR},#{tid:VARCHAR},#{lastLoginIp},#{lastLoginTime})
+	</insert>
+
+	<update id="updateByPrimaryKey" parameterType="com.jsjf.model.member.DrMember">
+		update dr_member
+		<set>
+			<if test="passWord != null"> password = #{passWord:CHAR},</if>
+			<if test="tpassWord != null"> tpassword = #{tpassWord:CHAR},</if>
+			<if test="photo != null"> photo = #{photo:CHAR},</if>
+			<if test="isBlack != null"> isblack = #{isBlack:CHAR},</if>
+			<if test="regIp != null"> regip = #{regIp:CHAR},</if>
+			<if test="regDate != null"> regdate = #{regDate:TIMESTAMP},</if>
+			<if test="lastLoginIp != null"> lastloginip = #{lastLoginIp:CHAR},</if>
+			<if test="lastLoginTime != null"> lastLoginTime = #{lastLoginTime:TIMESTAMP},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="userKy != null"> USER_KY = #{userKy:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="regFrom != null"> regfrom = #{regFrom:INTEGER},</if>
+			<if test="mobileVerify != null"> mobileverify = #{mobileVerify:INTEGER},</if>
+			<if test="realVerify != null"> realverify = #{realVerify:INTEGER},</if>
+			<if test="loginVerify != null"> loginverify = #{loginVerify:INTEGER},</if>
+			<if test="emailVerify != null"> emailverify = #{emailVerify:INTEGER},</if>
+			<if test="recommCodes != null"> recommCodes = #{recommCodes:CHAR},</if>
+			<if test="level != null"> level = #{level:INTEGER},</if>
+			<if test="mchnt_txn_ssn != null and mchnt_txn_ssn !=''"> mchnt_txn_ssn = #{mchnt_txn_ssn},</if>
+			<if test="isFuiou != null "> isFuiou = #{isFuiou},</if>
+			<if test="is_Byp_Old_User != null "> is_Byp_Old_User = #{is_Byp_Old_User},</if>
+			<if test="user_integral != null "> user_integral = #{user_integral},</if>
+			<if test="userIntegralUse != null "> user_integral_use = #{userIntegralUse},</if>
+			<if test="lastSignInTime != null "> last_sign_in_time = #{lastSignInTime},</if>
+			<if test="signInNumberDays != null "> sign_in_number_days = #{signInNumberDays}</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+	<select id="selectDrMemberByMobilephone" resultMap="DrMemberResult"
+		parameterType="java.lang.String">
+		select m.uid, m.password, m.tpassword, m.photo,
+		m.status,
+		m.regfrom, m.mobileverify, m.realverify, m.loginverify,
+		m.emailverify,
+		m.recommCodes,
+		m.regdate,m.mobilePhone,b.email,b.realname,b.idcards,b.birthdate,b.sex
+		from dr_member m left join
+		dr_member_base_info b on m.uid=b.uid
+		where
+		m.mobilephone = #{loginId}
+
+	</select>
+
+	<!-- 查询被用户推荐注册人的总数 -->
+	<select id="selectRecommRegSum" parameterType="Integer"
+		resultType="Integer">
+		select count(1)
+		from dr_member m
+		where m.recommCodes =
+		(select r.code from dr_member_recommcode r where
+		uid =#{uid}
+		);
+	</select>
+
+	<select id="queryCollectCountAndStayCount" resultType="java.util.HashMap"
+		parameterType="java.util.HashMap">
+		SELECT ifnull(ta.stayCount,0) as stayCount,
+		ifnull(SUM(tt.collectCount),0) AS collectCount
+		FROM (SELECT
+		ifnull(COUNT(1),0) AS stayCount
+		FROM dr_loan_repayment
+		WHERE uid =
+		#{uid}
+		AND DATE_FORMAT(shouldtime, '%Y-%m-%d') <![CDATA[ >= ]]>
+		DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		AND DATE_FORMAT(shouldtime,
+		'%Y-%m-%d') <![CDATA[ <= ]]>
+		#{date}
+		) ta, (SELECT COUNT(1) AS collectCount
+		FROM
+		dr_loan_repayment_info yi LEFT JOIN dr_loan_repayment yr ON yi.rid =
+		yr.rid
+		WHERE yi.uid = #{uid}
+		AND yi.shouldbj <![CDATA[ <> ]]>
+		yi.factbj
+		AND yi.shouldlx <![CDATA[ <> ]]>
+		yi.factlx
+		AND DATE_FORMAT(yr.shouldtime, '%Y-%m-%d') <![CDATA[ >= ]]>
+		DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		AND DATE_FORMAT(yr.shouldtime,
+		'%Y-%m-%d') <![CDATA[ <= ]]>
+		#{date}
+		UNION ALL
+		SELECT COUNT(1) AS collectCount
+		FROM
+		dr_financial_invest_payment
+		WHERE uid = #{uid}
+		AND (factlx IS NULL
+		OR
+		shouldlx <![CDATA[ <> ]]>
+		factlx)
+		AND DATE_FORMAT(payTime, '%Y-%m-%d') <![CDATA[ >= ]]>
+		DATE_FORMAT(CURDATE(), '%Y-%m-%d')
+		AND DATE_FORMAT(payTime, '%Y-%m-%d') <![CDATA[ <= ]]>
+		#{date}
+		UNION ALL
+		SELECT COUNT(1) AS collectCount
+		FROM dr_newhand_bid
+		WHERE STATUS = 0
+		AND uid = #{uid}
+		AND DATE_FORMAT(expiration_time,
+		'%Y-%m-%d') <![CDATA[ <= ]]>
+		#{date}
+		) tt
+	</select>
+	<select id="selectDrMemberByMobileOrRecomm" resultType="com.jsjf.model.member.DrMember"
+		parameterType="java.lang.String">
+		select * from dr_member where mobilephone = #{str} or
+		recommCodes = #{str}
+	</select>
+
+	<select id="selectMemberIsJoinActivity" resultType="com.jsjf.model.member.DrMember">
+		select tofrom
+		from dr_member m
+		where uid=#{uid} and exists (select `code` from
+		dr_channel_info where
+		isParticipation=0 and INSTR(toFrom,code)=1 )
+	</select>
+	<!-- 根据用户推荐码获取用户脱敏手机号 -->
+	<select id="selectMobilePhoneByRecommCode" resultType="java.lang.String"
+		parameterType="java.lang.String">
+		select
+		concat(substring(mobilePhone,1,3),"****",substring(mobilePhone,8)) as
+		mobilePhone from dr_member where recommCodes = #{recommCode}
+	</select>
+	<select id="lastRegMember" resultType="java.util.HashMap">
+		select
+		concat(left(mobilePhone,3),'****',right(mobilePhone,4))
+		mobilePhone,DATE_FORMAT(regdate,'%m-%d %h:%i:%s') regdate
+		from
+		dr_member ORDER BY uid DESC LIMIT 100
+	</select>
+
+
+	<!-- 查询总注册人数 -->
+	<select id="selectDrmembercount" resultType="Integer">
+		select count(1) from
+		dr_member
+	</select>
+
+
+	<select id="selectIndexSummaryData" resultType="java.util.HashMap">
+		select count(uid)
+		as regCount,(SELECT sum(amount) from dr_product_invest) as
+		investCumulative
+		,sum(investProfit+spreadProfit+fuiou_investProfit+fuiou_spreadProfit)
+		as profitCumulative from dr_member_funds
+	</select>
+
+	<select id="selectDrMemberByMonth" resultType="com.jsjf.model.member.DrMember">
+		select * from
+		dr_member where uid = #{uid} and DATE_FORMAT(regdate,"%Y-%m") =
+		DATE_FORMAT(now(),"%Y-%m")
+	</select>
+	<select id="selectIsBypOldUser" resultType="com.jsjf.model.member.DrMember">
+		SELECT
+		*
+		FROM
+		dr_member
+		WHERE
+		uid = #{uid}
+		AND is_byp_old_user
+		in
+		<foreach item="item" index="index" collection="ids" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+		LIMIT 0,1
+	</select>
+	
+	<insert id="insertDevice" useGeneratedKeys="true" keyProperty="uid"
+		parameterType="com.jsjf.model.member.DrMember">
+		insert into dr_member (passWord,regfrom,toFrom)
+		values (#{passWord},#{regFrom},#{toFrom})
+	</insert>
+	
+	<select id="queryMemberUuid" parameterType="String" resultType="Integer">
+		SELECT
+		count(0)
+		FROM
+		dr_member
+		WHERE
+		password = #{password}
+	</select>
+	
+	<select id="queryMemberUid" parameterType="String" resultType="String">
+		SELECT
+		uid
+		FROM
+		dr_member
+		WHERE
+		password = #{password}
+	</select>
+	
+
+	<update id="updateDrMember" parameterType="com.jsjf.model.member.DrMember" >
+		update dr_member
+		<set>
+			<if test="mobilephone != null"> mobilePhone = #{mobilephone:CHAR},</if>
+			<if test="passWord != null"> password = #{passWord:CHAR},</if>
+			<if test="tpassWord != null"> tpassword = #{tpassWord:CHAR},</if>
+			<if test="photo != null"> photo = #{photo:CHAR},</if>
+			<if test="isBlack != null"> isblack = #{isBlack:CHAR},</if>
+			<if test="regIp != null"> regip = #{regIp:CHAR},</if>
+			<if test="regDate != null"> regdate = #{regDate:TIMESTAMP},</if>
+			<if test="lastLoginIp != null"> lastloginip = #{lastLoginIp:CHAR},</if>
+			<if test="lastLoginTime != null"> lastLoginTime = #{lastLoginTime:TIMESTAMP},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="userKy != null"> USER_KY = #{userKy:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="regFrom != null"> regfrom = #{regFrom:INTEGER},</if>
+			<if test="mobileVerify != null"> mobileverify = #{mobileVerify:INTEGER},</if>
+			<if test="realVerify != null"> realverify = #{realVerify:INTEGER},</if>
+			<if test="loginVerify != null"> loginverify = #{loginVerify:INTEGER},</if>
+			<if test="emailVerify != null"> emailverify = #{emailVerify:INTEGER},</if>
+			<if test="recommCodes != null"> recommCodes = #{recommCodes:CHAR},</if>
+			<if test="level != null"> level = #{level:INTEGER},</if>
+			<if test="mchnt_txn_ssn != null and mchnt_txn_ssn !=''"> mchnt_txn_ssn = #{mchnt_txn_ssn},</if>
+			<if test="isFuiou != null "> isFuiou = #{isFuiou},</if>
+			<if test="is_Byp_Old_User != null "> is_Byp_Old_User = #{is_Byp_Old_User},</if>
+			<if test="user_integral != null "> user_integral = #{user_integral},</if>
+			<if test="userIntegralUse != null "> user_integral_use = #{userIntegralUse},</if>
+			<if test="lastSignInTime != null "> last_sign_in_time = #{lastSignInTime},</if>
+			<if test="signInNumberDays != null "> sign_in_number_days = #{signInNumberDays}</if>
+		</set>
+		where passWord = #{androidUuid:CHAR}
+	</update>
+    <select id="selectDrmemberSignDays" resultType="java.lang.Integer"
+            parameterType="java.util.HashMap">
+        SELECT sign_in_number_days
+        FROM
+        dr_member
+        where uid = #{uid:INTEGER}
+    </select>
+    
+    <!-- 查询openId -->
+     <select id="queryOpenId" resultType="java.lang.String"
+            parameterType="java.lang.Integer">
+        SELECT open_id as openId
+        FROM
+        byp_bind_weixin
+        where uid = #{uid:INTEGER}
+    </select>
+    
+    <!-- 绑定微信用户 -->
+    <insert id="insertopenId" useGeneratedKeys="true" keyProperty="uid"
+		parameterType="com.jsjf.model.weixin.BindWeixinBean">
+		insert into byp_bind_weixin (uid,open_id,add_time)
+		values (#{uid},#{openId},#{addTime})
+	</insert>
+
+</mapper>

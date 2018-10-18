@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeDAO">
+	<resultMap id="JsProductPrize" type="com.jsjf.model.product.JsProductPrize">
+	<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR"/>
+		<result column="simpleName" property="simpleName" jdbcType="VARCHAR"/>
+		<result column="price" property="price" jdbcType="DECIMAL"/>
+		<result column="amount" property="amount" jdbcType="DECIMAL"/>
+		<result column="sort" property="sort" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="pcImgUrlV" property="pcImgUrlV" jdbcType="VARCHAR"/>
+		<result column="pcImgUrlH" property="pcImgUrlH" jdbcType="VARCHAR"/>
+		<result column="pcDetailImgUrl" property="pcDetailImgUrl" jdbcType="VARCHAR"/>
+		<result column="h5ImgUrlV" property="h5ImgUrlV" jdbcType="VARCHAR"/>
+		<result column="h5ImgUrlH" property="h5ImgUrlH" jdbcType="VARCHAR"/>
+		<result column="h5DetailImgUrl" property="h5DetailImgUrl" jdbcType="VARCHAR"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="isNot" property="isNot" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="rate" property="rate" jdbcType="DECIMAL"/>
+		<result column="activityRate" property="activityRate" jdbcType="DECIMAL"/>
+		<result column="deadline" property="deadline" jdbcType="INTEGER"/>
+		<result column="prizeType" property="prizeType" jdbcType="INTEGER"/>
+	</resultMap>
+	<!--查询活动页的 / -->
+	<select id="selectActivityIndexJsproductPrize" resultMap="JsProductPrize">
+		SELECT jpp.*,dp.id pid,
+				 if(dp.status=5 and dp.isShow =1, if(1>(dp.surplusAmount/jpp.amount),1,0),1) isNot,dp.rate,dp.activityRate,dp.deadline
+			from js_product_prize jpp 
+			LEFT JOIN dr_product_info dp ON jpp.id = dp.prizeId and dp.isShow = 1 and NOW() >= dp.startDate and dp.status = 5
+			WHERE  jpp.status = 1 ORDER BY jpp.sort DESC,dp.`status`,jpp.`addTime`
+	</select>
+	
+	<select id="selectJsPorudctPrize" resultMap="JsProductPrize" parameterType="java.util.HashMap">
+		SELECT jpp.*,dp.id pid,
+			if(dp.status=5, if(1>(dp.surplusAmount/jpp.amount),1,0),1) isNot,
+			ifNull(dp.rate,8.5) as rate,ifNull(dp.activityRate,3) as activityRate,ifNull(dp.deadline,90) as deadline,
+			IF(jpp.name = "50元话费",1,2) AS prizeType 
+			from js_product_prize jpp 
+			LEFT JOIN dr_product_info dp ON jpp.id = dp.prizeId
+		<where>
+			<if test="id  != null ">
+				and jpp.id = #{id}
+			</if>
+			<if test="pid != null"> 
+				and dp.id = #{pid}
+			</if>
+		</where>
+		ORDER BY jpp.id,dp.startDate desc limit 1	
+	</select>
+    <select id="selectByPrimaryKey" resultMap="JsProductPrize" parameterType="java.util.HashMap">
+        SELECT * from js_product_prize
+        <where>
+            <if test="id  != null ">
+                and id = #{id}
+            </if></where>
+    </select>
+</mapper>

@@ -1,0 +1,301 @@
+﻿
+<%@include file="/WEB-INF/jsp/common/include/Taglibs.jsp"%>
+<%@ page language="java" import="java.util.*" pageEncoding="UTF-8"%>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>币优铺理财 - 慧信财富管理有限公司</title>
+<%@ include file="../../common/include/util.jsp" %>
+<script type="text/javascript" src="../js/common/jquery.form.js"></script>
+</head>
+<body>
+	<table id="drProductPrizeList" title="活动管理" 
+	class="easyui-datagrid" style="height:99%;width:99.9%"
+	data-options="singleSelect:true,
+	    fitColumns:true,url: '../festivaIactivity/queryFestivaIActivityList.do',
+	    fit:true,
+	    method:'post',rownumbers:true,
+	    pagination:true,toolbar:'#prizeManageTools',nowrap: false">
+		<thead>
+	    <tr>
+	    	<th data-options="field:'mobilePhone'" width="10%">用户手机号</th>
+	    	<th data-options="field:'code'" width="10%">兑换码/快递单号</th>
+	    	<th data-options="field:'status'" width="5%" formatter="formaterProductPrizeStatus">状态</th>
+	    	<th data-options="field:'type'" formatter="formaterProductPrizeCategory" width="5%">奖品类别</th>
+	    	<th data-options="field:'prizeName'"  width="10%">奖品名称</th>
+	        <th data-options="field:'provide'" width="8%" formatter="formatDateBoxFull">发放时间</th>
+	        <th data-options="field:'address'" width="27%" >收件地址</th>
+	          <th data-options="field:'starttime'" width="8%" formatter="formatDateBoxFull">有效期开始时间</th>
+	        <th data-options="field:'endtime'" width="8%" formatter="formatDateBoxFull">有效期截止时间</th>
+	        <th data-options="field:'addtime'"  width="8%" formatter="formatDateBoxFull">创建时间</th>
+	        <th data-options="field:'_operate',width:80,align:'center',formatter:formatOper" width="5%">操作</th>
+	    </tr>
+	    </thead>
+	</table>
+	<div id="prizeManageTools" style="padding:5px;height:750">
+	  	<form id="drProductPrizeForm" target="_blank" method="post">
+	  		手机号:<input id="mobilePhone" name="mobilePhone" class="easyui-textbox"  size="15" style="width:150px"/>
+	  		兑换码/快递单号:<input id="code" name="code" class="easyui-textbox"  size="15" style="width:150px"/>
+	  		开始时间:<input id="starttime" name="starttime" class="easyui-datebox" style="width:100px" />
+	  		截止时间:<input id="endtime" name="endtime" class="easyui-datebox" style="width:100px"/>
+	  		发放时间:<input id="provide" name="provide" class="easyui-datetimebox" style="width:200px"/>
+	                   状态:<select id="status" name="status" class="easyui-combobox" style="width:100px">
+		  					<option value=''>全部</option>
+		  					<option value='0' >不可用</option>
+		  					<option value='1' selected="selected">可用</option>
+	  				</select>
+  			类别：<select id="type" name="type" class="easyui-combobox" style="width:100px">
+	  					<option value=''>全部</option>
+	  					<option value='1'>京东卡</option>
+	  					<option value='2'>电子产品</option>
+	  					<option value='3'>虚拟货物</option>
+  				</select>
+  				</br>
+  				</br>
+  				活动时间:<input id="tjStartTime" name="tjStartTime" class="easyui-datebox" style="width:100px" data-options="required:true"/>
+	  			至:<input id="tjEndTime" name="tjEndTime" class="easyui-datebox" style="width:100px" data-options="required:true"/>
+	  			产品天数:<input id="deadline" name="deadline" class="easyui-textbox"  size="15" style="width:150px" data-options="required:true"/>
+	  			虚拟货物有效期:<input id="xnEndTime" name="xnEndTime" class="easyui-datebox"  size="15" style="width:150px"/>
+	  			最低参与金额:<input id="amount" name="amount" class="easyui-textbox"  size="15" style="width:150px" data-options="required:true"/>
+	  			统计奖品类型:<select id="tjType" name="tjType" class="easyui-combobox" style="width:100px">
+	  					<option value='1' selected="selected">京东卡</option>
+	  					<option value='2'>电子产品</option>
+	  					<option value='3'>虚拟货物</option>
+  				</select>
+  				</br>
+  				</br>
+	  		<a id="searchJsProductPrize" onclick="searchJsProductPrize()" href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-search">查询</a>
+	    	<a id="resetJsProductPrize" href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-reload">重置</a>
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" onclick="prizeStatistics()">奖品统计</a> 
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" onclick="sendPrizeSms()">发放奖品</a> 
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-redo" onclick="downloadDetail()">活动记录明细下载</a>
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" onclick="importBatchCodeWindows()">批量导入活动数据</a> 
+	    	<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-redo" onclick="downloadModel()">导入活动数据模板下载</a> 
+	    </form>
+	</div>
+	
+	
+	<%--单个兑换码和地址录入--%>
+	<div id="updateActivityWindow" class="easyui-dialog" title="兑换码录入"
+		data-options="iconCls:'icon-edit',closed:true,modal:true,minimizable:false,resizable:true,maximizable:false,buttons:'#addDrProductInfoBtn'"
+		style="width:550px;height:300px;padding:20px;">
+		<form id="updateSysProgramForm">
+			<table id="jptable" align="center" cellspacing="1" cellpadding="1" style="width:auto;">
+			<input id="id" name="id" readonly="readonly" type="hidden" />
+				<tr>
+					<td align="left">兑换码：<input id="code" name="code" type="text" class="easyui-textbox" data-options="required:true"/>
+					
+					</td>
+				</tr>
+			</table>
+		</form>
+		<div id="#addRedEnvelopeBtn" align="center">
+			<a href="javascript:void(0)" class="easyui-linkbutton" iconCls="icon-add" onclick="updatePrize()">提交</a>
+		</div>
+	</div>
+	
+	
+	<div id="uploadFileDialog" class="easyui-dialog" title="导入活动信息"
+		data-options="iconCls:'icon-edit',closed:true,modal:true,minimizable:false,resizable:true,maximizable:false,buttons:'#uploadFileDialogBtn'" 
+		style="width:420px;height:200px;padding:15px;">
+		<form id="uploadFileDialogForm" name="uploadFileDialogForm" enctype="multipart/form-data">
+			<div class="easyui-panel"  style="border:0">
+				<div style="margin-bottom:20px">
+					<div>请选择要导入的EXCEL:</div>
+					<input class="easyui-filebox" name="filename" data-options="prompt:'请选择文件...'" style="width:100%">
+				</div>
+			</div>
+			<div id="uploadFileDialogBtn">
+				<a id="uploadMemberInfo" href="javascript:void(0)" class="easyui-linkbutton" onclick="importBatchCode()">导入</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="closeDialog()">取消</a>
+			</div>
+		</form>
+	</div>
+
+	
+<script type="text/javascript">
+
+	//重置按钮
+	$('#resetJsProductPrize').click(function(){
+		$("#drProductPrizeForm").form("reset");
+		$("#drProductPrizeList").datagrid("load", {});
+	});
+	//查询按钮
+	function searchJsProductPrize(){
+ 		$('#drProductPrizeList').datagrid({
+			queryParams: {
+				code:$('#code').val(),
+				starttime:$('#starttime').datebox('getValue'),
+				endtime:$('#endtime').datebox('getValue'),
+				provide:$('#provide').datebox('getValue'),
+				status:$('#status').combobox('getValue'),
+				mobilePhone:$('#mobilePhone').val(),
+				type:$('#type').combobox('getValue'),
+			}
+		});
+	};
+	
+	
+	//添加基本操作链接
+	function formatOper(val,row,index){ 
+		var articleOper = '<a href="#" class="btn l-btn l-btn-small" onclick="updateActivityWindow('+index+')">录入兑换码</a>';
+		return articleOper;
+	} 	
+	
+	//单个录入
+	function updatePrize(){
+		var validate = $("#updateSysProgramForm").form("validate");
+		if(!validate){
+			return false;
+		}
+		$.ajax({
+          	url: "${apppath}/festivaIactivity/updateFestivaIActivity.do",
+            type: 'POST',
+            data:$("#updateSysProgramForm").serialize(),  
+            success:function(result){
+			if(result.success){
+				$.messager.alert("提示信息",result.msg);
+				$("#drProductPrizeList").datagrid("reload");
+				$("#updateActivityWindow").dialog("close");
+			}else{
+				$.messager.alert("提示信息",result.msg);
+			}
+			}
+        });
+		 return false;
+	}
+
+	//跳转到修改页面
+	function updateActivityWindow(index){
+		$('#drProductPrizeList').datagrid('selectRow',index);// 关键在这里 
+	    var row = $('#drProductPrizeList').datagrid('getSelected'); 
+		$("#updateSysProgramForm").form("load",row);
+		$("#updateActivityWindow").dialog("open");
+	}
+	
+	//奖品统计（统计有哪些用户有资格可以参与活动）
+	function prizeStatistics(){
+		var validate = $("#drProductPrizeForm").form("validate");
+		if(!validate){
+			return false;
+		}
+		
+		$.ajax({
+          	url: "${apppath}/festivaIactivity/prizeStatistics.do",
+            type: 'POST',
+            data:$("#drProductPrizeForm").serialize(),  
+            success:function(result){
+				if(result.success){
+					$("#drProductPrizeList").datagrid("reload");
+					$.messager.alert("提示信息",result.msg);
+				}else{
+					$.messager.alert("提示信息",result.msg);
+				}
+			}
+        });
+		return false;
+	}
+	
+	//发送京东卡和虚拟货物状态为可用的奖品短信
+	function sendPrizeSms(){
+		$.ajax({
+          	url: "${apppath}/festivaIactivity/sendPrizeSms.do",
+            type: 'POST',
+            data:$("#updateSysProgramForm").serialize(),  
+            success:function(result){
+				if(result.success){
+					$("#drProductPrizeList").datagrid("reload");
+					$.messager.alert("提示信息",result.msg);
+				}else{
+					$.messager.alert("提示信息",result.msg);
+				}
+			}
+        });
+	}
+
+	//明细数据下载
+	function downloadDetail(){
+		window.location.href="../festivaIactivity/downloadDetail.do";
+	}
+	
+	//模板下载
+	function downloadModel(){
+		window.location.href="../festivaIactivity/downloadModel.do";
+	}
+	
+	//导入文件窗口
+	function importBatchCodeWindows(index){
+		$("#uploadFileDialogForm").form("reset");
+		$("#uploadFileDialog").dialog("open");
+	}
+	
+	//批量导入
+	function importBatchCode(){
+		$("#uploadFileDialogForm").ajaxSubmit({
+            type: 'post', // 提交方式 get/post
+            url: '${apppath}/festivaIactivity/importBatchCode.do', // 需要提交的 url
+            success:function(result){
+             	var resultJson = jQuery.parseJSON(result);
+				if(resultJson.success){
+					$.messager.alert("提示信息",resultJson.msg);
+					$("#drProductPrizeList").datagrid("reload");
+					$("#uploadFileDialog").dialog("close");
+				}else{
+					$.messager.alert("提示信息",resultJson.msg);
+				}
+			}
+        });
+	}
+		
+	function closeDialog(){
+		$("#uploadFileDialog").dialog("close");	
+	}
+	
+	//奖品状态	
+	function formaterProductPrizeStatus(value,row,index){
+		if(row.status == 0){
+			return '不可用';
+		}else if(row.status == 1){
+			return '可用';
+		}
+	}
+
+	function formaterProductPrizeCategory(value,row,index){
+		if(value == " "){
+			return '请选择';
+		}
+		if(value == 1){
+			return '京东卡';
+		}
+		if(value == 2){
+			return '电子产品';
+		} 
+		if(value == 3){
+			return '虚拟货物';
+		}
+		
+	}
+	
+
+	
+	$(document).ready(function () {
+		$('#status').combobox('getValue');
+		searchJsProductPrize();		   
+		/* $('#drProductPrizeList').datagrid({ 
+		    onBeforeLoad: function (d) {
+			var url= "../festivaIactivity/queryFestivaIActivityList.do"; 
+				$.ajax({
+					url:url,
+					type:'post',
+					data:$("#drProductPrizeForm").serialize(), 
+					success:function(data){
+					}
+				});
+			} 
+    	}); */
+	});
+</script>
+</body>
+</html>
+

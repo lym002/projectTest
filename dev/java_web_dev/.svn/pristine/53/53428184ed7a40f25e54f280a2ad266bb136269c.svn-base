@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityHitIceLogDAO">
+	<resultMap id="JsActivityHitIceLogResult" type="com.jsjf.model.activity.JsActivityHitIceLog">
+	
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="goldNum" property="goldNum" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		
+	</resultMap>
+	<sql id="Base_Column_List">
+		id,uid,type,goldNum,investId,addTime,updateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsActivityHitIceLogResult">
+		select <include refid="Base_Column_List"/> from js_activity_hitIce_log where id = #{id}
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.JsActivityHitIceLog" >
+		INSERT INTO js_activity_hitIce_log
+		( uid, type, goldNum, investId, addTime) 
+		VALUES (  #{uid}, #{ type}, #{goldNum}, #{investId}, #{addTime})
+	</insert>
+	
+	<insert id="insertBatch" parameterType="java.util.List">
+		insert into js_activity_hitIce_log
+		( uid, type, goldNum, investId, addTime) 
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(  #{item.uid}, #{ item.type}, #{item.goldNum}, #{item.investId}, #{item.addTime})
+		</foreach>
+	
+	</insert>
+	
+	<!-- 查询 -->
+	<select id="selectObjectByMap" resultMap="JsActivityHitIceLogResult" parameterType="java.util.Map">
+		select <include refid="Base_Column_List"/> from js_activity_hitIce_log
+		<trim prefix="where" prefixOverrides="and">
+			<if test="uid !=null ">and uid =#{uid}</if>
+			<if test="type !=null ">and type =#{type}</if>
+			<if test="goldNum !=null ">and goldNum =#{goldNum}</if>
+			<if test="investId !=null ">and investId =#{investId}</if>
+			<if test="addTime !=null ">and addTime =#{addTime}</if>
+			<if test="updateTime !=null ">and updateTime =#{updateTime}</if>
+			<if test="isReceive !=null"> and updateTime is not null</if><!-- 已领取 -->
+			<if test="noReceive !=null"> and updateTime is null</if><!-- 未领取 -->
+			<if test="start !=null and end !=''"> and  addTime BETWEEN   #{start} and  #{end}  </if>
+		</trim>
+		<if test="offset !=null and limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	
+	</select>
+	<!-- 查询 -->
+	<select id="selectObjectCountByMap" resultType="int" parameterType="java.util.Map">
+		select count(1) from js_activity_hitIce_log
+		<trim prefix="where" prefixOverrides="and">
+			<if test="uid !=null ">and uid =#{uid}</if>
+			<if test="type !=null ">and type =#{type}</if>
+			<if test="goldNum !=null ">and goldNum =#{goldNum}</if>
+			<if test="investId !=null ">and investId =#{investId}</if>
+			<if test="addTime !=null ">and DATE_FORMAT(addTime,'%Y%m%d') =DATE_FORMAT(#{addTime},'%Y%m%d')</if>
+			<if test="updateTime !=null ">and updateTime =#{updateTime}</if>
+			<if test="isReceive !=null"> and updateTime is not null</if><!-- 已领取 -->
+			<if test="noReceive !=null"> and updateTime is null</if><!-- 未领取 -->
+			<if test="start !=null and end !=''"> and  addTime BETWEEN   #{start} and  #{end}  </if>
+		</trim>	
+	</select>
+	
+	<!--  砸冰块活动期间邀请好友数量 -->
+	
+	<select id="selectActivityTimeInviteFriendsCount" resultType="int" parameterType="java.util.Map">
+		SELECT COUNT(1) from dr_member_recommended dmr
+		LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+		where  dm.isFuiou and  dmr.referrerId =  #{uid} and dmr.addTime BETWEEN #{start} and #{end}
+	</select>
+	
+	<!--砸冰块活动期间 新的投资  -->
+	<select id="selectActivityTimeNewInvest" resultType="java.util.Map"  parameterType="java.util.Map"  >
+		SELECT dpi.amount,dpi.id investId from dr_product_invest dpi 
+			LEFT JOIN dr_product_info dp ON dpi.pid = dp.id AND dp.type = 2 and dp.deadline in(60,180) and if(dp.atid or dp.prizeId,0,1)  and dp.repayType = 1
+			LEFT JOIN js_activity_hitIce_log ja ON dpi.id = ja.investId 
+			where  dp.id and  dpi.amount>999 and dpi.uid = #{uid} and dpi.investTime BETWEEN #{start} and #{end} and  ja.id is NULL
+	</select>
+	
+	<!-- 活动期间参与人数 -->
+	<select id="selectActivityTimePartakeCount" resultType="int" parameterType="java.util.Map">
+		SELECT COUNT(DISTINCT uid) from js_activity_hitIce_log where addTime BETWEEN #{start} and #{end} 
+	</select>
+	<!-- 活动期间用户获得金币总数 -->
+	<select id="selectActivityTimeGoldCount" resultType="int" parameterType="java.util.Map">
+		SELECT IFNULL(sum(goldNum),0) from js_activity_hitIce_log where uid = #{uid}  and updateTime is not null and addTime BETWEEN #{start} and #{end}
+	</select>
+	<!-- 修改领取时间 -->
+	<update id="updateReceiveTime" parameterType="Integer">
+		update js_activity_hitIce_log set updateTime = now() where id = #{id}
+	</update>
+	
+</mapper>

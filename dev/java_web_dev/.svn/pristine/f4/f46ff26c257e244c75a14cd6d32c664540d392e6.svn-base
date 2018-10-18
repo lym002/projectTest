@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberCpsFavourableRuleDAO" >
+  <resultMap id="DrMemberCpsFavourableRuleBaseResultMap" type="com.jsjf.model.member.DrMemberCpsFavourableRule" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="minAmount" property="minAmount" jdbcType="DECIMAL" />
+    <result column="maxAmount" property="maxAmount" jdbcType="DECIMAL" />
+    <result column="isFirst" property="isFirst" jdbcType="INTEGER" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="isCps" property="isCps" jdbcType="INTEGER" />
+    <result column="activityId_1" property="activityId_1" jdbcType="INTEGER" />
+    <result column="activityId_2" property="activityId_2" jdbcType="INTEGER" />
+    <result column="activityId_3" property="activityId_3" jdbcType="INTEGER" />
+    <result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+    <result column="addUserKey" property="addUserKey" jdbcType="INTEGER" />
+    <result column="updTime" property="updTime" jdbcType="TIMESTAMP" />
+    <result column="updUserKey" property="updUserKey" jdbcType="INTEGER" />
+    <result column="code_1" property="code_1" jdbcType="VARCHAR" />
+    <result column="code_2" property="code_2" jdbcType="VARCHAR" />
+    <result column="code_3" property="code_3" jdbcType="VARCHAR" />
+    <result column="addUserName" property="addUserName" jdbcType="VARCHAR" />
+    <result column="updUserName" property="updUserName" jdbcType="VARCHAR" />
+  </resultMap>
+  
+   <select id="selectActivityByCps" resultType="com.jsjf.model.member.DrMemberCpsFavourableRule" parameterType="java.util.HashMap">
+  	select activityId_1,activityId_2,activityId_3 from dr_member_cps_favourable_rule 
+	where minAmount &lt;= #{shouldPrincipalCount} and maxAmount &gt;= #{shouldPrincipalCount} and status ='1' and isFirst = #{isFirst} and isCps =(select IFNULL(b.type,0) AS TYPE from dr_member a left join dr_channel_info b on INSTR(a.toFrom,b.code)=1 where uid = #{uid})
+  </select>
+  
+</mapper>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsProductReservationLogDAO">
+	<resultMap id="JsProductReservationLogResult" type="com.jsjf.model.activity.JsProductReservationLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="prid" property="prid" jdbcType="VARCHAR" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />	
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="TIMESTAMP" />
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />	
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,prid,uid,addTime,amount,joinType
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsProductReservationLogResult" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_product_reservation_log where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsProductReservationLogByMap" parameterType="java.util.HashMap" resultMap="JsProductReservationLogResult">
+	 	select <include refid="Base_Column_List" /> from js_product_reservation_log
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="prid != null">
+	 			and prid = #{prid}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 <insert id="insert" parameterType="com.jsjf.model.activity.JsProductReservationLog">
+	 	INSERT INTO js_product_reservation_log (prid,uid, addTime, amount, joinType) 
+		VALUES (#{prid}, #{uid}, now(), #{amount}, #{joinType});
+	 </insert>
+</mapper>

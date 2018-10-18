@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.creditorRight.DrCreditorRightMappingDAO">
+	<resultMap id="DrCreditorRightMappingResult" type="com.jsjf.model.creditorRight.DrCreditorRightMapping">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="sid" property="sid" jdbcType="INTEGER" />
+		<result column="mappingAmount" property="mappingAmount" jdbcType="DECIMAL" />
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="operateUser" property="operateUser" jdbcType="INTEGER" />
+		<result column="operateTime" property="operateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<!-- 添加登陆用户 -->
+	<insert id="insertcreditorRightMapping" parameterType="com.jsjf.model.creditorRight.DrCreditorRightMapping">
+		insert into dr_creditor_right_mapping (pid,sid,mappingAmount, startDate, endDate,status, remark, operateUser,operateTime)
+		values(#{pid},#{sid},#{mappingAmount}, #{startDate}, #{endDate},#{status}, #{remark}, #{operateUser},sysdate())
+	</insert>
+	
+	<update id="updateDrMemberByUid" parameterType="com.jsjf.model.creditorRight.DrCreditorRightMapping">
+		update dr_creditor_right_mapping
+		<set>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	
+	<select id="getCreditorRightMapping"  resultMap="DrCreditorRightMappingResult">
+		select crm.id,crm.pid,crm.sid,dsi.`status` as subjectStatus,crm.mappingAmount,crm.endDate 
+		from dr_creditor_right_mapping crm
+		left JOIN dr_product_info dpi ON crm.pid = dpi.id
+		left join dr_subject_info dsi ON crm.sid = dsi.id
+		where DATE_FORMAT(crm.endDate,'%Y-%m-%d')=DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 day),'%Y-%m-%d')
+	</select>
+</mapper>

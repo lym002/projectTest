@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsShareholderDAO">
+	<resultMap id="DrClaimsShareholderResult" type="com.jsjf.model.claims.DrClaimsShareholder">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />	
+		<result column="certificateType" property="certificateType" jdbcType="INTEGER" />
+		<result column="certificateNo" property="certificateNo" jdbcType="VARCHAR" />
+		<result column="contributionLines" property="contributionLines" jdbcType="DECIMAL" />
+		<result column="contributionType" property="contributionType" jdbcType="VARCHAR" />
+		<result column="investRate" property="investRate" jdbcType="DECIMAL" />	
+	</resultMap>
+	<!-- 获取股东情况-->
+	<select id="getDrClaimsShareholderByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsShareholder">
+		select * from dr_claims_shareholder
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	<!-- 修改股东情况-->
+	<update id="updateDrClaimsShareholder" parameterType="com.jsjf.model.claims.DrClaimsShareholder">
+		update dr_claims_shareholder
+		<set>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="sex != null"> sex = #{sex:INTEGER},</if>
+			<if test="phone != null"> phone = #{phone:VARCHAR},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="certificateType != null"> certificateType = #{certificateType:INTEGER},</if>
+			<if test="certificateNo != null"> certificateNo = #{certificateNo:VARCHAR},</if>
+			<if test="contributionLines != null"> contributionLines = #{contributionLines:DECIMAL},</if>
+			<if test="contributionType != null"> contributionType = #{contributionType:VARCHAR},</if>
+			<if test="investRate != null"> investRate = #{investRate:DECIMAL}</if>
+		</set>
+		where lid = #{lid:INTEGER}
+	</update>
+	
+	<!-- 股东情况 -->
+	<insert id="insertDrClaimsShareholder" parameterType="com.jsjf.model.claims.DrClaimsShareholder">
+		insert into dr_claims_shareholder(lid,name,sex,phone,type,certificateType,certificateNo,
+		contributionLines,contributionType,investRate)
+		values (#{lid:INTEGER},#{name:VARCHAR},#{sex:INTEGER},#{phone:VARCHAR},#{type:INTEGER},
+		#{certificateType:INTEGER},#{certificateNo:VARCHAR},#{contributionLines:DECIMAL},#{contributionType:VARCHAR},
+		#{investRate:DECIMAL})
+	</insert>
+	
+		<!-- 删除股东情况 -->
+	<delete id="deleteDrClaimsShareholder" parameterType="java.lang.Integer" >
+	    delete from dr_claims_shareholder where lid = #{lid:INTEGER} 
+	</delete>
+	
+
+</mapper>

@@ -1,0 +1,575 @@
+package com.jsjf.service.member.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.MailUtil;
+import com.jsjf.common.SmsSendUtil;
+import com.jsjf.common.ThreadPool;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.claims.JsLoanRecordDAO;
+import com.jsjf.dao.member.DrCarryParamDAO;
+import com.jsjf.dao.member.DrMemberBankDAO;
+import com.jsjf.dao.member.DrMemberCarryDAO;
+import com.jsjf.dao.member.DrMemberCrushDAO;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberFundsDAO;
+import com.jsjf.dao.member.DrMemberFundsLogDAO;
+import com.jsjf.dao.member.DrMemberFundsRecordDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.dao.member.JsCompanyAccountLogDAO;
+import com.jsjf.dao.product.DrProductInfoDAO;
+import com.jsjf.dao.product.DrProductInvestDAO;
+import com.jsjf.dao.system.DrCompanyFundsLogDAO;
+import com.jsjf.dao.system.SysFuiouNoticeLogDAO;
+import com.jsjf.model.member.DrCarryParam;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberBank;
+import com.jsjf.model.member.DrMemberCarry;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.model.member.DrMemberFundsLog;
+import com.jsjf.model.member.DrMemberFundsRecord;
+import com.jsjf.model.member.DrMemberMsg;
+import com.jsjf.model.member.JsCompanyAccountLog;
+import com.jsjf.model.product.DrProductInfo;
+import com.jsjf.model.system.DrCompanyFundsLog;
+import com.jsjf.model.system.Mail;
+import com.jsjf.model.system.SysFuiouNoticeLog;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.system.SysMessageLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jytpay.config.MockClientMsgBase;
+import com.jytpay.vo.JYTResultData;
+import com.jytpay.vo.JYTSendData;
+import com.jzh.FuiouConfig;
+import com.jzh.data.WtRechargeAndWtWithdrawalRspData;
+
+@Service
+@Transactional
+public class DrMemberCarryServiceImpl implements DrMemberCarryService {
+	@Autowired
+	private DrMemberCarryDAO drMemberCarryDAO;
+	@Autowired
+	private DrCarryParamDAO drCarryParamDAO;
+	@Autowired
+	private DrMemberFundsDAO drMemberFundsDAO;
+	@Autowired
+	private DrMemberFundsLogDAO drMemberFundsLogDAO;
+	@Autowired
+	private DrMemberMsgDAO drMemberMsgDAO;
+	@Autowired
+	private SysMessageLogService sysMessageLogService;
+	@Autowired
+	public DrMemberBankDAO drMemberBankDAO;
+	@Autowired
+	public DrMemberFundsRecordDAO drMemberFundsRecordDAO;
+	@Autowired
+	public DrCompanyFundsLogDAO drCompanyFundsLogDAO;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrProductInvestDAO drProductInvestDAO;
+	@Autowired
+	private DrMemberCrushDAO drMemberCrushDAO;
+	@Autowired
+	private DrMemberDAO drMemberDao;
+	@Autowired
+	private JsCompanyAccountLogDAO jsCompanyAccountLogDAO;
+	@Autowired
+	private SysFuiouNoticeLogDAO sysFuiouNoticeLogDao;
+	@Autowired
+	private DrProductInfoDAO drProductInfoDAO; 
+	@Autowired
+	private JsLoanRecordDAO jsLoanRecordDAO;
+	
+	ThreadPool t = ThreadPool.getThreadPool(20);
+	@Override
+	public Map<String, Object> insertDrMemberCarry(final DrMember member,DrMemberCarry drMemberCarry,DrMemberBank drMemberBank,DrMemberFunds drMemberFunds,DrCarryParam drCarryParam)throws Exception {
+		Map<String, Object> map = new HashMap<String, Object>();
+		boolean flag = true;
+		drMemberCarry.setUid(member.getUid());
+		drMemberCarry.setPaymentNum(createOrderNo(6,drMemberCarry.getUid())); 
+		drMemberCarry.setChannel(0); 
+		drMemberCarry.setAddTime(new Date()); 
+		drMemberCarry.setBankId(drMemberBank.getId());
+		drMemberCarry.setBankName(drMemberBank.getBankName());
+		drMemberCarry.setBankNum(drMemberBank.getBankNum().substring(0,4)+"********"+drMemberBank.getBankNum().substring(drMemberBank.getBankNum().length()-4,drMemberBank.getBankNum().length()));
+		drMemberCarry.setType(2);//金运通
+
+		drMemberFunds.setBalance(Utils.nwdBcsub(drMemberFunds.getBalance(), drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+		drMemberFunds.setFreeze(Utils.nwdBcadd(drMemberFunds.getFreeze(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+		drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+		
+		if(drCarryParam.getAmount().compareTo(drMemberCarry.getAmount())>=0){
+			drMemberCarry.setAuditTime(new Date());
+			drMemberCarry.setStatus(5);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+			drMemberCarry.setReason("提现金额小于后台设置的最小提现金额！");
+		}else{
+			drMemberCarry.setStatus(0);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+		}
+		//判断资金是否异常
+		BigDecimal income  = drMemberFunds.getCrushCount().add(drMemberFunds.getInvestProfit().add(drMemberFunds.getSpreadProfit()));//收入
+		BigDecimal expenditure = drMemberFunds.getBalance().add(drMemberFunds.getFreeze().add(drMemberFunds.getWprincipal().add(drMemberFunds.getCarryCount())));//支出
+		//收入 - 支出 = 0
+		if(income.subtract(expenditure).compareTo(BigDecimal.ZERO)!=0){
+		        t.execute(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						try {
+							sendSmsAndMail(member.getUid());
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				});
+			drMemberCarry.setStatus(0);
+			drMemberCarry.setReason("资金账户出现异常!");
+			flag = false;
+		}
+		
+		drMemberCarryDAO.insertDrMemberCarry(drMemberCarry);
+		
+		DrMemberFundsRecord record = new DrMemberFundsRecord(null,null,drMemberCarry.getUid(), 2, 0,drMemberCarry.getAmount().add(drMemberCarry.getPoundage()), drMemberFunds.getBalance(),1,
+				"提现金额：【"+ drMemberCarry.getAmount().setScale(2)  + "】手续费：【"+drMemberCarry.getPoundage().setScale(2)+"】", drMemberCarry.getPaymentNum());
+		drMemberFundsRecordDAO.insert(record);
+		DrMemberFundsLog drMemberFundsLog = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),13,0,
+				"提现金额冻结：【"+ drMemberCarry.getAmount().add(drMemberCarry.getPoundage()).setScale(2)  + "】");
+		drMemberFundsLogDAO.insertDrMemberFundsLog(drMemberFundsLog);
+		
+		String msg = redisClientTemplate.getProperties("carryApplyMsg").replace("${1}",drMemberCarry.getAmount().setScale(2).toString())
+				.replace("${2}",drMemberBank.getBankName());
+		String sms = redisClientTemplate.getProperties("carryApplySms").replace("${1}",member.getRealName())
+				.replace("${2}", drMemberCarry.getAmount().setScale(2).toString());
+		sendMsg(member,1,"提现申请",msg,3,sms,10);
+		
+		if(!flag){
+			return map;
+		}
+
+		map.put("drMemberCarry", drMemberCarry);
+		map.put("record", record);
+		map.put("drMemberFunds", drMemberFunds);
+		return map;
+	}
+	
+	@Override
+	public BaseResult saveJYTpayment(DrMember member,Map<String, Object> map,DrMemberBank drMemberBank,DrCarryParam drCarryParam)throws Exception {
+		BaseResult br = new BaseResult();
+		DrMemberFunds drMemberFunds = (DrMemberFunds) map.get("drMemberFunds");
+		DrMemberCarry drMemberCarry = (DrMemberCarry) map.get("drMemberCarry");
+		DrMemberFundsRecord record = (DrMemberFundsRecord) map.get("record");
+		
+		if(drCarryParam.getAmount().compareTo(drMemberCarry.getAmount()) >= 0 && drMemberCarry.getStatus() == 5){
+			JYTSendData sendData = new JYTSendData();
+			sendData.setTran_code(MockClientMsgBase.PAY_TRAN_CODE);
+			sendData.setBank_name(drMemberBank.getBankName());
+			sendData.setAccount_no(drMemberBank.getBankNum());
+			sendData.setAccount_name(member.getRealName());
+			sendData.setAccount_type("00");
+			sendData.setTran_amt(drMemberCarry.getAmount());
+			sendData.setCurrency(MockClientMsgBase.CURRENCY);
+			sendData.setBsn_code(MockClientMsgBase.PAY_BSN_CODE);
+			sendData.setTran_flowid(drMemberCarry.getPaymentNum());
+			sendData.setMobile(drMemberBank.getMobilePhone());
+			
+			JYTResultData resultData = MockClientMsgBase.getInstance().payClientMsg(sendData);
+			
+			if("S0000000".equals(resultData.getResp_code()) && "01".equals(resultData.getTran_state())){
+				drMemberCarry.setStatus(2);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+				record.setStatus(3);
+				drMemberFundsRecordDAO.updateStatusByNo(record);
+				//解冻会员资金
+				drMemberFunds.setBalance(Utils.nwdBcadd(drMemberFunds.getBalance(), drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+				drMemberFunds.setFreeze(Utils.nwdBcsub(drMemberFunds.getFreeze(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+				
+				DrMemberFundsLog log = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),14,1,
+						"提现金额解冻：【"+ drMemberCarry.getAmount().add(drMemberCarry.getPoundage()).setScale(2)  + "】");
+				drMemberFundsLogDAO.insertDrMemberFundsLog(log);
+				
+				drMemberFunds.setBalance(Utils.nwdBcsub(drMemberFunds.getBalance(), drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+				
+				log = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),5,0,
+						"提现金额：【"+ drMemberCarry.getAmount().setScale(2) + "】手续费：【"+drMemberCarry.getPoundage().setScale(2)+"】");
+				drMemberFundsLogDAO.insertDrMemberFundsLog(log);
+				
+				// 提现总额
+				drMemberFunds.setCarryCount(drMemberFunds.getCarryCount().add(drMemberCarry.getAmount()).add(drMemberCarry.getPoundage()));
+				drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+				
+				if(drMemberCarry.getPoundage().intValue() == 2){
+					DrCompanyFundsLog drCompanyFundsLog = new DrCompanyFundsLog(4, drMemberCarry.getUid(), null, drMemberCarry.getPoundage(), 1, "提现手续费：【"+ drMemberCarry.getPoundage().setScale(2)  + "】", null);
+					drCompanyFundsLogDAO.insertDrCompanyFundsLog(drCompanyFundsLog);
+				}
+				
+				Map<String, Object> resultMap = new HashMap<String, Object>();
+				resultMap.put("amount", drMemberCarry.getAmount());
+				
+				br.setMap(resultMap);
+	        	br.setSuccess(true);
+			}else if("03".equals(resultData.getTran_state()) || (resultData.getResp_code().startsWith("E") && !"E0000000".equals(resultData.getResp_code()))){
+				drMemberCarry.setStatus(3);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+				drMemberCarry.setReason(resultData.getResp_desc());
+				
+				//解冻会员资金
+				drMemberFunds.setBalance(Utils.nwdBcadd(drMemberFunds.getBalance(), drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+				drMemberFunds.setFreeze(Utils.nwdBcsub(drMemberFunds.getFreeze(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+				drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+
+				DrMemberFundsLog log = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),14,1,
+						"提现金额解冻：【"+ drMemberCarry.getAmount().add(drMemberCarry.getPoundage()).setScale(2)  + "】");
+				drMemberFundsLogDAO.insertDrMemberFundsLog(log);
+				
+				record.setStatus(2);
+				record.setBalance(drMemberFunds.getBalance());
+				drMemberFundsRecordDAO.updateStatusByNo(record);
+				
+				String sms = redisClientTemplate.getProperties("carryFail")
+						.replace("${1}", member.getRealName())
+						.replace("${2}", Utils.format(drMemberCarry.getAddTime(), "M月d日"))
+						.replace("${3}", drMemberCarry.getAmount().setScale(2).toString());
+				SysMessageLog logs = new SysMessageLog(member.getUid(), sms, 11, null, member.getMobilephone());
+				
+				sysMessageLogService.sendMsg(logs,1);
+	        	br.setSuccess(false);
+	        	br.setErrorCode("1005");
+			}else{
+				drMemberCarry.setStatus(1);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+	        	br.setSuccess(false);
+	        	br.setErrorCode("1006");
+			}
+			drMemberCarryDAO.updateStatusById(drMemberCarry);
+		}else{
+        	br.setSuccess(false);
+        	br.setErrorCode("1006");
+		}
+		return br;
+	}
+	
+    /**
+     * 创建商户订单号
+     * @param req
+     * @return
+     */
+	private String createOrderNo(int length,int uid) {
+		Date date = new Date();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(sdf.format(date));
+		Random rand = new Random();
+		for (int i = 0; i < length; i++) {
+			int tempvalue = rand.nextInt(10);
+			buffer.append(tempvalue);
+		}
+		buffer.append(uid);
+		return buffer.toString();
+	}
+
+	private void sendMsg(DrMember member,Integer type,String title,String msg,Integer msgType,String sms,Integer smsType) throws Exception {
+		DrMemberMsg insertMemberMsg = new DrMemberMsg();
+		insertMemberMsg.setRuId(member.getUid());
+		insertMemberMsg.setPuId(0);
+		insertMemberMsg.setType(msgType); 
+		insertMemberMsg.setTitle(title); 
+		insertMemberMsg.setContent(msg); // 消息内容',
+		insertMemberMsg.setAddTime(new Date()); // 发送时间',
+		insertMemberMsg.setIsRead(0); // 是否阅读0未读，1已读',
+		insertMemberMsg.setStatus(0); // 状态，0正常，1删除',
+		drMemberMsgDAO.insertDrMemberMsg(insertMemberMsg);
+
+		if(1 == type){
+			// 发送手机短信
+			if (member.getMobilephone() != null && !member.getMobilephone().equals("")) {
+				SysMessageLog logs = new SysMessageLog(member.getUid(), sms, smsType, null, member.getMobilephone());
+				sysMessageLogService.sendMsg(logs,1);
+			}
+		}
+	}
+
+	@Override
+	public Integer getDrCarryParamIsCharge(Integer uid, Integer free) {
+		return drCarryParamDAO.getDrCarryParamIsCharge(uid, free);
+	}
+
+	@Override
+	public Integer getDrCarryParamIsChargeNew(Integer uid, Integer free) {
+		return drCarryParamDAO.getDrCarryParamIsChargeNew(uid, free);
+	}
+
+	@Override
+	public DrCarryParam getDrCarryParam() {
+		return drCarryParamDAO.getDrCarryParam();
+	}
+	
+	//发送邮件和短信
+		private Integer sendSmsAndMail(Integer uId) throws Exception{
+			Integer result = 0;
+			Set<String> emailSet = redisClientTemplate.getSet("emial.");
+			Set<String> mobileSet = redisClientTemplate.getSet("mobile.");
+			String content = "用户资金出现异常，提现失败！uid="+uId;
+			//发送短信
+			for (String mobile : mobileSet) {
+				SysMessageLog sysMessageLog = new SysMessageLog(uId, content, 6, new Date(), mobile);
+				result = SmsSendUtil.sendMsg(sysMessageLog.getPhone(), sysMessageLog.getMessage(), 0);
+				sysMessageLog.setResults(result);
+				sysMessageLogService.insert(sysMessageLog);
+			}
+			// 发送邮件
+			Mail mail = new Mail();
+			mail.setMessage("用户资金出现异常，提现失败！uid="+uId);
+			mail.setSubject("提现异常");
+			MailUtil.sendMails(mail, emailSet);
+			return result;
+		}
+
+		@Override
+		public boolean checkDrMemberCarryAmount(Integer uid,BigDecimal amount,Integer type) {
+			boolean result = false;
+			int investCount = drProductInvestDAO.selectProductInvestCountByUid(uid);
+			//type = 1 存管，type = 2平台
+			BigDecimal tixian = drMemberCarryDAO.selectAmountByUid(uid,type);
+			BigDecimal chongzhi = drMemberCrushDAO.getDrMemberCrushAmountByUID(uid,type);
+			if(investCount ==  0 && (amount.add(tixian).compareTo(chongzhi)==1)){ //提现大于充值并且未投资除体验标之外的产品
+				result = false;
+			}else{
+				result = true;
+			}
+			return result;
+		}
+		
+		@Override
+		public Map<String, Object> insertFuiouDrMemberCarry(final DrMember member,DrMemberCarry drMemberCarry,DrMemberBank drMemberBank,DrMemberFunds drMemberFunds,DrCarryParam drCarryParam)throws Exception {
+			Map<String, Object> map = new HashMap<String, Object>();
+			boolean flag = true;
+			drMemberCarry.setUid(member.getUid());
+			drMemberCarry.setPaymentNum(createOrderNo(6,drMemberCarry.getUid())); 
+			drMemberCarry.setChannel(0); 
+			drMemberCarry.setAddTime(new Date()); 
+			drMemberCarry.setBankId(drMemberBank.getId());
+			drMemberCarry.setBankName(drMemberBank.getBankName());
+			drMemberCarry.setBankNum(drMemberBank.getBankNum().substring(0,4)+"********"+drMemberBank.getBankNum().substring(drMemberBank.getBankNum().length()-4,drMemberBank.getBankNum().length()));
+			
+			/*drMemberFunds.setFuiou_balance(Utils.nwdBcsub(drMemberFunds.getFuiou_balance(), drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+			drMemberFunds.setFuiou_freeze(Utils.nwdBcadd(drMemberFunds.getFuiou_freeze(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage())));
+			*/
+//			drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+			
+			
+			drMemberCarry.setStatus(0);//提现状态，0未处理 1处理中 2成功 3失败  4拒绝 5超时
+			drMemberCarry.setType(3);//存管
+			//判断资金是否异常
+			BigDecimal income  = drMemberFunds.getFuiou_crushcount().add(drMemberFunds.getFuiou_investProfit().add(drMemberFunds.getFuiou_spreadProfit()));//收入
+			BigDecimal expenditure = drMemberFunds.getFuiou_balance().add(drMemberFunds.getFuiou_freeze().add(drMemberFunds.getFuiou_wprincipal().add(drMemberFunds.getFuiou_carrycount())));//支出
+			//收入 - 支出 = 0
+			if(income.subtract(expenditure).compareTo(BigDecimal.ZERO)!=0){
+				 ThreadPool t = ThreadPool.getThreadPool(20);  
+			        t.execute(new Runnable() {
+						
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							try {
+								sendSmsAndMail(member.getUid());
+							} catch (Exception e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+					});
+				drMemberCarry.setStatus(0);
+				drMemberCarry.setReason("资金账户出现异常!");
+				flag = false;
+			}
+			
+			drMemberCarryDAO.insertDrMemberCarry(drMemberCarry);
+			
+			/*DrMemberFundsRecord record = new DrMemberFundsRecord(null,null,drMemberCarry.getUid(), 2, 0,drMemberCarry.getAmount().add(drMemberCarry.getPoundage()), drMemberFunds.getFuiou_balance(),1,
+					"提现金额：【"+ drMemberCarry.getAmount().setScale(2)  + "】手续费：【"+drMemberCarry.getPoundage().setScale(2)+"】", drMemberCarry.getPaymentNum());
+			drMemberFundsRecordDAO.insert(record);*/
+			/*DrMemberFundsLog drMemberFundsLog = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),13,0,
+					"提现金额冻结：【"+ drMemberCarry.getAmount().add(drMemberCarry.getPoundage()).setScale(2)  + "】");
+			drMemberFundsLogDAO.insertDrMemberFundsLog(drMemberFundsLog);*/
+			
+			String msg = redisClientTemplate.getProperties("carryApplyMsg").replace("${1}",drMemberCarry.getAmount().setScale(2).toString())
+					.replace("${2}",drMemberBank.getBankName());
+			String sms = redisClientTemplate.getProperties("carryApplySms").replace("${1}",member.getRealName())
+					.replace("${2}", drMemberCarry.getAmount().setScale(2).toString());
+			/*sendMsg(member,1,"提现申请",msg,3,sms,10);*/
+			
+			if(!flag){
+				return map;
+			}
+
+			map.put("drMemberCarry", drMemberCarry);
+			/*map.put("record", record);*/
+			map.put("drMemberFunds", drMemberFunds);
+			return map;
+		}
+
+		@Override
+		public String selectDrMemberCarryByPaymentnum(WtRechargeAndWtWithdrawalRspData rspData) {
+			/**
+			 * 分为两种有手续的和没有手续费的;
+			 * 当有手续费的时候,需要调用存管的转账接口把手续费转到用户存管账户中,在公司日志中添加一个日志说明退票操作,再把提现金额回滚到用户资金表,提现记录更新备注为退票操作
+			 * 当没有手续费的时候,把提现金额回滚到用户资金表,提现记录更新备注为退票操作
+			 */
+			SysFuiouNoticeLog log = null;
+			String paymentnum = rspData.getMchnt_txn_ssn();//获取流水号
+			BaseResult br = new BaseResult();
+			if(Utils.isObjectEmpty(paymentnum)){
+				return "FAILE";
+			}
+			log = sysFuiouNoticeLogDao.selectObjectBy_txn_ssn(paymentnum);
+			if(Utils.isObjectNotEmpty(log) && log.getStatus() == 2){
+					try {
+						/**
+						 * 区分企业退票和用户退票
+						 * 企业是委托提现000036 用户是直接体现000016
+						 */
+						if(Utils.isObjectNotEmpty(log.getIcd()) && "000036".equals(log.getIcd())){
+							//冻结
+							BaseResult result = new BaseResult();
+							Map<String, Object>params=new HashMap<>();
+							params.put("uid", 1);//为了生成流水号用到
+							params.put("cust_no",log.getUser_id());
+							params.put("amt",log.getAmt());
+							params.put("rem","");
+							result= FuiouConfig.freeze(params);
+							if(!result.isSuccess()){//冻结失败
+								return "FAILE";
+							}
+							Map<String, Object> map=new HashMap<>();
+							map.put("mchnt_txn_ssn", rspData.getMchnt_txn_ssn());
+							DrProductInfo drProductInfo=drProductInfoDAO.getDrProductLoanByMchntTxnSsn(map);//查询产品信息
+							if(drProductInfo!=null){
+								map.put("id", drProductInfo.getId());
+								drProductInfoDAO.updateDrProductLoanByMchntTxnSsn(map);//回滚放款状态
+								jsLoanRecordDAO.deleteLoanRecord(map);//删除放款记录
+							}
+							br.setSuccess(true);
+							//记录存管返回的日志
+							log.setMessage(rspData.createSignValue());
+							log.setResp_desc(rspData.getRemark());
+							log.setStatus(3);//3失败
+//							log.setResp_code("");
+							sysFuiouNoticeLogDao.update(log);
+							params.clear();
+							params.put("funds_type_id", 15);
+							params.put("pid", drProductInfo.getId());
+							drCompanyFundsLogDAO.update(params);
+							System.out.println("企业委托提现退票通知结束");	
+							//发送短信通知用户
+							String message = redisClientTemplate.getProperties("tpCompanySms").replace("{1}", drProductInfo.getFullName())
+								.replace("{2}", Utils.format(log.getAddtime(), "yyyy年MM月dd日"))
+								.replace("{3}", Utils.covertToString(String.valueOf(Utils.nwdDivide(rspData.getAmt(),"100"))));
+							String pushMobile = redisClientTemplate.getProperties("tpMobile");
+							String[] pushMobiles = pushMobile.split(",");
+							for(int i =0;i<pushMobiles.length;i++){
+								SysMessageLog logs = new SysMessageLog(0, message, 7, null,pushMobiles[i]);
+								sysMessageLogService.sendMsg(logs, 1);
+								System.out.println(message);
+							}
+							
+						}else if(Utils.isObjectNotEmpty(log.getIcd()) && ("000016".equals(log.getIcd()) || "000023".equals(log.getIcd()))){
+							DrMemberCarry drMemberCarry = drMemberCarryDAO.selectDrMemberCarryByPaymentnum(paymentnum);
+							if(Utils.isObjectEmpty(drMemberCarry)){
+								return "FAILE";
+							}
+							DrMemberFunds drMemberFunds = drMemberFundsDAO.queryDrMemberFundsByUid(drMemberCarry.getUid());
+							DrMember member = drMemberDao.selectByPrimaryKey(drMemberCarry.getUid());
+							//fuiou可用余额加上提现金额
+							drMemberFunds.setFuiou_balance(Utils.nwdBcadd(Utils.nwdBcadd(drMemberFunds.getFuiou_balance(), drMemberCarry.getAmount()),drMemberCarry.getPoundage()));
+							// 提现总额-体检金额
+							drMemberFunds.setFuiou_carrycount(Utils.nwdBcsub(Utils.nwdBcsub(drMemberFunds.getFuiou_carrycount(), drMemberCarry.getAmount()), drMemberCarry.getPoundage()));
+							drMemberFundsDAO.updateDrMemberFunds(drMemberFunds);
+							
+							DrMemberFundsRecord record = drMemberFundsRecordDAO.selectMemberFundsRecordByOrderNo(paymentnum);
+							if(Utils.isObjectNotEmpty(record) && record.getStatus() ==3){
+								record.setStatus(2);
+								record.setRemark(record.getRemark()+"退票操作");
+								drMemberFundsRecordDAO.updateStatusByNo(record);
+							}
+							
+							DrMemberFundsLog drMemberFundsLog = new DrMemberFundsLog(drMemberCarry.getUid(),record.getId(),
+									drMemberCarry.getAmount().add(drMemberCarry.getPoundage()),100,1,
+									"提现金额：【"+ drMemberCarry.getAmount().setScale(2) + "】退票平台手续费：【"+drMemberCarry.getPoundage().setScale(2)+"】");
+							drMemberFundsLogDAO.insertDrMemberFundsLog(drMemberFundsLog);
+							
+							drMemberCarry.setStatus(3);
+							drMemberCarry.setReason("退票操作"+rspData.getRemark());
+							drMemberCarryDAO.updateStatusById(drMemberCarry);
+							
+							if(drMemberCarry.getPoundage().compareTo(new BigDecimal(2)) == 0){
+								//有手续费
+								//扣除手续费
+								Map<String, Object> params = new HashMap<String, Object>();
+								String remitMchntTxnSsn = Utils.createOrderNo(6, drMemberCarry.getUid(), "");// 流水号
+								params.put("mchnt_txn_ssn", remitMchntTxnSsn);
+								params.put("out_cust_no", FuiouConfig.LOGIN_ID);
+								params.put("in_cust_no", member.getMobilephone());
+								params.put("amt", "" + drMemberCarry.getPoundage());// 手续费精确到分
+								params.put("icd_name", "提现失败退票处理手续费退还");
+								params.put("rem", "提现失败退票处理手续费退还");
+								params.put("contract_no", "");
+								BaseResult r = FuiouConfig.transferBmu(params);
+								if(r.isSuccess()){
+									//调用存管转账成功之后，在公司日志表差一条数据
+									DrCompanyFundsLog drCompanyFundsLog = new DrCompanyFundsLog(101, drMemberCarry.getUid(), null, 
+											drMemberCarry.getPoundage(), 0, "退票平台提现手续费：【"+ drMemberCarry.getPoundage().setScale(2)  + "】", null);
+									drCompanyFundsLogDAO.insertDrCompanyFundsLog(drCompanyFundsLog);
+									//记公司账户日志 收取手续费
+									JsCompanyAccountLog companyAccountLog=new JsCompanyAccountLog();
+									companyAccountLog.setCompanyfunds(101);//资金类型
+									companyAccountLog.setType(0);//支出
+									companyAccountLog.setAmount(drMemberCarry.getPoundage());//金额
+									companyAccountLog.setStatus(3);//成功
+									companyAccountLog.setRemark(member.getMobilephone()+"退票平台提现手续费(投资人)");
+									companyAccountLog.setAddTime(new Date());
+									companyAccountLog.setChannelType(2);//存管
+									companyAccountLog.setUid(member.getUid());//用户id
+									jsCompanyAccountLogDAO.insertCompanyAccountLog(companyAccountLog);	
+								}
+								JsCompanyAccountLog accountLog=new JsCompanyAccountLog();
+								accountLog.setCompanyfunds(101);//资金类型
+								accountLog.setType(1);//收出
+								accountLog.setAmount(new BigDecimal(2));//金额
+								accountLog.setStatus(3);//成功
+								accountLog.setRemark(member.getMobilephone()+"退票平台提现手续费(第三方)");
+								accountLog.setAddTime(new Date());
+								accountLog.setChannelType(2);//存管
+								accountLog.setUid(member.getUid());//用户id
+								jsCompanyAccountLogDAO.insertCompanyAccountLog(accountLog);
+								
+							}
+							//发送短信通知用户
+							String message = redisClientTemplate.getProperties("tpMemberSms").replace("{1}", member.getRealName())
+									.replace("{2}", Utils.format(log.getAddtime(), "yyyy年MM月dd日"))
+									.replace("{3}", Utils.covertToString(String.valueOf(drMemberCarry.getAmount())));
+							SysMessageLog logs = new SysMessageLog(member.getUid(), message, 7, null, member.getMobilephone());
+//							System.out.println(message);
+							sysMessageLogService.sendMsg(logs, 1);
+						}
+						return "SUCCESS";
+				} catch (Exception e) {
+					e.printStackTrace();
+					return "FAILE";
+				}
+			}else{
+				return "FAILE";
+			}
+		}
+		
+}

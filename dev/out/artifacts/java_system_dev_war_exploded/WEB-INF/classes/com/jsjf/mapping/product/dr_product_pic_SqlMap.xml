@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductPicDAO">
+	<resultMap id="DrProductPicResult" type="com.jsjf.model.product.DrProductPic">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="smallUrl" property="smallUrl" jdbcType="VARCHAR" />
+		<result column="bigUrl" property="bigUrl" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="isShow" property="isShow" jdbcType="INTEGER" />
+		<result column="showSort" property="showSort" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 获取产品图片-->
+	<select id="getDrProductPicByPid" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductPic">
+		select * from dr_product_pic
+		<where>
+			pid = #{pid}
+		</where>
+	</select>
+	
+	<!-- 获取产品图片-->
+	<select id="getDrProductPicById" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductPic">
+		select * from dr_product_pic
+		<where>
+	 		id = #{id}
+		</where>
+	</select>
+	
+	<!-- 添加产品图片 -->
+	<insert id="insertDrProductPic" parameterType="com.jsjf.model.product.DrProductPic">
+		insert into dr_product_pic(pid, smallUrl, bigUrl,name,status,isShow,showSort,type)
+		values (#{pid:INTEGER},#{smallUrl:VARCHAR},#{bigUrl:VARCHAR},#{name:VARCHAR},
+		#{status:INTEGER},#{isShow:INTEGER},#{showSort:INTEGER},#{type:INTEGER})
+	</insert>
+	
+	<!-- 修改产品图片 -->
+	<update id="updateDrProductPic" parameterType="com.jsjf.model.product.DrProductPic">
+		update dr_product_pic
+		<set>
+			<if test="smallUrl != null"> smallUrl = #{smallUrl:VARCHAR},</if>
+			<if test="bigUrl != null"> bigUrl = #{bigUrl:VARCHAR},</if>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="isShow != null"> isShow = #{isShow:INTEGER},</if>
+			<if test="showSort != null"> showSort = #{showSort:INTEGER},</if>
+			<if test="type != null"> type = #{type:INTEGER}</if>
+		</set>
+		<where>
+			<if test="id != null"> id = #{id:INTEGER}</if>
+			<if test="pid != null"> and pid = #{pid:INTEGER}</if>
+		</where>
+	</update>
+	<!-- 根据LID删除产品图片 -->
+	<delete id="deleteDrProductPicByPid" parameterType="java.lang.Integer" >
+	    delete from dr_product_pic where pid = #{pid:INTEGER} 
+	</delete>
+	
+	<!-- 根据ID删除产品图片 -->
+	<delete id="deleteDrProductPicById" parameterType="java.lang.Integer" >
+	    delete from dr_product_pic where id = #{id:INTEGER} 
+	</delete>
+</mapper>

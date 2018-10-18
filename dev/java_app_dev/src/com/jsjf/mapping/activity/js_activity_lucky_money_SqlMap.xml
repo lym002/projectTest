@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityLuckyMoneyDAO">
+	<resultMap id="JsActivityLuckyMoneyResult" type="com.jsjf.model.activity.JsActivityLuckyMoney">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />	
+		<result column="shaerUid" property="shaerUid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="shareCount" property="shareCount" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,uid,amount,shaerUid,addTime,updateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsActivityLuckyMoneyResult" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_activity_lucky_money where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsActivityLuckyMoneyByMap" parameterType="java.util.HashMap" resultMap="JsActivityLuckyMoneyResult">
+	 	select concat(substring(m.`mobilePhone`,1,3),"****",substring(m.mobilePhone,8)) as mobilePhone,jalm.* from js_activity_lucky_money jalm
+	 	left join dr_member m on m.uid = jalm.uid 
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="uid != null">
+	 			<if test="uid == -1">
+	 				and jalm.uid is null
+	 			</if>
+	 			<if test="uid == -2">
+	 				and jalm.uid is not null
+	 			</if>
+	 			<if test="uid !=-1 and uid != -2">
+	 				and jalm.uid = #{uid}
+	 			</if>
+	 		</if>
+	 		<if test="shaerUid != null">
+	 			and jalm.shaerUid = #{shaerUid}
+	 		</if>
+	 		<if test="time !=null and time !='' ">
+	 		    and jalm.`addTime`>= DATE_FORMAT(#{time},'%Y-%m-%d') AND 
+	 		    DATE_FORMAT(DATE_ADD(#{time},INTERVAL 1 DAY),'%Y-%m-%d') > jalm.`addTime` 
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 
+	 <select id="update" parameterType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	update js_activity_lucky_money 
+	 		set uid = #{uid},
+	 			updateTime = now(),
+	 			luckDrawSum = #{luckDrawSum}
+	 	<where>
+	 		<if test = "id != null"> and id = #{id}</if>
+	 		<if test = "shaerUid != null"> and shaerUid = #{shaerUid}</if>
+	 		<if test = "aid != null"> and aid = #{aid}</if>
+	 	</where>
+	 </select>
+
+	 <insert id = "insert" parameterType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	 insert into js_activity_lucky_money
+	 	 <trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="uid != null"> uid,</if>
+			<if test="amount != null"> amount,</if>
+			<if test="shaerUid != null"> shaerUid,</if>
+										 addtime,
+			<if test="updateTime != null"> updateTime,</if>
+			<if test="luckDrawSum != null"> luckDrawSum,</if>
+			<if test="aid != null"> aid,</if>
+		</trim>
+		<trim prefix=" values ( " suffix=")" suffixOverrides=",">
+			<if test="uid != null"> #{uid},</if>
+			<if test="amount != null"> #{amount},</if>
+			<if test="shaerUid != null"> #{shaerUid},</if>
+									now(),
+			<if test="updateTime != null"> #{updateTime},</if>
+			<if test="luckDrawSum != null"> #{luckDrawSum},</if>
+			<if test="aid != null"> #{aid},</if>
+		</trim>
+	 </insert>
+	 
+	 <select id ="selectByshaerUid" parameterType="Integer" resultMap="JsActivityLuckyMoneyResult">
+	 	select m.*,
+			(select count(1) from js_activity_lucky_money a where shaerUid=#{uid:INTEGER}
+			and uid is null and date_format(a.`addTime`,'%Y%m%d')=date_format(m.addtime,'%Y%m%d')) shareCount
+			from `js_activity_lucky_money` m where shaerUid=#{uid:INTEGER} and uid=#{uid:INTEGER}
+			group by date_format(addtime,'%Y%m%d')
+			order by date_format(addtime,'%Y%m%d') desc
+	 </select>
+
+
+	<select id = "getLuckDrawSum" resultType="java.lang.Integer" parameterType="java.util.HashMap"> 
+		select luckDrawSum from `js_activity_lucky_money` 
+		where shaerUid = #{uid} and aid = #{aid}
+	</select>
+
+</mapper>

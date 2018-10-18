@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrActivityParameterDAO">
+	<resultMap id="DrActivityParameterResult" type="com.jsjf.model.activity.DrActivityParameter">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="raisedRates" property="raisedRates" jdbcType="DECIMAL"/>
+		<result column="enableAmount" property="enableAmount" jdbcType="DECIMAL"/>
+		<result column="grantQty" property="grantQty" jdbcType="INTEGER"/>
+		<result column="surplusQty" property="surplusQty" jdbcType="INTEGER"/>
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="applicableScenarios" property="applicableScenarios" jdbcType="VARCHAR" />
+		<result column="applicableProducts" property="applicableProducts" jdbcType="VARCHAR" />
+		<result column="applicableUser" property="applicableUser" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="deadline" property="deadline" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="VARCHAR" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result property="addName" column="addName" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updateName" jdbcType="VARCHAR"/><!--修改人姓名 -->
+		<result column="productDeadline" property="productDeadline" jdbcType="INTEGER" />
+		<result column="multiple" property="multiple" jdbcType="DECIMAL" />
+		
+	</resultMap>
+	
+	<!-- 获取活动 -->
+	<select id="getActivityParameterById"  resultMap="DrActivityParameterResult">
+		select a.id,a.code,a.name,amount,raisedRates,enableAmount,grantQty,surplusQty,type,applicableScenarios,productDeadline,multiple,
+			applicableProducts,applicableUser,a.status,deadline,addUser,addTime,updateUser,updateTime,b.`name` as addName,c.`name` as updateName
+		from dr_activity_parameter a
+		left join sys_users b ON a.addUser = b.user_ky
+		left join sys_users c ON a.updateUser = c.user_ky
+		where  a.id = #{id:INTEGER}		
+	</select>
+	
+	
+	<!-- 查询活动列表 -->
+	<select id="getDrActivityParameterByParam" parameterType="java.util.HashMap"  resultMap="DrActivityParameterResult">
+		select id,code,name,amount,raisedRates,enableAmount,grantQty,surplusQty,type,applicableScenarios,productDeadline,multiple,
+		applicableProducts,applicableUser,deadline,addUser,addTime,updateUser,updateTime
+		from dr_activity_parameter 
+		<where>
+			type = #{type:INTEGER}
+	 		<if test="status != null">
+	 			and status=#{status:INTEGER}
+	 		</if>
+	 		<if test="applicableScenarios != null">
+	 			and applicableScenarios=#{applicableScenarios:VARCHAR}
+	 		</if>
+		</where>
+	
+	</select>
+	<!-- 查询活动列表总条数 -->
+	<select id="getDrActivityParameterTotal" parameterType="java.util.HashMap"  resultType="INTEGER">
+		select count(1) from dr_activity_parameter 
+		<where>
+			type = #{type:INTEGER}
+			<if test="amount != null and amount != ''">
+				and amount = #{amount:DECIMAL}
+			</if>
+			<if test="name != null and name != ''">
+				and name like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+			</if>
+			<if test="raisedRates != null and raisedRates !=''">
+				and raisedRates =#{raisedRates:DECIMAL}
+			</if>
+			<if test="deadline != null ">
+				and deadline=#{deadline:INTEGER}
+			</if>
+	 		<if test="status != null and status !=''">
+	 			and status=#{stauts:INTEGER}
+	 		</if>
+		</where>
+	</select>
+	
+	<!-- 修改活动 -->
+	<update id="updateActivityParameter" parameterType="com.jsjf.model.activity.DrActivityParameter" >
+		update dr_activity_parameter 
+		<set>	
+			<if test="code != null and code != ''">
+				code = #{code:VARCHAR},
+			</if>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="name != null and name != ''" >
+				name = #{name:VARCHAR},
+			</if>
+			<if test="amount != null and amount != ''">
+				amount = #{amount:DECIMAL},
+			</if>
+			<if test="raisedRates != null">
+				raisedRates = #{raisedRates:DECIMAL},
+			</if>
+			<if test="enableAmount != null">
+				enableAmount = #{enableAmount:DECIMAL},
+			</if>
+			<if test="grantQty != null">
+				grantQty = #{grantQty:INTEGER},
+			</if>
+			<if test="surplusQty != null">
+				surplusQty = #{surplusQty:INTEGER},
+			</if>
+			<if test="type != null">
+				type = #{type:INTEGER},
+			</if>
+			<if test="applicableUser != null">
+				applicableUser = #{applicableUser:INTEGER},
+			</if>
+			<if test="applicableScenarios != null and applicableScenarios != ''">
+				applicableScenarios = #{applicableScenarios:VARCHAR},
+			</if>
+			<if test="applicableProducts != null and applicableProducts != ''">
+				applicableProducts = #{applicableProducts:VARCHAR},
+			</if>
+			<if test="updateUser != null and updateUser != ''">
+				updateUser = #{updateUser:INTEGER},
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				updateTime = #{updateTime:TIMESTAMP},
+			</if>
+			<if test="deadline != null">
+				 deadline=#{deadline:INTEGER}
+			</if>
+		</set>		
+		<where>
+			 id = #{id:INTEGER}
+		</where>
+	</update> 
+	
+	<!-- 根据PID获取活动详情 -->
+	<select id="getActivityParameterByPid" resultType="com.jsjf.model.activity.DrActivityParameter" parameterType="Integer">
+		SELECT dap.* from dr_activity_parameter dap 
+			LEFT JOIN js_product_reward jpr ON dap.id = jpr.apid
+			WHERE jpr.pid  = #{pid}
+	</select>
+	<!-- 活动绑定募集中产品的最高利率的加息券 -->
+	<select id="selectActivityParameterMap" resultType="java.util.HashMap">
+		SELECT MAX(dap.raisedRates) maxActivityCoupon,pid from dr_activity_parameter dap 
+			LEFT JOIN js_product_reward jpr ON dap.id = jpr.apid
+			LEFT JOIN dr_product_info dpi ON jpr.pid = dpi.id
+		WHERE dpi.`status` = 5 GROUP BY jpr.pid 	
+	</select>
+	
+	<!-- 添加活动 -->
+	<insert id="insertActivityParameter" parameterType="com.jsjf.model.activity.DrActivityParameter">
+		insert into dr_activity_parameter(code,name,amount,raisedRates,enableAmount,grantQty,surplusQty,type,applicableScenarios,multiple,productDeadline,
+		applicableProducts,applicableUser,status,deadline,addUser,addTime,updateUser,updateTime)
+		values(#{code},#{name},#{amount},#{raisedRates},#{enableAmount},#{grantQty},#{surplusQty},#{type},#{applicableScenarios},#{multiple},#{productDeadline},
+		#{applicableProducts},#{applicableUser},#{status},#{deadline},#{addUser},#{addTime},#{updateUser},#{updateTime})
+	</insert>
+	
+	<select id = "selectActivityParameterByMap" resultType="java.util.HashMap">
+		SELECT * from dr_activity_parameter
+		<where>
+			<if test = "couponIds != null">
+				and id in
+				<foreach item="item" index="index" collection="couponIds" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+		ORDER BY type
+	</select>
+	<select id="selectActivityParamterByIds" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.DrActivityParameter">
+		select  *
+		from dr_activity_parameter dap
+		where dap.ID in
+		<foreach collection="ids" item="item" open="(" close=")" separator=",">
+			#{item}
+		</foreach>
+	</select>
+	<select id="selectActivityParameterPrimaryKey" parameterType="java.util.HashMap"
+			resultType="com.jsjf.model.activity.DrActivityParameter">
+		select *
+		from dr_activity_parameter
+		where
+		1=1
+		<if test="id!=null">
+			and id =#{id}
+		</if>
+	</select>
+	<select id="selectParameterPrimaryKey" parameterType="java.util.HashMap"
+			resultType="com.jsjf.model.activity.DrActivityParameter">
+		select *
+		from dr_activity_parameter
+		where
+		1=1
+		<if test="fid!=null">
+			and id =#{fid}
+		</if>
+		LIMIT 1
+	</select>
+
+	<!--查询月度礼包-->
+	<select id="selectParameterByVipMonth" resultMap="DrActivityParameterResult">
+		select dap.* from byp_vip_activity_parameter bvap left join dr_activity_parameter dap on bvap.code = dap.code where bvap.vip_level = #{vipLevel};
+	</select>
+
+	<!--查询月度礼包是否被领取-->
+	<select id="selectParameterByVipMonthIsGet" resultMap="DrActivityParameterResult">
+		SELECT dap.*,dmf.addtime,DATE_FORMAT(NOW(),'%Y-%m') FROM byp_vip_activity_parameter bvap
+		LEFT JOIN dr_activity_parameter dap ON bvap.code = dap.code
+		LEFT JOIN dr_member_favourable dmf ON dap.`code` = dmf.`code`
+		WHERE DATE_FORMAT(dmf.`addtime`,'%Y-%m') = DATE_FORMAT(NOW(),'%Y-%m') AND dmf.uid = #{uid}
+		limit 1;
+	</select>
+</mapper>

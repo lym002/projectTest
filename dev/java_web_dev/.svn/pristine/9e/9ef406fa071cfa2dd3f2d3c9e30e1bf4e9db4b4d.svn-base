@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.integral.BypCommodityRepertoryDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.integral.BypCommodityRepertory">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="specification_id" jdbcType="INTEGER" property="specificationId" />
+    <result column="exchange_channel_code" jdbcType="VARCHAR" property="exchangeChannelCode" />
+    <result column="commodity_name" jdbcType="VARCHAR" property="commodityName" />
+    <result column="commodity_type" jdbcType="INTEGER" property="commodityType" />
+    <result column="face_value" jdbcType="DECIMAL" property="faceValue" />
+    <result column="commodity_worth" jdbcType="DECIMAL" property="commodityWorth" />
+    <result column="repertory_into" jdbcType="INTEGER" property="repertoryInto" />
+    <result column="repertory_out" jdbcType="INTEGER" property="repertoryOut" />
+    <result column="img_url" jdbcType="VARCHAR" property="imgUrl" />
+    <result column="add_date" jdbcType="TIMESTAMP" property="addDate" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="detail" jdbcType="VARCHAR" property="detail" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, specification_id, exchange_channel_code, commodity_name, commodity_type, face_value,
+    commodity_worth, repertory_into, repertory_out, img_url, add_date, update_time, detail
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_commodity_repertory
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_commodity_repertory
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.integral.BypCommodityRepertory">
+    insert into byp_commodity_repertory (id, specification_id, exchange_channel_code,
+    commodity_name, commodity_type, face_value,
+    commodity_worth, repertory_into, repertory_out,
+    img_url, add_date, update_time, detail
+    )
+    values (#{id,jdbcType=INTEGER}, #{specificationId,jdbcType=INTEGER}, #{exchangeChannelCode,jdbcType=VARCHAR},
+    #{commodityName,jdbcType=VARCHAR}, #{commodityType,jdbcType=INTEGER}, #{faceValue,jdbcType=DECIMAL},
+    #{commodityWorth,jdbcType=DECIMAL}, #{repertoryInto,jdbcType=INTEGER}, #{repertoryOut,jdbcType=INTEGER},
+    #{imgUrl,jdbcType=VARCHAR}, #{addDate,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{detail,jdbcType=VARCHAR}
+    )
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.integral.BypCommodityRepertory">
+    insert into byp_commodity_repertory
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="specificationId != null">
+        specification_id,
+      </if>
+      <if test="exchangeChannelCode != null">
+        exchange_channel_code,
+      </if>
+      <if test="commodityName != null">
+        commodity_name,
+      </if>
+      <if test="commodityType != null">
+        commodity_type,
+      </if>
+      <if test="faceValue != null">
+        face_value,
+      </if>
+      <if test="commodityWorth != null">
+        commodity_worth,
+      </if>
+      <if test="repertoryInto != null">
+        repertory_into,
+      </if>
+      <if test="repertoryOut != null">
+        repertory_out,
+      </if>
+      <if test="imgUrl != null">
+        img_url,
+      </if>
+      <if test="addDate != null">
+        add_date,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="detail != null">
+        detail,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="specificationId != null">
+        #{specificationId,jdbcType=INTEGER},
+      </if>
+      <if test="exchangeChannelCode != null">
+        #{exchangeChannelCode,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityName != null">
+        #{commodityName,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityType != null">
+        #{commodityType,jdbcType=INTEGER},
+      </if>
+      <if test="faceValue != null">
+        #{faceValue,jdbcType=DECIMAL},
+      </if>
+      <if test="commodityWorth != null">
+        #{commodityWorth,jdbcType=DECIMAL},
+      </if>
+      <if test="repertoryInto != null">
+        #{repertoryInto,jdbcType=INTEGER},
+      </if>
+      <if test="repertoryOut != null">
+        #{repertoryOut,jdbcType=INTEGER},
+      </if>
+      <if test="imgUrl != null">
+        #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="addDate != null">
+        #{addDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="detail != null">
+        #{detail,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.integral.BypCommodityRepertory">
+    update byp_commodity_repertory
+    <set>
+      <if test="specificationId != null">
+        specification_id = #{specificationId,jdbcType=INTEGER},
+      </if>
+      <if test="exchangeChannelCode != null">
+        exchange_channel_code = #{exchangeChannelCode,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityName != null">
+        commodity_name = #{commodityName,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityType != null">
+        commodity_type = #{commodityType,jdbcType=INTEGER},
+      </if>
+      <if test="faceValue != null">
+        face_value = #{faceValue,jdbcType=DECIMAL},
+      </if>
+      <if test="commodityWorth != null">
+        commodity_worth = #{commodityWorth,jdbcType=DECIMAL},
+      </if>
+      <if test="repertoryInto != null">
+        repertory_into = #{repertoryInto,jdbcType=INTEGER},
+      </if>
+      <if test="repertoryOut != null">
+        repertory_out = #{repertoryOut,jdbcType=INTEGER},
+      </if>
+      <if test="imgUrl != null">
+        img_url = #{imgUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="addDate != null">
+        add_date = #{addDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="detail != null">
+        detail = #{detail,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.integral.BypCommodityRepertory">
+    update byp_commodity_repertory
+    set specification_id = #{specificationId,jdbcType=INTEGER},
+      exchange_channel_code = #{exchangeChannelCode,jdbcType=VARCHAR},
+      commodity_name = #{commodityName,jdbcType=VARCHAR},
+      commodity_type = #{commodityType,jdbcType=INTEGER},
+      face_value = #{faceValue,jdbcType=DECIMAL},
+      commodity_worth = #{commodityWorth,jdbcType=DECIMAL},
+      repertory_into = #{repertoryInto,jdbcType=INTEGER},
+      repertory_out = #{repertoryOut,jdbcType=INTEGER},
+      img_url = #{imgUrl,jdbcType=VARCHAR},
+      add_date = #{addDate,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      detail = #{detail,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

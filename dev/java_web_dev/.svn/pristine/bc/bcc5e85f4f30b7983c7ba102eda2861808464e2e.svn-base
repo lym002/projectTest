@@ -1,0 +1,377 @@
+package com.jsjf.controller.index;
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.SensorsAnalytics.SensorsAnalytics;
+import com.SensorsAnalytics.exceptions.InvalidArgumentException;
+import com.jsjf.common.*;
+import com.sun.image.codec.jpeg.JPEGCodec;
+import com.sun.image.codec.jpeg.JPEGImageEncoder;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.alibaba.fastjson.JSON;
+import com.jsjf.model.activity.DrMemberFavourable;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.activity.DrMemberFavourableService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.system.SysMessageLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+
+@RequestMapping("/login")
+@Controller
+public class LoginController {
+	private Logger log = Logger.getLogger(this.getClass());
+
+	@Autowired
+	private DrMemberService drMemberService;
+	@Autowired
+	private SysMessageLogService sysMessageLogService;
+	@Autowired
+	public RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrProductInvestService drProductInvestService;
+	
+
+
+	/**
+	 * 用户登录
+	 * @param req
+	 * @param DrMember
+	 * @param loginId 登录用户名（手机，邮箱）
+	 * @return
+	 */
+	@RequestMapping(value = "/doLogin", method = RequestMethod.POST)
+	@ResponseBody
+	public String login(HttpServletRequest req,@RequestBody Map<String,Object> params){
+		SensorsAnalytics instance = SensorsAnalyticsUtil.getInstance();
+		Map<String, Object> properties = new HashMap<String, Object>();
+		DrMember member = new DrMember();
+		Utils.getObjectFromMap(member, params);
+		BaseResult br = new BaseResult();
+		DrMember m = new DrMember();
+//		Integer loginErrorNums = req.getSession().getAttribute("loginErrorNums")==null?0:(Integer)req.getSession().getAttribute("loginErrorNums");//错误登录次数
+		Integer loginErrorNums= StringUtils.isBlank(redisClientTemplate.get(ConfigUtil.PWD_ERROR + member.getMobilephone())) ? 0 :
+				Integer.parseInt(redisClientTemplate.get(ConfigUtil.PWD_ERROR + member.getMobilephone()));//密码错误次数
+		Map<String, Object> map = new HashMap<String, Object>();
+		try {
+			if (loginErrorNums>=5){
+				map.put("loginErrorNums", loginErrorNums);
+				br.setMap(map);
+				br.setSuccess(false);
+				br.setErrorCode("2003");
+				return JSON.toJSONString(br);
+			}
+			map.clear();
+            properties.put("OperTime", Utils.format(new Date(),"yyyy-MM-dd HH:mm:ss"));
+			properties.put("LoginMode","mobilePhone");
+			m = drMemberService.selectDrMemberByMobilephone(member.getMobilephone());
+			if(member.getPassWord().trim() == null || member.getMobilephone().trim() == null){//登录名或密码为空
+				br.setSuccess(false);
+				br.setErrorCode("1001");
+				properties.put("IsSuccess",false);
+				instance.track(m.getUid().toString(), true, "Login", properties);
+				return JSON.toJSONString(br);
+			}else if(loginErrorNums>2 && !req.getSession().getAttribute("rand").toString().toLowerCase().equals(params.get("picCode")+"".toLowerCase())){
+				map.put("loginErrorNums", loginErrorNums);
+				br.setMap(map);
+				br.setSuccess(false);
+				br.setErrorCode("1002");
+				properties.put("IsSuccess",false);
+				instance.track(m.getUid().toString(), true, "Login", properties);
+				return JSON.toJSONString(br);
+			}
+			if(m == null || !m.getPassWord().equals(SecurityUtils.MD5(member.getPassWord())) || m.getStatus() != 1){
+				//req.getSession().setAttribute("loginErrorNums", loginErrorNums+1);
+				loginErrorNums+=1;
+				redisClientTemplate.setex(ConfigUtil.PWD_ERROR+member.getMobilephone(), 600, String.valueOf(loginErrorNums));
+				map.put("loginErrorNums", loginErrorNums+1);
+				br.setMap(map);
+				if (3==loginErrorNums){
+					br.setSuccess(false);
+					br.setErrorCode("2004");
+					return JSON.toJSONString(br);
+				}
+				if (4==loginErrorNums){
+					br.setSuccess(false);
+					br.setErrorCode("2005");
+					return JSON.toJSONString(br);
+				}
+				if (5==loginErrorNums){
+					br.setSuccess(false);
+					br.setErrorCode("2003");
+					return JSON.toJSONString(br);
+				}
+				br.setSuccess(false);
+				br.setErrorCode("1003");
+				properties.put("IsSuccess",false);
+				instance.track(m.getUid().toString(), true, "Login", properties);
+				return JSON.toJSONString(br);
+			}
+			Date nowDate = new Date();
+			m.setLastLoginIp(Utils.getIpAddr(req));
+			m.setLastLoginTime(nowDate);
+			drMemberService.update(m);
+			// 2.插入session
+			req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, m);
+			//判断用户是否显示再来一次翻倍收益图片
+			Map<String,Object> brMap = drProductInvestService.selectUserLastInvestmentInfo(m.getUid());
+			if(Utils.isObjectNotEmpty(brMap.get("type")) && brMap.get("type").toString().equals("1")
+					&& Utils.isObjectNotEmpty(brMap.get("expireDate")) && brMap.get("flag").toString().equals("1")){
+				br.setFlag(true);
+			}else{
+				br.setFlag(false);
+			}
+			br.setSuccess(true);
+			properties.put("IsSuccess",true);
+			instance.track(m.getUid().toString(), true, "Login", properties);
+		} catch (Exception e) {
+			log.error("登陆失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			try {
+				instance.track(m.getUid().toString(), true, "Login", properties);
+			} catch (InvalidArgumentException e1) {
+				e1.printStackTrace();
+			}
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/*
+	 * 忘记密码，发送手机验证码找回密码
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping("/forgetPwdSmsCode")
+	@ResponseBody
+	public String forgetPwdSmsCode(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		String mobilephone = String.valueOf(param.get("mobilephone"));
+		try {
+			DrMember drMember = drMemberService.selectDrMemberByMobilephone(param.get("mobilephone").toString());
+			if(drMember==null){
+				br.setSuccess(false);
+				br.setErrorCode("1001");
+				return JSON.toJSONString(br);
+			}
+			Object typeObj = param.get("type");
+			if(Utils.isObjectEmpty(typeObj)){
+				br.setSuccess(false);
+				br.setErrorCode("9999");
+				return JSON.toJSONString(br);
+			}
+			int type = (Integer) typeObj;
+			String redisCode = redisClientTemplate.get("forgetPwdCode_"+mobilephone);
+			int flag = 0;
+			int  seconds = 0;
+			if(StringUtils.isNotEmpty(redisCode)){//短信内容是否存在redis中
+				seconds = Utils.getDateSecondsSub(Utils.getStrDatetime(new Date()), redisClientTemplate.get("forgetPwdSendTime_"+mobilephone));
+				if(seconds < 59){
+					if(2 == type){
+						String forgetPwdUse = redisClientTemplate.get("forgetPwdUse_"+mobilephone);
+						if("1".equals(forgetPwdUse)){
+							br.setSuccess(false);
+							br.setErrorCode("8888");//语音频繁操作
+							return JSON.toJSONString(br);
+						}else{
+							seconds = 60;
+						}
+					}
+				}else{
+					redisCode = Utils.getRandomNumber6();//生成验证码
+					//短信验证码 10分钟有效
+					redisClientTemplate.setex("forgetPwdCode_"+mobilephone, 600, redisCode);
+					//短信发送时间 10分钟有效
+					redisClientTemplate.setex("forgetPwdSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			}else if(StringUtils.isBlank(redisCode)){//短信内容是否存在redis中
+				redisCode = Utils.getRandomNumber6();//生成验证码
+				seconds = 60;
+				//短信验证码 10分钟有效
+				redisClientTemplate.setex("forgetPwdCode_"+mobilephone, 600, redisCode);
+				//短信发送时间 10分钟有效
+				redisClientTemplate.setex("forgetPwdSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			}
+			if(seconds > 59){//两次时间间隔60秒，重新发送短信
+				String content = redisClientTemplate.getProperties("forgetPwdSms").replace("${1}",drMember.getRealName()==null?"用户":drMember.getRealName())
+						.replace("${2}",redisCode);
+//				if(2 == type){
+//					content = redisCode;
+//					redisClientTemplate.setex("forgetPwdUse_"+mobilephone, 600, "1");
+//				}
+//				if(1 == type){
+//					redisClientTemplate.del("forgetPwdUse_"+mobilephone);
+//				}
+				SysMessageLog logs = new SysMessageLog(drMember.getUid(), content, 5, null, mobilephone);
+				flag = sysMessageLogService.sendMsg(logs,type);
+			}else{
+				flag = 1;
+			}
+			//短信是否发送成功
+			if (flag > 0) {
+				br.setSuccess(true);
+			} else {
+				br.setSuccess(false);
+				br.setErrorCode("1002");
+				log.info("短信发送失败，返回码："+flag);
+			}
+		} catch (Exception e) {
+			log.error("忘记密码时短信发送错误",e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		return JSON.toJSONString(br);
+	}
+
+
+	/*
+	 * 比对验证码
+	 */
+	@RequestMapping("/validateSmsCode")
+	@ResponseBody
+	public String validateSmsCode(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult br = new BaseResult();
+		try {
+			String code = String.valueOf(param.get("code"));
+			String mobilephone = String.valueOf(param.get("mobilephone"));
+			String redisCode = redisClientTemplate.get("forgetPwdCode_"+mobilephone);
+			if(StringUtils.isNotBlank(code)&&code.equals(redisCode)){
+				req.getSession().setAttribute("forgetPwdPhone", mobilephone);
+				br.setSuccess(true);
+			}else{
+				br.setSuccess(false);
+			}
+		} catch (Exception e) {
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+
+		return JSON.toJSONString(br);
+	}
+
+	/**
+	 * 修改密码
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping(value = "/updatePwd", method = RequestMethod.POST)
+	@ResponseBody
+	public String updatePwd(HttpServletRequest req,@RequestBody Map<String, Object> param){
+		BaseResult	br = new BaseResult();
+		String mobilephone = String.valueOf(req.getSession().getAttribute("forgetPwdPhone"));
+		String password = String.valueOf(param.get("password"));
+		String confirmPwd = String.valueOf(param.get("confirmPwd"));
+		try {
+			if(StringUtils.isNotBlank(mobilephone)&&password.equals(confirmPwd)){
+				DrMember drMember = drMemberService.selectDrMemberByMobilephone(mobilephone);
+				drMember.setPassWord(SecurityUtils.MD5(password));
+				drMemberService.update(drMember);
+				br.setSuccess(true);
+				redisClientTemplate.del("forgetPwdCode_"+mobilephone);
+				redisClientTemplate.del("forgetPwdSendTime_"+mobilephone);
+//				redisClientTemplate.del("forgetPwdUse_"+mobilephone);
+			}else{
+				br.setSuccess(false);
+			}
+		} catch (Exception e) {
+			log.error("手机号"+mobilephone+"找回密码失败",e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	/**
+	 * 生成图片验证码
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping("/validateCode")
+	public void generateValidateCode(HttpServletRequest request,HttpServletResponse response){
+		try{
+			response.setHeader("Pragma", "No-cache");
+			response.setHeader("Cache-Control", "no-cache");
+			response.setDateHeader("Expires", 0);
+			int width = 60, height = 30;
+			BufferedImage image = new BufferedImage(width, height,
+					BufferedImage.TYPE_INT_RGB);
+			OutputStream os = response.getOutputStream();
+			Graphics g = image.getGraphics();
+			Random random = new Random();
+			g.setColor(getRandColor(200, 250));
+			g.fillRect(0, 0, width, height);
+
+			g.setFont(new Font("Times New Roman", Font.PLAIN, 25));
+			g.setColor(getRandColor(160, 200));
+			for (int i = 0; i < 155; i++) {
+				int x = random.nextInt(width);
+				int y = random.nextInt(height);
+				int xl = random.nextInt(12);
+				int yl = random.nextInt(12);
+				g.drawLine(x, y, x + xl, y + yl);
+			}
+			// 设置备选验证码:包括"a-z"和数字"0-9"
+			String base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+			int size = base.length();
+			String sRand = "";
+			for (int i = 0; i < 4; i++) {
+				//String rand = String.valueOf(random.nextInt(10));
+				int start = random.nextInt(size);
+				String strRand = base.substring(start, start + 1);
+				sRand += strRand;
+				g.setColor(new Color(20 + random.nextInt(110), 20 + random
+						.nextInt(110), 20 + random.nextInt(110)));
+				g.drawString(strRand+"", 13 * i + 6, 25);
+			}
+			request.getSession().setAttribute("rand", sRand);
+			g.dispose();
+			//ImageIO.write(image, "JPEG", os);
+			JPEGImageEncoder encoder = JPEGCodec.createJPEGEncoder(response.getOutputStream());
+			encoder.encode(image);
+			os.flush();
+			os.close();
+			os = null;
+			response.flushBuffer();
+		} catch (IllegalStateException e) {
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}catch (IOException e){
+			System.out.println(e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	public Color getRandColor(int fc, int bc) {
+		Random random = new Random();
+		if (fc > 255)
+			fc = 255;
+		if (bc > 255)
+			bc = 255;
+		int r = fc + random.nextInt(bc - fc);
+		int g = fc + random.nextInt(bc - fc);
+		int b = fc + random.nextInt(bc - fc);
+		return new Color(r, g, b);
+	}
+
+}

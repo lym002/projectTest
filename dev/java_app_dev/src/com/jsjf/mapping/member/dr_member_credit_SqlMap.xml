@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberCreditDAO">
+	<resultMap id="BaseResultMap" type="com.jsjf.model.member.DrMemberCredit">
+		<id column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="has_house" property="hasHouse" jdbcType="BIT" />
+		<result column="has_car" property="hasCar" jdbcType="BIT" />
+		<result column="overdue_amount" property="overdueAmount" jdbcType="DECIMAL" />
+		<result column="other_credit_amount" property="otherCreditAmount" jdbcType="DECIMAL" />
+		<result column="credit_card_amount" property="creditCardAmount" jdbcType="DECIMAL" />
+		<result column="repay_num" property="repayNum" jdbcType="INTEGER" />
+		<result column="ontime_pay_num" property="ontimePayNum" jdbcType="INTEGER" />
+		<result column="advance_pay_num" property="advancePayNum" jdbcType="INTEGER" />
+		<result column="late_nopay_num" property="lateNopayNum" jdbcType="INTEGER" />
+		<result column="late_pay_num" property="latePayNum" jdbcType="INTEGER" />
+		<result column="credit_count" property="creditCount" jdbcType="DECIMAL" />
+		<result column="received_count" property="receivedCount" jdbcType="DECIMAL" />
+		<result column="aprincipal" property="aprincipal" jdbcType="DECIMAL" />
+		<result column="ainterest" property="ainterest" jdbcType="DECIMAL" />
+		<result column="apenalty" property="apenalty" jdbcType="DECIMAL" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		uid, has_house, has_car, overdue_amount, other_credit_amount,
+		credit_card_amount,
+		repay_num, ontime_pay_num, advance_pay_num, late_nopay_num,
+		late_pay_num,
+		credit_count, received_count, aprincipal, ainterest, apenalty
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="BaseResultMap"
+		parameterType="java.lang.Integer">
+		select
+		<include refid="Base_Column_List" />
+		from dr_member_credit
+		where uid = #{uid,jdbcType=INTEGER}
+	</select>
+	<insert id="insertSelective" parameterType="com.jsjf.model.member.DrMemberCredit">
+		insert into dr_member_credit
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="uid != null">
+				uid,
+			</if>
+			<if test="hasHouse != null">
+				has_house,
+			</if>
+			<if test="hasCar != null">
+				has_car,
+			</if>
+			<if test="overdueAmount != null">
+				overdue_amount,
+			</if>
+			<if test="otherCreditAmount != null">
+				other_credit_amount,
+			</if>
+			<if test="creditCardAmount != null">
+				credit_card_amount,
+			</if>
+			<if test="repayNum != null">
+				repay_num,
+			</if>
+			<if test="ontimePayNum != null">
+				ontime_pay_num,
+			</if>
+			<if test="advancePayNum != null">
+				advance_pay_num,
+			</if>
+			<if test="lateNopayNum != null">
+				late_nopay_num,
+			</if>
+			<if test="latePayNum != null">
+				late_pay_num,
+			</if>
+			<if test="creditCount != null">
+				credit_count,
+			</if>
+			<if test="receivedCount != null">
+				received_count,
+			</if>
+			<if test="aprincipal != null">
+				aprincipal,
+			</if>
+			<if test="ainterest != null">
+				ainterest,
+			</if>
+			<if test="apenalty != null">
+				apenalty,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="uid != null">
+				#{uid,jdbcType=INTEGER},
+			</if>
+			<if test="hasHouse != null">
+				#{hasHouse,jdbcType=BIT},
+			</if>
+			<if test="hasCar != null">
+				#{hasCar,jdbcType=BIT},
+			</if>
+			<if test="overdueAmount != null">
+				#{overdueAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="otherCreditAmount != null">
+				#{otherCreditAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="creditCardAmount != null">
+				#{creditCardAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="repayNum != null">
+				#{repayNum,jdbcType=INTEGER},
+			</if>
+			<if test="ontimePayNum != null">
+				#{ontimePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="advancePayNum != null">
+				#{advancePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="lateNopayNum != null">
+				#{lateNopayNum,jdbcType=INTEGER},
+			</if>
+			<if test="latePayNum != null">
+				#{latePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="creditCount != null">
+				#{creditCount,jdbcType=DECIMAL},
+			</if>
+			<if test="receivedCount != null">
+				#{receivedCount,jdbcType=DECIMAL},
+			</if>
+			<if test="aprincipal != null">
+				#{aprincipal,jdbcType=DECIMAL},
+			</if>
+			<if test="ainterest != null">
+				#{ainterest,jdbcType=DECIMAL},
+			</if>
+			<if test="apenalty != null">
+				#{apenalty,jdbcType=DECIMAL},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.member.DrMemberCredit">
+		update dr_member_credit
+		<set>
+			<if test="hasHouse != null">
+				has_house = #{hasHouse,jdbcType=BIT},
+			</if>
+			<if test="hasCar != null">
+				has_car = #{hasCar,jdbcType=BIT},
+			</if>
+			<if test="overdueAmount != null">
+				overdue_amount = #{overdueAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="otherCreditAmount != null">
+				other_credit_amount = #{otherCreditAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="creditCardAmount != null">
+				credit_card_amount = #{creditCardAmount,jdbcType=DECIMAL},
+			</if>
+			<if test="repayNum != null">
+				repay_num = #{repayNum,jdbcType=INTEGER},
+			</if>
+			<if test="ontimePayNum != null">
+				ontime_pay_num = #{ontimePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="advancePayNum != null">
+				advance_pay_num = #{advancePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="lateNopayNum != null">
+				late_nopay_num = #{lateNopayNum,jdbcType=INTEGER},
+			</if>
+			<if test="latePayNum != null">
+				late_pay_num = #{latePayNum,jdbcType=INTEGER},
+			</if>
+			<if test="creditCount != null">
+				credit_count = #{creditCount,jdbcType=DECIMAL},
+			</if>
+			<if test="receivedCount != null">
+				received_count = #{receivedCount,jdbcType=DECIMAL},
+			</if>
+			<if test="aprincipal != null">
+				aprincipal = #{aprincipal,jdbcType=DECIMAL},
+			</if>
+			<if test="ainterest != null">
+				ainterest = #{ainterest,jdbcType=DECIMAL},
+			</if>
+			<if test="apenalty != null">
+				apenalty = #{apenalty,jdbcType=DECIMAL},
+			</if>
+		</set>
+		where uid = #{uid,jdbcType=INTEGER}
+	</update>
+</mapper>

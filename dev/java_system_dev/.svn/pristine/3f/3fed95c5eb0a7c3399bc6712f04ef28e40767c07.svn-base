@@ -1,0 +1,434 @@
+package com.jsjf.service.activity.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.CardRuleEnum;
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.PropertyUtil;
+import com.jsjf.common.ReadExcel;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.FestivaiActivityDao;
+import com.jsjf.dao.activity.PrizeManageDao;
+import com.jsjf.dao.member.JsMemberInfoDAO;
+import com.jsjf.model.activity.BypCommodityBean;
+import com.jsjf.model.activity.BypCommodityDetailBean;
+import com.jsjf.model.member.JsMemberInfo;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.activity.FestivaiActivityService;
+import com.jsjf.service.system.SysMessageLogService;
+
+@Service
+@Transactional
+public class FestivaiActivityServiceImpl implements FestivaiActivityService{
+
+	@Autowired
+	private FestivaiActivityDao festivaiActivityDao;
+
+	
+	@Autowired
+	private JsMemberInfoDAO jsMemberInfoDAO;
+	
+	@Autowired
+	SysMessageLogService sysMessageLogService;
+	
+	@Autowired
+	private PrizeManageDao prizeManageDao;
+	
+	private Logger log = Logger.getLogger(FestivaiActivityServiceImpl.class);
+	
+	@Override
+	public BaseResult queryFestivaIActivityList(Map<String, Object> param,
+			PageInfo pi) {
+		Map<String,PageInfo> resultMap = new HashMap<String,PageInfo>();
+		param.put("offset",pi.getPageInfo().getOffset()); 
+		param.put("limit",pi.getPageInfo().getLimit()); 
+		List<BypCommodityDetailBean> list = festivaiActivityDao.queryFestivaIActivityList(param);
+		Integer total = festivaiActivityDao.queryFestivaIActivityListCount(param);
+		pi.setTotal(total);
+		pi.setRows(list);
+		resultMap.put("page", pi);
+		BaseResult br = new BaseResult();
+		br.setMap(resultMap);
+		return br;
+	}
+
+	@Override
+	public BaseResult updateFestivaIActivity(BypCommodityDetailBean bypCommodityBean) {
+		BaseResult br = new BaseResult();
+		try{
+			festivaiActivityDao.updateFestivaIActivity(bypCommodityBean);
+			br.setSuccess(true);
+			br.setMsg("修改兑换码成功");
+		}catch (Exception e) {
+			br.setSuccess(false);
+			br.setMsg("修改兑换码失败");
+			br.setErrorCode("9999");
+			log.error("修改兑换码失败",e);
+		}
+		return br;
+	}
+
+	@Override
+	public BaseResult updateSendPrizeSms() {
+		BaseResult br = new BaseResult();
+		//获取要发送短信的用户手机号和卡号、奖品记录id、金额
+		List<BypCommodityDetailBean> list = festivaiActivityDao.getSendPrizeSms();
+		if(Utils.isObjectNotEmpty(list) && list.size()>0){
+			Integer ids[] = new Integer[list.size()];
+			for (int i = 0; i < list.size(); i++) {
+				ids[i] = list.get(i).getId();
+			}
+			//修改状态为不可用
+			festivaiActivityDao.updateSendPrizeSms(ids);
+			sendPrizeSms(list);
+		}
+		return br;
+	}
+
+	@Override
+	public BaseResult sendPrizeSms(final List<BypCommodityDetailBean> list) {
+		ExecutorService batch = Executors.newFixedThreadPool(3);
+		BaseResult br = new BaseResult();
+		try {
+			final StringBuilder sb = new StringBuilder(PropertyUtil.getProperties("20171212"));
+			for (int i = 0; i < list.size(); i++) {
+				final int j = i;
+				batch.execute(new Runnable(){
+			        @Override
+			        public void run(){
+			        	//执行回调接口   TODO同一手机号十分钟内三条
+			        	try {
+			    				final String price = list.get(j).getPrice().toString();
+			    				final String phone = list.get(j).getMobilePhone().toString();
+			    				final String code = list.get(j).getCode().toString();
+			    				final Integer uid = list.get(j).getUid();
+			    				final StringBuilder sbStr = new StringBuilder();
+				        		sbStr.delete(0, sbStr.length());
+								sbStr.append(
+										sb.toString().replace("${price}",price).replace("${code}", code));
+								//System.out.println("***************"+phone+":"+sbStr.toString());
+								SysMessageLog sms = new SysMessageLog
+										(uid, sbStr.toString(), 41, null, phone);
+								sysMessageLogService.sendMsg(sms);
+				        		/*Integer result = SmsSendUtil.sendMsg(phone,sbStr.toString());
+				        		//记录日志
+								SysMessageLog sms = new SysMessageLog
+										(uid, sbStr.toString(), 41, new Date(), phone);
+								sms.setResults(result);
+								sysMessageLogDAO.insertSysMessageLog(sms);*/
+						} catch (Exception e) {
+							log.error("线程池IO异常：" , e);
+							e.printStackTrace();
+						}
+				    }
+				});
+			}
+			batch.shutdown();
+		}catch (Exception e) {
+			br.setSuccess(false);
+			br.setMsg("奖励发送失败");
+			br.setErrorCode("9999");
+			log.error("奖励发送失败",e);
+		}
+		br.setSuccess(true);
+		br.setMsg("奖励发送成功");
+		return br;
+	}
+
+	@Override
+	public BaseResult prizeStatistics(Map<String,Object> param) {
+		BaseResult br = new BaseResult();
+		if(Utils.isObjectEmpty(param)){
+			br.setSuccess(false);
+			br.setMsg("活动开始时间、结束时间、产品天数、产品金额、统计奖品类型不能为空！");
+			br.setErrorCode("9999");
+			return br;
+		}
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		try{
+			//查询所有有资格参与活动的用户
+			/*//5个参数，活动开始时间、活动结束时间、产品天数、最低参与金额(再加个奖品类型)
+			List<Integer> uid = festivaiActivityDao.queryPrizeUid(param);*/
+			//查询是否有为发放奖品的记录，如果有，不能进行统计
+			PageInfo pi = new PageInfo(1,1000000);
+			Map<String,Object> bypBean = new HashMap<String,Object>();
+			bypBean.put("status", 1);
+			bypBean.put("tjType", param.get("tjType"));
+			queryFestivaIActivityList(bypBean, pi);
+			List<BypCommodityDetailBean> bypComList = (List<BypCommodityDetailBean>) pi.getRows();
+			if(Utils.isObjectNotEmpty(bypComList) && bypComList.size() > 0){
+				br.setSuccess(false);
+				br.setMsg("还有未发放的奖品，请先发放奖品再进行统计！");
+				br.setErrorCode("9999");
+				return br;
+			}
+			Integer isNotTj = festivaiActivityDao.queryIsNotTj(param);
+			if(null != isNotTj || Utils.isObjectNotEmpty(isNotTj)){//再次统计时奖品发送时间要小于活动开始时间，否则没有要统计的记录
+				if(isNotTj != 0){
+					br.setSuccess(false);
+					br.setMsg("不能重复统计该时间段的记录！");
+					return br;
+				}
+			}
+			Integer type = Integer.parseInt(param.get("tjType").toString());
+			//根据uid查询能参与活动的用户的所有投资产品
+			List<BypCommodityDetailBean> list = festivaiActivityDao.queryPrizeStatistics(param);
+			//获取对应奖品表的奖品id和金额
+			List<BypCommodityDetailBean> pridMoneyList = festivaiActivityDao.
+					queryPrid(type);
+			BigDecimal cardAmount = new BigDecimal(0);
+			BypCommodityDetailBean bean = new BypCommodityDetailBean();
+			if(Utils.isObjectNotEmpty(list)){
+				for (int i = 0; i < list.size(); i++) {
+					//判断是否为渠道用户
+					Map<String, Object> map = new HashMap<String, Object>();
+					map.put("code", list.get(i).getToFrom());
+					Integer cpsType = festivaiActivityDao.queryIsNotCps(map);
+					map.clear();
+					if(!Utils.isObjectNotEmpty(cpsType)){
+						map.put("isCps", cpsType==null?0:cpsType);//渠道类型，如果为null默认为非CPS
+					}else{
+						map.put("isCps", 0);//如果渠道不存在，则默认是非CPS
+					}
+					if(!map.get("isCps").equals(0)){//渠道用户不参加活动
+						continue;
+					}
+					Integer key = list.get(i).getDeadline();
+					cardAmount = CardRuleEnum.getCardAmount(key.toString(),list.get(i).getAmount());
+					if(cardAmount.compareTo(BigDecimal.ZERO) != 0){
+						//决定送那种类型奖品
+						for (int j = 0; j < pridMoneyList.size(); j++) {
+							if(list.get(i).getAmount().compareTo(new BigDecimal(param.get("amount").toString())) >= 0 && 
+									cardAmount.compareTo(new BigDecimal(pridMoneyList.get(j).getPrice())) == 0){
+								bean.setPrid(pridMoneyList.get(j).getPrid());
+								bean.setUid(list.get(i).getUid());
+								bean.setAddtime(new Date());
+								bean.setStarttime(sdf.parse(param.get("tjStartTime").toString()));
+								if(Utils.isObjectEmpty(param.get("xnEndTime")) && 
+										(type == 1 || type == 3)){//有效期为空且为京东卡的
+									Date endDate = new Date();
+									Calendar rightNow = Calendar.getInstance();
+									rightNow.setTime(endDate);
+									rightNow.add(Calendar.YEAR,3);
+									bean.setEndtime(rightNow.getTime());
+								}else{
+									bean.setEndtime(sdf.parse(param.get("xnEndTime").toString()));
+								}
+								bean.setStatus(1);
+								//System.out.println("用户："+list.get(i).getUid()+"获取奖品："+cardAmount);
+								//将参与活动的用户数据加入到奖品记录表
+								festivaiActivityDao.addPrizeStatistics(bean);
+								break;
+							}
+						}
+					}
+				}
+			}
+			br.setSuccess(true);
+			br.setMsg("奖品统计成功");
+		}catch (Exception e) {
+			br.setSuccess(false);
+			br.setMsg("奖品统计失败");
+			br.setErrorCode("9999");
+			log.error("奖品统计失败",e);
+		}
+		return br;
+	}
+
+	@Override
+	public void queryDownloadDetail(Map<String,Object> param,PageInfo pi) {
+		Map<String,PageInfo> resultMap = new HashMap<String,PageInfo>();
+		param.put("offset",pi.getPageInfo().getOffset()); 
+		param.put("limit",pi.getPageInfo().getLimit()); 
+		List<BypCommodityDetailBean> list = festivaiActivityDao.queryDownloadDetail(param);
+		pi.setRows(list);
+		resultMap.put("page", pi);
+	}
+
+	@Override
+	public void addBatchCode(String name, MultipartFile bannerAddPicFile) throws Exception {
+		//创建处理EXCEL
+        ReadExcel readExcel=new ReadExcel();
+        BypCommodityDetailBean bean = new BypCommodityDetailBean();
+        //解析excel
+        List<BypCommodityDetailBean> beanList = readExcel.getExcelInfo(name ,bannerAddPicFile,bean);
+        //添加纪录
+        festivaiActivityDao.addBatchCode(beanList);
+        //查询收货地址管理表的数据
+        for (int j = 0; j < beanList.size(); j++) {
+        	JsMemberInfo jmInfo = jsMemberInfoDAO.queryJsMemberInfo(beanList.get(j).getUid());
+        	if(Utils.isObjectEmpty(jmInfo)){
+        		jmInfo = new JsMemberInfo();
+        		if(!Utils.strIsNull(beanList.get(j).getAddress())){
+        			jmInfo.setAddress(beanList.get(j).getAddress());
+        		}
+        		jmInfo.setUid(beanList.get(j).getUid());
+        		jmInfo.setPhone(beanList.get(j).getMobilePhone());
+        		jmInfo.setAddTime(new Date());
+        		jmInfo.setName(beanList.get(j).getRealName());
+        		jsMemberInfoDAO.addJsMemberAddressInfo(jmInfo);
+        	}else if(!Utils.strIsNull(jmInfo.getAddress())){
+        		jmInfo.setAddress(beanList.get(j).getAddress());
+        		jmInfo.setUpdateTime(new Date());
+        		jsMemberInfoDAO.updateJsMemberAddressInfo(jmInfo);
+        	}
+		}
+		
+	}
+
+	@Override
+	public BaseResult queryYearInvestList(Map<String, Object> param, PageInfo pi) {
+		Map<String,PageInfo> resultMap = new HashMap<String,PageInfo>();
+		param.put("offset",pi.getPageInfo().getOffset()); 
+		param.put("limit",pi.getPageInfo().getLimit()); 
+		param.put("mobilePhone",param.get("mobilePhone") );
+		param.put("starttime", param.get("starttime"));
+		param.put("endtime", param.get("endtime"));
+		//查询之前对用户最新投资进行统计并存入奖品详情明细表
+		Map<String, Object> tjMap = new HashMap<String, Object>();
+		tjMap.put("starttime", "2018-01-24 00:00:00");//活动开始时间
+		tjMap.put("endtime", "2018-02-08 23:59:59");//活动结束时间
+		//查询奖品金额和id
+		List<BypCommodityDetailBean> pridMoneyList = festivaiActivityDao.
+				queryYearInvestPrid();
+		List<BypCommodityDetailBean> tjList = festivaiActivityDao.queryUserInvest(tjMap);
+
+		for (int i = 0; i < tjList.size(); i++) {
+			for (int j = 0; j < pridMoneyList.size(); j++) {
+				switch(tjList.get(i).getYearAmount().compareTo(pridMoneyList.get(j).getNeedPoints())){
+					case 0:
+					case 1:
+						tjList.get(i).setPrid(pridMoneyList.get(j).getPrid());
+						festivaiActivityDao.addUserInvest(tjList.get(i));
+				}
+			}
+		}
+		List<BypCommodityDetailBean> list = festivaiActivityDao.queryYearInvestList(param);
+		Integer total = festivaiActivityDao.queryYearInvestListCount(param);
+		pi.setTotal(total);
+		pi.setRows(list);
+		resultMap.put("page", pi);
+		BaseResult br = new BaseResult();
+		br.setMap(resultMap);
+		return br;
+	}
+		
+
+	@Override
+	public BaseResult queryTodayRankingList(Map<String, Object> param,
+			PageInfo pi) {
+		Map<String,PageInfo> resultMap = new HashMap<String,PageInfo>();
+		param.put("offset",pi.getPageInfo().getOffset()); 
+		param.put("limit",pi.getPageInfo().getLimit()); 
+		param.put("mobilePhone",param.get("mobilePhone") );
+		param.put("starttime", param.get("starttime"));
+		param.put("endtime", param.get("endtime"));
+		List<BypCommodityDetailBean> list = festivaiActivityDao.queryTodayRankingList(param);
+		Integer total = festivaiActivityDao.queryTodayRankingListCount(param);
+		pi.setTotal(total);
+		pi.setRows(list);
+		resultMap.put("page", pi);
+		BaseResult br = new BaseResult();
+		br.setMap(resultMap);
+		return br;
+	}
+
+	@Override
+	public BaseResult queryUserTotalList(Map<String, Object> param, PageInfo pi) {
+		Map<String,PageInfo> resultMap = new HashMap<String,PageInfo>();
+		param.put("offset",pi.getPageInfo().getOffset()); 
+		param.put("limit",pi.getPageInfo().getLimit()); 
+		param.put("mobilePhone",param.get("mobilePhone") );
+		param.put("starttime", param.get("starttime"));
+		param.put("endtime", param.get("endtime"));
+		List<BypCommodityDetailBean> list = festivaiActivityDao.queryUserTotalList(param);
+		Integer total = festivaiActivityDao.queryUserTotalListCount(param);
+		pi.setTotal(total);
+		pi.setRows(list);
+		resultMap.put("page", pi);
+		BaseResult br = new BaseResult();
+		br.setMap(resultMap);
+		return br;
+	}
+
+	@Override
+	public BaseResult updateUserCommodityDetail() {
+		BaseResult br = new BaseResult();
+		try{
+			//查询出本次活动所有用户获取京东卡总额
+			List<BypCommodityDetailBean> list = festivaiActivityDao.queryUserCommodityDetail();
+			Integer prId = festivaiActivityDao.queryJdPrid();
+			for (int i = 0; i < list.size(); i++) {
+				if(list.get(i).getPrice() >= 1000){
+					double rid = list.get(i).getPrice()/1000;
+					for (int j = 0; j < (int)rid; j++) {
+						BypCommodityDetailBean bean = new BypCommodityDetailBean();
+						bean.setUid(list.get(i).getUid());
+						bean.setPrid(prId);
+						festivaiActivityDao.addUserInvest(bean);//以1000为单位合并京东卡
+					}
+					if((list.get(i).getPrice()%1000) != 0){
+						int num = list.get(i).getPrice()%1000;
+						//新增定制额度京东卡
+						BypCommodityBean bypCommodityBean = new BypCommodityBean();
+						bypCommodityBean.setPrizeName("5880京东卡"+num+"元");
+						bypCommodityBean.setPrice(new BigDecimal(num));
+						bypCommodityBean.setDetails("5880活动期间使用,1000额度以下定制型京东卡");
+						bypCommodityBean.setStatus(1);
+						bypCommodityBean.setType(1);
+						bypCommodityBean.setActivityId("5880-small");
+						prizeManageDao.addDrPrizeManage(bypCommodityBean);
+						//查询定制京东卡的prid
+						Integer smallPrId = festivaiActivityDao.queryJdCardSmall(bypCommodityBean);
+						//插入1000以下京东卡详情
+						BypCommodityDetailBean bean = new BypCommodityDetailBean();
+						bean.setUid(list.get(i).getUid());
+						bean.setPrid(smallPrId);
+						festivaiActivityDao.addUserInvest(bean);
+					}
+				}else{
+					//新增定制额度京东卡
+					BypCommodityBean bypCommodityBean = new BypCommodityBean();
+					bypCommodityBean.setPrizeName("5880京东卡"+list.get(i).getPrice()+"元");
+					bypCommodityBean.setPrice(new BigDecimal(list.get(i).getPrice()));
+					bypCommodityBean.setDetails("5880活动期间使用,1000额度以下定制型京东卡");
+					bypCommodityBean.setStatus(1);
+					bypCommodityBean.setType(1);
+					bypCommodityBean.setActivityId("5880-small");
+					prizeManageDao.addDrPrizeManage(bypCommodityBean);
+					//查询定制京东卡的prid
+					Integer smallPrId = festivaiActivityDao.queryJdCardSmall(bypCommodityBean);
+					//插入1000以下京东卡详情
+					BypCommodityDetailBean bean = new BypCommodityDetailBean();
+					bean.setUid(list.get(i).getUid());
+					bean.setPrid(smallPrId);
+					festivaiActivityDao.addUserInvest(bean);
+				}
+				festivaiActivityDao.updateUserCommodityDetail(list.get(i).getUid());//修改老数据为不可用
+			}
+			br.setSuccess(true);
+			br.setMsg("生成成功，请到节日活动模块进行奖品发放！");
+		}catch(Exception e){
+			log.error("生成失败", e);
+			br.setSuccess(false);
+			br.setMsg("生成失败");
+		}
+		return br;
+	} 
+
+}

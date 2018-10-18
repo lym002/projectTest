@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityFriendDAO">
+	<resultMap id="JsActivityFriendResult" type="com.jsjf.model.activity.JsActivityFriend">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="conditionType" property="conditionType" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="periods" property="periods" jdbcType="INTEGER" />
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="isPut" property="isPut" jdbcType="INTEGER" />
+		<result column="pcPutImg" property="appPutImg" jdbcType="VARCHAR" />
+		<result column="pcPutUrl" property="appPutUrl" jdbcType="VARCHAR" />
+		<result column="putContent" property="putContent" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,name,conditionType,status,periods,startDate,endDate,adddate,isPut,appPutImg,appPutUrl,putContent
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsActivityFriendResult">
+		select <include refid="Base_Column_List" /> from js_activity_friend where id = #{id}
+	</select>
+	
+	<select id="selectJsActivityFriend" resultMap="JsActivityFriendResult" parameterType="java.util.HashMap">
+		select <include refid="Base_Column_List" /> from js_activity_friend 
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id != null"> and id = #{id}</if>
+			<if test="status != null" >
+				and status = #{status}
+			</if>
+			<if test="type != null" >
+				and type = #{type}
+			</if>			
+			<if test="type != null" >
+				and type = #{type}
+			</if>		
+		</trim>
+		order by status,startDate desc
+		<if test="offset != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+		<select id="selectJsActivityFriendCount" resultType="int" parameterType="java.util.HashMap">
+		select count(1) as count from js_activity_friend 
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id != null"> and id = #{id}</if>
+			<if test="status != null" >
+				and status = #{status}
+			</if>
+			<if test="type != null" >
+				and type = #{type}
+			</if>			
+		</trim>		
+	</select>
+</mapper>

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsLoanDAO">
+	<resultMap id="DrClaimsLoanResult" type="com.jsjf.model.claims.DrClaimsLoan">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="no" property="no" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />		
+		<result column="loanUse" property="loanUse" jdbcType="VARCHAR" />
+		<result column="loanAmount" property="loanAmount" jdbcType="DECIMAL" />	
+		<result column="receiveInterest" property="receiveInterest" jdbcType="DECIMAL" />	
+		<result column="serviceCharge" property="serviceCharge" jdbcType="DECIMAL" />			
+		<result column="currency" property="currency" jdbcType="VARCHAR" />
+		<result column="loanDeadline" property="loanDeadline" jdbcType="VARCHAR" />
+		<result column="rate" property="rate" jdbcType="DECIMAL" />
+		<result column="repayType" property="repayType" jdbcType="INTEGER" />
+		<result column="repayDeadline" property="repayDeadline" jdbcType="INTEGER" />	
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="dateType" property="dateType" jdbcType="INTEGER" />
+		<result column="loanName" property="loanName" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="bankNo" property="bankNo" jdbcType="VARCHAR" />
+		<result column="advisoryRate" property="advisoryRate" jdbcType="DECIMAL" />	
+		<result column="serviceRate" property="serviceRate" jdbcType="DECIMAL" />
+		<result column="defaultersRate" property="defaultersRate" jdbcType="DECIMAL" />
+		<result column="overdueRate" property="overdueRate" jdbcType="DECIMAL" />
+		<result column="overduePenaltyRate" property="overduePenaltyRate" jdbcType="DECIMAL" />	
+		<result column="riskRate" property="riskRate" jdbcType="DECIMAL" />	
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+		<result column="showStatus" property="showStatus" jdbcType="INTEGER" />
+		<result column="isAuditEdit" property="isAuditEdit" jdbcType="INTEGER" />
+		<result column="bankAddress" property="bankAddress" jdbcType="VARCHAR" />
+		<result column="companyNameProtocolShow" property="companyNameProtocolShow" jdbcType="VARCHAR" />
+		<result column="payLoanNo" property="payLoanNo" jdbcType="VARCHAR" />
+		<result column="claimsOriginate" property="claimsOriginate" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 获取贷款项目基本信息列表 -->
+	<select id="getDrClaimsLoanList" parameterType="java.util.HashMap" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		select dcl.id,dcc.id customerId,dcc.user_id,dcc.fuiou_acnt,dcl.name,dcl.no,dcl.status,dcl.loanUse,ifnull(dcl.loanAmount,0) as loanAmount,dcl.receiveInterest,
+		IFNULL(IFNULL(dcl.receiveInterest,0)+IFNULL(dcl.loanAmount,0),0) as pendRepayAmount,dcl.currency,dcl.loanDeadline,dcl.serviceCharge,
+		ifnull(dcl.rate,0) as rate,dcl.repayType,dcl.repayDeadline,dcl.startDate,dcl.endDate,
+		dcl.dateType,dcl.loanName,dcl.bankName,dcl.bankAddress,CONCAT(left(dcl.bankNo,4),'****',right(dcl.bankNo,4)) as bankNo,dcl.advisoryRate,dcl.serviceRate,dcl.defaultersRate,dcl.showStatus,
+		dcl.overdueRate,dcl.overduePenaltyRate,dcl.riskRate,dcl.addDate,dcl.addUser,dcl.updDate,dcl.updUser,dcc.companyName,dcc.companyNameProtocolShow,dcl.isAuditEdit,
+		dcc.mchnt_txn_ssn as mchnt_txn_ssn
+		from dr_claims_loan dcl
+		LEFT JOIN dr_claims_customer dcc ON dcl.id = dcc.lid
+		<where>
+			<if test="name != null and name != ''">
+				dcl.name like CONCAT('%','${name}','%' )
+			</if>
+			<if test="no != null and no != ''"> 
+				and dcl.no like CONCAT('%','${no}','%' )
+			</if>
+			<if test="companyName != null and companyName != ''"> 
+				and dcc.companyName like CONCAT('%','${companyName}','%' )
+			</if>
+			<if test="startDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="dueStartDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') >= #{dueStartDate}]]>
+			</if>
+			<if test="dueEndDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') <= #{dueEndDate} ]]>
+			</if>
+			<if test="status != null">
+				and (dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>				
+				<if test="isAuditEdit == 100">
+					 or dcl.isAuditEdit = 1 
+				</if>
+				)
+			</if>
+			
+			<if test="loanAmount != null">
+				and dcl.loanAmount = #{loanAmount}
+			</if>
+			<if test="isAuditEdit == 1">
+				and dcl.isAuditEdit = 1
+			</if>							
+			
+		</where>
+		<![CDATA[ order by dcl.addDate desc]]>
+		<if test="offset != null">
+		limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<!-- 获取贷款项目基本信息总数 -->
+	<select id="getDrClaimsLoanCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_claims_loan dcl
+		LEFT JOIN dr_claims_customer dcc ON dcl.id = dcc.lid
+		<where>
+			<if test="name != null and name != ''">
+				dcl.name like CONCAT('%','${name}','%' )
+			</if>
+			<if test="no != null and no != ''"> 
+				and dcl.no like CONCAT('%','${no}','%' )
+			</if>
+			<if test="companyName != null and companyName != ''"> 
+				and dcc.companyName like CONCAT('%','${companyName}','%' )
+			</if>
+			<if test="startDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			
+			<if test="dueStartDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') >= #{dueStartDate}]]>
+			</if>
+			<if test="dueEndDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') <= #{dueEndDate} ]]>
+			</if>
+			<if test="status != null">
+				and (dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>				
+				<if test="isAuditEdit == 100">
+					 or dcl.isAuditEdit = 1 
+				</if>
+				)
+			</if>
+			<if test="loanAmount != null">
+				and dcl.loanAmount = #{loanAmount}
+			</if>
+			<if test="isAuditEdit == 1">
+				and dcl.isAuditEdit = 1
+			</if>
+							
+		</where>
+	</select>
+	
+	<!-- 获取贷款项目基本信息总金额 -->
+	<select id="getDrClaimsLoanSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select IFNULL(sum(IFNULL(dcl.receiveInterest,0)+IFNULL(dcl.loanAmount,0)),0) as pendRepayAmount from dr_claims_loan dcl
+		LEFT JOIN dr_claims_customer dcc ON dcl.id = dcc.lid
+		<where>
+			<if test="dueStartDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') >= #{dueStartDate}]]>
+			</if>
+			<if test="dueEndDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') <= #{dueEndDate} ]]>
+			</if>
+			<if test="status != null">
+				and	dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 添加贷款项目基本信息 -->
+	<insert id="insertDrClaimsLoan" parameterType="com.jsjf.model.claims.DrClaimsLoan" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_claims_loan(name,no,status,loanUse,loanAmount,receiveInterest,currency,loanDeadline,rate,repayType,repayDeadline,
+		startDate,endDate,dateType,loanName,bankName,bankNo,advisoryRate,serviceRate,defaultersRate,overdueRate,overduePenaltyRate,riskRate,
+		addDate,addUser,cardFlag,bankAddress,payLoanNo,claimsOriginate)
+		values (#{name:VARCHAR},#{no:VARCHAR},#{status:INTEGER},#{loanUse:VARCHAR},#{loanAmount:DECIMAL},#{receiveInterest:DECIMAL},#{currency:VARCHAR},
+		#{loanDeadline:VARCHAR},#{rate:DECIMAL},#{repayType:INTEGER},#{repayDeadline:INTEGER},#{startDate:TIMESTAMP},#{endDate:TIMESTAMP},
+		#{dateType:INTEGER},#{loanName:VARCHAR},#{bankName:VARCHAR},#{bankNo:VARCHAR},#{advisoryRate:DECIMAL},#{serviceRate:DECIMAL},
+		#{defaultersRate:DECIMAL},#{overdueRate:DECIMAL},#{overduePenaltyRate:DECIMAL},#{riskRate:DECIMAL},
+		sysdate(),#{addUser:INTEGER},#{cardFlag:INTEGER},#{bankAddress:VARCHAR},#{payLoanNo:VARCHAR},#{claimsOriginate:INTEGER})
+	</insert>
+	
+	<!-- 修改贷款项目基本信息  -->
+	<update id="updateDrClaimsLoan" parameterType="com.jsjf.model.claims.DrClaimsLoan">
+		update dr_claims_loan
+		<set>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="no != null"> no = #{no:VARCHAR},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="loanUse != null"> loanUse = #{loanUse:VARCHAR},</if>
+			<if test="loanAmount != null"> loanAmount = #{loanAmount:DECIMAL},</if>
+			<if test="receiveInterest != null"> receiveInterest = #{receiveInterest:DECIMAL},</if>			
+			<if test="serviceCharge != null"> serviceCharge = #{serviceCharge:DECIMAL},</if>	
+			<if test="pendRepayAmount != null"> receiveInterest = #{receiveInterest:DECIMAL},</if>
+			<if test="currency != null"> currency = #{currency:VARCHAR},</if>
+			<if test="loanDeadline != null"> loanDeadline = #{loanDeadline:VARCHAR},</if>
+			<if test="rate != null"> rate = #{rate:DECIMAL},</if>
+			<if test="repayType != null"> repayType = #{repayType:INTEGER},</if>
+			<if test="repayDeadline != null"> repayDeadline = #{repayDeadline:INTEGER},</if>
+			<if test="startDate != null"> startDate = #{startDate:TIMESTAMP},</if>
+			<if test="endDate != null"> endDate = #{endDate:TIMESTAMP},</if>
+			<if test="dateType != null"> dateType = #{dateType:INTEGER},</if>
+			<if test="loanName != null"> loanName = #{loanName:VARCHAR},</if>
+			<if test="bankName != null"> bankName = #{bankName:VARCHAR},</if>
+			<if test="bankAddress != null"> bankAddress = #{bankAddress:VARCHAR},</if>
+			<if test="bankNo != null"> bankNo = #{bankNo:VARCHAR},</if>
+			<if test="advisoryRate != null"> advisoryRate = #{advisoryRate:DECIMAL},</if>
+			<if test="serviceRate != null"> serviceRate = #{serviceRate:DECIMAL},</if>
+			<if test="defaultersRate != null"> defaultersRate = #{defaultersRate:DECIMAL},</if>
+			<if test="overdueRate != null"> overdueRate = #{overdueRate:DECIMAL},</if>
+			<if test="overduePenaltyRate != null"> overduePenaltyRate = #{overduePenaltyRate:DECIMAL},</if>
+			<if test="riskRate != null"> riskRate = #{riskRate:DECIMAL},</if>
+			updDate = sysdate(),
+			<if test="updUser != null"> updUser = #{updUser:INTEGER},</if>
+			<if test="cardFlag != null"> cardFlag = #{cardFlag:INTEGER},</if>
+			<if test="isAuditEdit != null"> isAuditEdit = #{isAuditEdit:INTEGER}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	<update id="updateClaimsLoanStatusById">
+		update dr_claims_loan set status = #{status} where id = #{id}
+	</update>
+	
+	<!-- 根据id得到贷款项目基本信息 -->
+	<select id="getDrClaimsLoanByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		SELECT id,name,`no`,`status`,loanUse,loanAmount/10000 as loanAmount,receiveInterest,currency,loanDeadline,
+		rate,repayType,repayDeadline,startDate,endDate,dateType,loanName,bankName,bankNo,serviceCharge,
+		advisoryRate,serviceRate,defaultersRate,overdueRate,overduePenaltyRate,riskRate,addDate,
+		addUser,updDate,updUser,cardFlag,isAuditEdit,bankAddress
+		FROM dr_claims_loan 
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+	<select id="getDrClaimsLoanBySid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		SELECT loan.* from dr_claims_loan loan
+		left join dr_subject_info sub on loan.id = sub.lid
+		<where>
+			sub.id = #{sid:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 根据Map获取贷款项目基本信息 -->
+	<select id="getDrClaimsLoanByMap" parameterType="java.util.HashMap" resultMap="DrClaimsLoanResult">
+		select * from dr_claims_loan 
+		<where>
+			<if test="no != null"> 
+				no = #{no:VARCHAR}
+			</if>
+			<if test="id != null"> 
+				and id = #{id:INTEGER}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取债权统计列表 -->
+	<select id="getDrClaimsStatisList" parameterType="java.util.HashMap" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		select dcl.no,dcl.name,dcl.loanAmount,dcl.status,dcl.bankName,CONCAT(LEFT(dcl.bankNo,4),'****',RIGHT(dcl.bankNo,4)) AS bankNo,
+		CASE WHEN dcl.status=6 THEN 0 ELSE dcl.receiveInterest+dcl.loanAmount
+		END as pendRepayAmount,dcl.loanDeadline,dcl.rate
+		,dcl.addDate,dcl.endDate,dsi.code,dsi.surplusAmount,count(dpi.id) as productCounts
+		 from dr_claims_loan dcl
+		LEFT JOIN dr_subject_info dsi on dsi.lid  = dcl.id
+		left JOIN dr_product_info dpi on dpi.sid = dsi.id
+		<where>
+			<if test="name != null and name != ''">
+				dcl.name like CONCAT('%','${name}','%' )
+			</if>
+			<if test="no != null and no != ''"> 
+				and dcl.no like CONCAT('%','${no}','%' )
+			</if>
+			<if test="dueStartDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') >= #{dueStartDate}]]>
+			</if>
+			<if test="dueEndDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') <= #{dueEndDate} ]]>
+			</if>
+			<if test="status != null">
+				and	dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+		GROUP BY dcl.id
+		<![CDATA[ order by dcl.addDate desc ]]>
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取债权统计总数 -->
+	<select id="getDrClaimsStatisCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_claims_loan dcl
+		<where>
+			<if test="name != null and name != ''">
+				dcl.name like CONCAT('%','${name}','%' )
+			</if>
+			<if test="no != null and no != ''"> 
+				and dcl.no like CONCAT('%','${no}','%' )
+			</if>
+			<if test="dueStartDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') >= #{dueStartDate}]]>
+			</if>
+			<if test="dueEndDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.endDate,'%Y-%m-%d') <= #{dueEndDate} ]]>
+			</if>
+			<if test="status != null">
+				and	dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 更改开关状态为关闭 -->
+	<update id="updateShowOffStatusBtn">
+		update dr_claims_loan set showStatus = 0 where id = #{id}
+	</update>
+	<!-- 更改开关状态为开启-->
+	<update id="updateShowOnStatusBtn">
+		update dr_claims_loan set showStatus = 1 where id = #{id}
+	</update>
+	<!-- 导出债权记录 -->
+	<select id="exportClaimsLoanList" parameterType="java.util.HashMap" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		select dcl.id,dcl.name,dcl.no,dcl.status,ifnull(dcl.loanAmount,0) as loanAmount,dcl.receiveInterest,
+		dcl.serviceCharge,
+		dcl.startDate,dcl.endDate,dcl.showStatus,
+		dcl.addDate,dcc.companyName, dcc.companyNameProtocolShow from dr_claims_loan dcl
+		LEFT JOIN dr_claims_customer dcc ON dcl.id = dcc.lid
+		<where>
+			<if test="name != null and name != ''">
+				dcl.name like CONCAT('%','${name}','%' )
+			</if>
+			<if test="no != null and no != ''"> 
+				and dcl.no like CONCAT('%','${no}','%' )
+			</if>
+			<if test="companyName != null and companyName != ''"> 
+				and dcc.companyName like CONCAT('%','${companyName}','%' )
+			</if>
+			<if test="companyNameProtocolShow != null and companyNameProtocolShow != ''"> 
+				and dcc.companyNameProtocolShow like CONCAT('%','${companyNameProtocolShow}','%' )
+			</if>
+			<if test="startDate != null"> 
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null">
+				<![CDATA[and DATE_FORMAT(dcl.addDate,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="status != null">
+				and	dcl.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+			<if test="loanAmount != null">
+				and dcl.loanAmount = #{loanAmount}
+			</if>
+			
+		</where>
+		<![CDATA[ order by dcl.addDate desc]]>
+	</select>
+	
+	<!-- 查询富有地区编码 -->
+	<select id="getFuiouAreaCity" resultType="java.util.Map">
+		select DISTINCT cityCode,city from js_fuiou_area ORDER BY cityCode
+	</select>
+	
+	<!-- 查询富有地区编码 -->
+	<select id="getFuiouAreaByCity" resultType="java.util.Map" parameterType="java.lang.Integer">
+		select DISTINCT areaCode,area from js_fuiou_area
+		where cityCode=#{cityCode}
+	</select>
+	
+	<!-- 查询富有银行编码 -->
+	<select id="getFuiouBankCode" resultType="java.util.Map" >
+		select * from js_fuiou_bankcode
+	</select>
+</mapper>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityRewardDao">
+	<resultMap id="JsActivityFriendResult" type="com.jsjf.model.activity.JsActivityReward">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="atid" property="atid" jdbcType="INTEGER" />
+		<result column="couponId" property="couponId" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="num" property="num" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="classes" property="classes" jdbcType="INTEGER" />
+		<result column="probability" property="probability" jdbcType="DOUBLE" />
+		<result column="orders" property="orders" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<select id="getJsActivityRewardByAid" parameterType="java.util.HashMap" resultMap="JsActivityFriendResult">
+	   select * from `js_activity_reward` jar 
+		 <trim prefix=" where " prefixOverrides="and">
+	 			<if test="atid !=null ">
+	 				jar.`atid` = #{atid}
+	 			</if>
+	 			<if test="classes !=null">
+	 				and jar.`classes` =#{classes} 
+	 			</if>
+	 	</trim>
+	</select>
+	<select id="getProNameById" parameterType="java.util.HashMap" resultMap="JsActivityFriendResult">
+		select * from js_activity_reward
+		<where>
+            1=1
+            <if test="atid !=null ">
+                and atid =#{atid}
+            </if>
+            <if test="giftId !=null">
+                and remark=#{giftId}
+            </if>
+		</where>
+        limit 1
+	</select>
+</mapper>

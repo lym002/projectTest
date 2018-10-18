@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace= "com.jsjf.dao.filing.FilingDao">
+	<resultMap type="com.jsjf.model.filing.DrFiling" id="drFilingResult">
+		<result column="mchntTxnSsn" property="mchntTxnSsn" jdbcType="VARCHAR"/>
+		<result column="mchTime" property="mchTime" jdbcType="VARCHAR"/>
+		<result column="type" property="type" jdbcType="VARCHAR"/>
+		<result column="itemNo" property="itemNo" jdbcType="VARCHAR"/>
+		<result column="code" property="code" jdbcType="VARCHAR"/>
+		<result column="out_cust_no" property="out_cust_no" jdbcType="VARCHAR"/>
+		<result column="realname" property="realname" jdbcType="VARCHAR"/>
+		<result column="realname" property="realname" jdbcType="VARCHAR"/>
+		<result column="amount" property="amount" jdbcType="DECIMAL"/>
+		<result column="in_cust_no" property="in_cust_no" jdbcType="VARCHAR"/>
+		<result column="name" property="name" jdbcType="VARCHAR"/>
+		<result column="businessType" property="businessType" jdbcType="VARCHAR"/>
+		<result column="paycompanyid" property="paycompanyid" jdbcType="VARCHAR"/>
+		<result column="failureCause" property="failureCause" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<!-- 交易报备 0-投资报备  1-满标放款报备 3-回款报备 -->
+	<select id="getInvestFilingList" parameterType="java.util.Map" resultType="com.jsjf.model.filing.DrFiling">
+		 <if test='businessType == "0"'>
+		 select dpi.id as dpid,dpit.id as id,dpi.code as code,dm.mobilePhone as out_cust_no,
+			cust.phone as in_cust_no,dpi.itemNo,ifNull(dpit.fileStatus,1) as fileStatus,
+			dpit.amount as amount,dpit.mchnt_txn_ssn as mchntTxnSsn,dpit.failureCause,
+			LEFT(dpit.mchnt_txn_ssn,8) AS mchTime,
+			dplr.contractCode as contractCode,cust.companyName as name,dmbi.realname as realname
+    	 </if>
+    	<if test='businessType == "1"'>
+	    select dpi.id as dpid,dpit.id as id,dpi.code as code,dm.mobilePhone as out_cust_no,
+			cust.phone as in_cust_no,dpi.itemNo,ifNull(dpit.fullFileStatus,1) as fullFileStatus,
+			dpit.factAmount as amount,dpit.remitMchntTxnSsn as mchntTxnSsn,dpit.fullFailureCause as failureCause,
+			LEFT(dpit.remitMchntTxnSsn,8) as mchTime,
+			dplr.contractCode as contractCode,cust.companyName as name,dmbi.realname as realname
+    	</if>
+    	<if test='businessType == "3"'>
+    	select dpi.id as dpid,dpitr.id as id,dpi.code as code,
+			case when dpitr.mchntPay = 1 Then 'tf002' ELSE cust.phone END  as out_cust_no ,
+			dm.mobilePhone as in_cust_no,ifNull(dpitr.fileStatus,1) as fileStatus,
+			dplr.contractCode as contractCode,dpi.itemNo,
+			dpitr.shouldTime as  shouldTime,
+			(dpitr.shouldPrincipal + dpitr.shouldInterest) as amount,
+			dpitr.remitMchntTxnSsn as mchntTxnSsn,dpitr.failureCause,
+			LEFT(dpitr.remitMchntTxnSsn,8) as mchTime,
+			cust.companyName as name,case when dpitr.mchntPay = 1 Then '慧信财富管理有限公司' ELSE dmbi.realname END as realname
+    	</if>
+    	<if test='businessType == "1" || businessType == "0"'>
+		from dr_product_invest dpit
+			left join dr_product_info dpi on dpit.pid=dpi.id
+			left join dr_member dm on dm.uid=dpit.uid
+			left join dr_subject_info sub ON dpi.sid = sub.id
+			left join dr_claims_loan loan ON loan.id = sub.lid
+			left join dr_claims_customer cust ON cust.lid = loan.id
+			left join dr_product_loan_record dplr on dplr.pid=dpi.id
+	    	left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+    	</if>
+    	<if test='businessType == "3"'>
+    	from dr_product_invest_repayinfo  dpitr
+			left join dr_product_info dpi on dpitr.pid=dpi.id
+			left join dr_member dm on dm.uid=dpitr.uid
+			left join dr_subject_info sub ON dpi.sid = sub.id
+			left join dr_claims_loan loan ON loan.id = sub.lid
+			left join dr_claims_customer cust ON cust.lid = loan.id
+			left join dr_product_loan_record dplr on dplr.pid=dpi.id
+			left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+			LEFT JOIN dr_product_invest dpit ON dpit.id = dpitr.investId
+    	</if>
+    	<where>
+			<if test='businessType == "0" '>
+				AND dpi.project_no is not null 
+				AND (dpit.fileStatus in(1,3) OR (dpit.fileStatus is NULL))
+				AND dpit.mchnt_txn_ssn is not NULL AND dpit.mchnt_txn_ssn != ''
+				AND dpi.fileStatus = 2
+				AND <![CDATA[LEFT(dpit.mchnt_txn_ssn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpit.mchnt_txn_ssn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpit.failureCause = #{failureCauseType}
+				</if>
+    		</if>
+    		<if test='businessType == "1"'>
+				AND dpi.project_no is not null AND dpi.project_no != ''
+				AND (dpit.fullFileStatus in (1,3) OR (dpit.fullFileStatus IS NULL))
+				AND dpit.remitMchntTxnSsn is not NULL and dpit.remitMchntTxnSsn != ''
+				AND dpi.fileStatus = 2
+				AND <![CDATA[LEFT(dpit.remitMchntTxnSsn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpit.remitMchntTxnSsn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpit.fullFailureCause = #{failureCauseType}
+				</if>
+    		</if>
+    		<if test='businessType == "3"'>
+    			AND dpi.project_no is not null and (dpitr.fileStatus in (1,3) OR (dpitr.fileStatus IS NULL))
+				AND (dpitr.remitMchntTxnSsn IS NOT NULL) AND dpitr.remitMchntTxnSsn !=''
+				AND <![CDATA[LEFT(dpitr.remitMchntTxnSsn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpitr.remitMchntTxnSsn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpitr.failureCause = #{failureCauseType}
+				</if>
+    		</if>
+		</where>
+    	<![CDATA[order by dpi.id asc]]>
+    			limit #{offset},#{limit}
+	</select>
+	<!-- 报备总数查询 -->
+	<select id="getInvestFilingCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+		<if test='businessType == "0" || businessType == "1" '>
+		select count(1)
+			from dr_product_invest dpit
+			left join dr_product_info dpi on dpit.pid=dpi.id
+			left join dr_member dm on dm.uid=dpit.uid
+			left join dr_subject_info sub ON dpi.sid = sub.id
+			left join dr_claims_loan loan ON loan.id = sub.lid
+			left join dr_claims_customer cust ON cust.lid = loan.id
+			left join dr_product_loan_record dplr on dplr.pid=dpi.id
+	    	left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		</if>
+		<if test='businessType == "3"'>
+		select count(1)
+			from dr_product_invest_repayinfo  dpitr
+			left join dr_product_info dpi on dpitr.pid=dpi.id
+			left join dr_member dm on dm.uid=dpitr.uid
+			left join dr_subject_info sub ON dpi.sid = sub.id
+			left join dr_claims_loan loan ON loan.id = sub.lid
+			left join dr_claims_customer cust ON cust.lid = loan.id
+			left join dr_product_loan_record dplr on dplr.pid=dpi.id
+			left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+			LEFT JOIN dr_product_invest dpit ON dpit.id = dpitr.investId
+		</if>
+		<where>
+			<if test='businessType == "0" '>
+				AND dpi.project_no is not null 
+				AND (dpit.fileStatus in(1,3) OR (dpit.fileStatus is NULL))
+				AND dpit.mchnt_txn_ssn is not NULL AND dpit.mchnt_txn_ssn != ''
+				AND dpi.fileStatus = 2
+				AND <![CDATA[LEFT(dpit.mchnt_txn_ssn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpit.mchnt_txn_ssn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpit.failureCause = #{failureCauseType}
+				</if>
+    		</if>
+    		<if test='businessType == "1"'>
+				AND dpi.project_no is not null AND dpi.project_no != ''
+				AND (dpit.fullFileStatus in (1,3) OR (dpit.fullFileStatus IS NULL))
+				AND dpit.remitMchntTxnSsn is not NULL and dpit.remitMchntTxnSsn != ''
+				AND dpi.fileStatus = 2
+				AND <![CDATA[LEFT(dpit.remitMchntTxnSsn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpit.remitMchntTxnSsn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpit.fullFailureCause = #{failureCauseType}
+				</if>
+    		</if>
+    		<if test='businessType == "3"'>
+    			AND dpi.project_no is not null and (dpitr.fileStatus in (1,3) OR (dpitr.fileStatus IS NULL))
+				AND (dpitr.remitMchntTxnSsn IS NOT NULL) AND dpitr.remitMchntTxnSsn !=''
+				AND <![CDATA[LEFT(dpitr.remitMchntTxnSsn,8) > '20170619']]>
+				AND <![CDATA[LEFT(dpitr.remitMchntTxnSsn,8) < CURDATE()]]>
+				<if test="failureCauseType != null and failureCauseType !=''">
+						AND dpitr.failureCause = #{failureCauseType}
+				</if>
+    		</if>
+		</where>
+	</select>
+
+</mapper>

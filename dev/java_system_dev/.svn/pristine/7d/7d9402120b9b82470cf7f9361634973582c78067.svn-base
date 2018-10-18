@@ -1,0 +1,49 @@
+/**
+ * 修改了dr_member增加了拥有积分的字段默认值为0
+ */
+ALTER TABLE `dr_member`
+ADD COLUMN `user_integral`  int(11) NULL DEFAULT 0 COMMENT '用户拥有积分' AFTER `is_byp_old_user`;
+/**
+ * 增加了一个奖品兑换所需积分
+ */
+ALTER TABLE `byp_commodity`
+ADD COLUMN `need_points`  int(11) NULL COMMENT '兑换所需积分点数' AFTER `type`;
+ALTER TABLE `byp_commodity`
+ADD COLUMN `activity_id`  varchar(255) NULL COMMENT '活动对应id:yd1,yd2,yd3...元旦活动id' AFTER `need_points`;
+/*
+ * 加了注解
+ */
+ALTER TABLE `byp_activity_integral`
+COMMENT='积分类型表';
+ALTER TABLE `byp_member_integral`
+COMMENT='用户积分明细表';
+/*
+ * 加入奖品url图
+ */
+ALTER TABLE `byp_commodity`
+ADD COLUMN `product_url`  varchar(255) NULL COMMENT '产品图片地址' AFTER `activity_id`;
+
+/*
+  dr_member 的  user_integral 类型改成  decimal
+  byp_commodity 的 need_points 类型改成 decimal
+  byp_member_integral  amount类型改成 decimal
+ */
+
+ALTER TABLE `byp_member_integral`
+MODIFY COLUMN `amount`  decimal(12,2) NULL DEFAULT DEFAULT 0.00 COMMENT '数量/金额' AFTER `uid`;
+
+ALTER TABLE `byp_commodity`
+MODIFY COLUMN `need_points`  decimal(12,2) NULL DEFAULT DEFAULT 0.00 COMMENT '兑换所需积分点数' AFTER `type`;
+
+ALTER TABLE `dr_member`
+MODIFY COLUMN `user_integral`  decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT '用户拥有积分' AFTER `is_byp_old_user`;
+
+/**
+ * 用户表增加：可用积分，
+ * 上次签到时间，
+ * 签到天数
+ */
+ALTER TABLE `byp`.`dr_member`
+  ADD COLUMN `user_integral_use` DECIMAL(12,2) DEFAULT 0.00 NOT NULL COMMENT '用户可用积分' AFTER `user_integral`,
+  ADD COLUMN `last_sign_in_time` DATETIME NULL COMMENT '用户上次签到时间' AFTER `user_integral_use`,
+  ADD COLUMN `sign_in_number_days` INT(11) NULL COMMENT '用户签到天数' AFTER `last_sign_in_time`;

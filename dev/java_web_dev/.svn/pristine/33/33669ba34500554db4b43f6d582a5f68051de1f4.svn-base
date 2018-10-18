@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsProductReservationLogDAO">
+	<resultMap id="JsProductReservationLogResult" type="com.jsjf.model.activity.JsProductReservationLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="prid" property="prid" jdbcType="VARCHAR" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />	
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="TIMESTAMP" />
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />	
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,prid,uid,addTime,amount,joinType
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsProductReservationLogResult" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_product_reservation_log where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsProductReservationLogByMap" parameterType="java.util.HashMap" resultMap="JsProductReservationLogResult">
+	 	select <include refid="Base_Column_List" /> from js_product_reservation_log
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="prid != null">
+	 			and prid = #{prid}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 <insert id="insert" parameterType="com.jsjf.model.activity.JsProductReservationLog">
+	 	INSERT INTO js_product_reservation_log (prid,uid, addTime, amount, joinType) 
+		VALUES (#{prid}, #{uid}, now(), #{amount}, #{joinType});
+	 </insert>
+	<select id="selectTopTen" resultType="com.jsjf.model.product.JsProductPrizeLog">
+		select jpp.name prizeName,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS phone,
+		DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d %H:%i:%s') addTime
+		from `js_product_prize_log` jppl
+		left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+		left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+		left join `dr_member` dm on dm.`uid` = jppl.`uid`
+		left join js_member_info jmi on jmi.`investId` = jppl.`investId`
+		left join js_product_prize jpp on jpp.id = jppl.ppid
+		left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+		left join dr_customerAllot dc on dc.uid=jppl.uid
+		left join sys_users su on su.user_ky=dc.userKy
+        <where>
+            1=1
+            <if test="addtime!=null">and addtime <![CDATA[ >= ]]> #{startTime}</if>
+        </where>
+		ORDER BY addTime desc LIMIT 0,10
+	</select>
+	<select id="selectMyZeroBuy" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.JsProductPrizeLog">
+		select jpp.name prizeName,
+		dp.fullName productName,
+		DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d %H:%i:%s') addTime
+		from `js_product_prize_log` jppl
+		left join `dr_product_invest` dpi on dpi.`id` = jppl.`investId`
+		left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+		left join `dr_member` dm on dm.`uid` = jppl.`uid`
+		left join js_member_info jmi on jmi.`investId` = jppl.`investId`
+		left join js_product_prize jpp on jpp.id = jppl.ppid
+		left join dr_member_base_info dmbi on dmbi.uid = jppl.`uid`
+		left join dr_customerAllot dc on dc.uid=jppl.uid
+		left join sys_users su on su.user_ky=dc.userKy
+		<where>
+			1=1
+			<if test="uid!=null" >and dm.uid=#{uid}</if>
+		</where>
+		ORDER BY addTime desc
+	</select>
+</mapper>

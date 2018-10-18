@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductLoanRecordDAO">
+		<resultMap type="com.jsjf.model.product.DrproductLoanRecord" id="DrProductLoanRecordResult">
+		<result column="id" property="id" jdbcType="INTEGER"/>
+		<result column="pid" property="pid" jdbcType="INTEGER"/>
+		<result column="loanStatus" property="loanStatus" jdbcType="INTEGER"/>
+		<result column="contractCode" property="contractCode" jdbcType="VARCHAR" />
+		<result column="simpleName" property="simpleName" jdbcType="VARCHAR" />
+		<result column="loanName" property="loanName" jdbcType="VARCHAR" />
+		<result column="company" property="company" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="rate" property="rate" jdbcType="DECIMAL" />
+		<result column="interest" property="interest" jdbcType="DECIMAL" />
+		<result column="actAmount" property="actAmount" jdbcType="DECIMAL" />
+		<result column="principalInterest" property="principalInterest" jdbcType="DECIMAL" />
+		<result column="deadline" property="deadline" jdbcType="INTEGER"/>
+		<result column="fullDate" property="fullDate" jdbcType="TIMESTAMP" />
+		<result column="prePayDate" property="prePayDate" jdbcType="TIMESTAMP" />
+		<result column="shouldDate" property="shouldDate" jdbcType="TIMESTAMP" />
+		<result column="loanTime" property="loanTime" jdbcType="TIMESTAMP" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	<insert id="insert">
+	insert into dr_product_loan_record (pid,simpleName,amount,rate,deadline,interest,principalInterest,fullDate,prePayDate,shouldDate,addDate,actAmount) 
+	select distinct dpi.id,dpi.simpleName,case when (SUM(dpt.amount)>0) then SUM(dpt.amount) else 0 end,dpi.rate,dpi.deadline,
+	case when (SUM(r.shouldInterest)>0) then SUM(r.shouldInterest) else 0 end ,
+	case when (SUM(dpt.amount))>0 then (SUM(dpt.amount)+SUM(r.shouldInterest)) else 0 end,date_sub(DATE_FORMAT(now(),'%Y-%m-%d'),interval 1 day),
+	DATE_FORMAT(now(),'%Y-%m-%d'),date_sub(date_sub(DATE_FORMAT(now(),'%Y-%m-%d'),interval 1 day),interval -(dpi.deadline+1) day),now(),
+	case when (SUM(dpt.amount)>0) then SUM(dpt.amount) else 0 end
+	from dr_product_info dpi
+	left join dr_product_invest dpt on dpt.pid=dpi.id and DATE_FORMAT(dpt.investTime,'%Y-%m-%d')=date_sub(DATE_FORMAT(now(),'%Y-%m-%d'),interval 1 day)
+	left join dr_product_invest_repayinfo r on r.investId = dpt.id
+	where dpi.type = 1 and dpi.id =1153
+	</insert>
+		<!-- 新手标放回款列表查询 -->
+		<select id="drProductLoanRecordList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrproductLoanRecord">
+		select id,pid,simpleName,amount,rate,deadline,interest,principalInterest,fullDate,prePayDate,shouldDate,addDate,loanStatus,contractCode,loanName,
+				company,updateTime,loanTime,actAmount,date_sub(shouldDate,INTERVAL 1 DAY) AS prepareDate
+				FROM dr_product_loan_record 
+			<where>
+				<if test="simpleName != null and simpleName != ''">
+					simpleName like concat('%','${simpleName}','%')
+				</if>
+				<if test="company != null and company != ''">
+					and company like concat ('%','${company}','%')
+				</if>
+				<if test="refundStartDate != null and refundStartDate != ''">
+					<![CDATA[and DATE_FORMAT(shouldDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+				</if>
+				<if test="refundEndDate != null and refundEndDate != ''"> 
+					<![CDATA[and DATE_FORMAT(shouldDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+				</if>
+				<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+				</if>
+				<if test="fullEndDate != null and fullEndDate != ''">
+					<![CDATA[and DATE_FORMAT(fullDate,'%Y-%m-%d') <=#{fullEndDate}]]>
+				</if>
+				<if test="startactLoanTime != null and startactLoanTime != ''">
+					<![CDATA[and DATE_FORMAT(loanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+				</if>
+				<if test="endactLoanTime != null and endactLoanTime != ''">
+					<![CDATA[and DATE_FORMAT(loanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+				</if>
+				<if test="loanStatus !=null">
+					and loanStatus = #{loanStatus}
+				</if>
+			</where>
+			<if test="limit !=null">
+			<![CDATA[ order by fullDate DESC  ]]>
+				limit #{offset},#{limit}
+			</if>	
+	</select>
+	<!-- 新手标放回款列表总数 -->
+	<select id="drProductLoanRecordListCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select COUNT(1) from dr_product_loan_record 
+			<where>
+				<if test="simpleName != null and simpleName != ''">
+					simpleName like concat('%','${simpleName}','%')
+				</if>
+				<if test="company != null and company != ''">
+					and company like concat ('%','${company}','%')
+				</if>
+				<if test="refundStartDate != null and refundStartDate != ''">
+					<![CDATA[and DATE_FORMAT(shouldDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+				</if>
+				<if test="refundEndDate != null and refundEndDate != ''"> 
+					<![CDATA[and DATE_FORMAT(shouldDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+				</if>
+				<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+				</if>
+				<if test="fullEndDate != null and fullEndDate != ''">
+					<![CDATA[and DATE_FORMAT(fullDate,'%Y-%m-%d') <= #{fullEndDate}]]>
+				</if>
+				<if test="startactLoanTime != null and startactLoanTime != ''">
+					<![CDATA[and DATE_FORMAT(loanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+				</if>
+				<if test="endactLoanTime != null and endactLoanTime != ''">
+					<![CDATA[and DATE_FORMAT(loanTime,'%Y-%m-%d') <= #{endactLoanTime}]]>
+				</if>
+				<if test="loanStatus !=null">
+					and loanStatus = #{loanStatus}
+				</if>
+			</where>
+		</select>
+		<!-- 新手标放款状态修改 -->
+		<update id="updateDrProductLoanStatus" parameterType="java.util.HashMap">
+			update dr_product_loan_record
+			<set>
+				loanStatus = 1
+			</set>
+			<if test="loanTime != null and loanTime != ''">
+				,loanTime = #{loanTime}
+			</if>
+			where id = #{id}
+		</update>
+		<!-- 新手标回款状态修改 -->
+		<update id="updateReFundRecordDrProductLoan" parameterType="java.lang.Integer">
+			update dr_product_loan_record
+			<set>
+				loanStatus = 2
+			</set>
+			where id = #{id}
+		</update>
+	</mapper>	

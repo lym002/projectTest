@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInvestRepayInfoDAO">
+	<resultMap id="DrProductInvestResult" type="com.jsjf.model.product.DrProductInvestRepayInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="shouldPrincipal" property="shouldPrincipal" jdbcType="DECIMAL"/>
+		<result column="factPrincipal" property="factPrincipal" jdbcType="DECIMAL"/>
+		<result column="shouldInterest" property="shouldInterest" jdbcType="DECIMAL"/>
+		<result column="factInterest" property="factInterest" jdbcType="DECIMAL"/>
+		<result column="penalty" property="penalty" jdbcType="DECIMAL"/>
+		<result column="status" property="status" jdbcType="INTEGER"/>
+		<result column="shouldTime" property="shouldTime" jdbcType="TIMESTAMP"/>
+		<result column="factTime" property="factTime" jdbcType="TIMESTAMP"/>
+	</resultMap>
+
+	
+	<select id="selectInvestRepayInfoNumsByParam" resultType="int" parameterType="java.util.HashMap">
+		select count(id) from dr_product_invest_repayinfo where status = 0 and uid = #{uid} and <![CDATA[ shouldTime  < DATE_ADD(NOW(),INTERVAL 30 DAY) ]]>
+	</select>
+	
+	<select id="selectRepayInfoDetailByInvestId" resultType="java.util.HashMap" parameterType="int">
+		SELECT DATE_FORMAT(pir.shouldTime,'%Y-%m-%d') date,IFNULL(pir.shouldPrincipal,0) shouldPrincipal,IFNULL(pir.shouldInterest,0) shouldInterest,pir.`status` 
+		from dr_product_invest_repayinfo pir LEFT JOIN dr_product_invest pi on pir.investId = pi.id		
+			where  pi.id = #{id}
+	</select>
+	
+	<select id="selectReturnedCount" resultType="int" parameterType="int">
+		SELECT IFNULL(COUNT(1),0) from dr_product_invest_repayinfo a 
+		left join `dr_product_info` b on a.pid =b.id 
+		WHERE uid = #{uid} and b.type not in (1,5) and shouldPrincipal != 0 and DATE_FORMAT(shouldTime,'%Y-%m-%d')  <![CDATA[>= ]]> DATE_FORMAT(NOW(),'%Y-%m-%d') 
+			and DATE_FORMAT(shouldTime,'%Y-%m-%d') <![CDATA[ <=  ]]> DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 7 DAY),'%Y-%m-%d') 
+	</select>
+	
+	<select id="selectPayment" resultMap="DrProductInvestResult" parameterType="int">
+		SELECT r.id,r.uid,IFNULL(shouldPrincipal,0) as shouldPrincipal ,IFNULL(factPrincipal,0) as factPrincipal 
+		from dr_product_invest_repayinfo r
+		left join dr_product_info p on r.pid = p.id
+		WHERE p.type != 1 and uid = #{uid} and  shouldPrincipal != 0 and isgrant = '0'
+		and DATE_FORMAT(shouldTime,'%Y-%m-%d')  <![CDATA[>= ]]> DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 5 DAY),'%Y-%m-%d') 
+		and DATE_FORMAT(shouldTime,'%Y-%m-%d') <![CDATA[ <=  ]]> DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 5 DAY),'%Y-%m-%d') 
+	</select>
+	
+	<update id ="update" parameterType="com.jsjf.model.product.DrProductInvestRepayInfo">
+		update dr_product_invest_repayinfo 
+		<set>	
+			<if test="isgrant != null and isgrant != ''">
+				isgrant = #{isgrant:INTEGER},
+			</if>
+		</set>		
+		<where>
+			 id = #{id:INTEGER}
+		</where>
+	</update>
+	
+</mapper>

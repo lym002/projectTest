@@ -1,0 +1,26 @@
+package com.jsjf.dao.store;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.store.CommodityRepertory;
+import com.jsjf.model.vip.VipEquities;
+
+public interface CommodityRepertoryDao {
+    int deleteCommodityClass(Integer id);
+
+    int insert(CommodityRepertory record);
+
+    CommodityRepertory selectByPrimaryKey(Integer id);
+
+    int updateByPrimaryKey(CommodityRepertory record);
+
+	List<VipEquities> queryCommodityRepertoryList(Map<String, Object> param);
+
+	Integer queryCommodityRepertoryListCount(Map<String, Object> param);
+
+	void addCommodityRepertory(CommodityRepertory bean);
+
+	void updateCommodityRepertory(CommodityRepertory bean);
+
+}

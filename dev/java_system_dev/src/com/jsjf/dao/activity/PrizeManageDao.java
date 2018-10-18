@@ -1,0 +1,27 @@
+package com.jsjf.dao.activity;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.BypCommodityBean;
+
+public interface PrizeManageDao {
+
+	public List<BypCommodityBean> queryPrizeManageList(Map<String,Object> map);
+
+	public int queryPrizeManageListCount(Map<String,Object> map);
+
+	public void addDrPrizeManage(BypCommodityBean bypCommodityBean);
+
+	public BypCommodityBean getDrPrizeManage(Integer id);
+
+	public void updateDrPrizeManage(BypCommodityBean bypCommodityBean);
+
+	public void updateProductUrl(BypCommodityBean bean);
+
+	public List<BypCommodityBean> queryPrize();
+
+	public List<BypCommodityBean> queryHb();
+
+    Map<String,Object> selectPrizeId(Map<String, Object> map);
+}

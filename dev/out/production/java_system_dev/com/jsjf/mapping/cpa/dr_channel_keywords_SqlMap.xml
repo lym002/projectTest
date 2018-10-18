@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.cpa.DrChannelKeyWordsDAO">
+	<resultMap id="DrChannelInfoResult" type="com.jsjf.model.cpa.DrChannelKeyWords">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="keyword" property="keyword" jdbcType="VARCHAR" />	
+		<result column="kCode" property="kCode" jdbcType="VARCHAR" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="cid" property="cid" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />	
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUserKey" property="addUserKey" jdbcType="INTEGER" />
+	</resultMap>
+	<insert id="saveOrUpdate" parameterType="com.jsjf.model.cpa.DrChannelKeyWords">
+	  <selectKey keyProperty="id" resultType="int" order="BEFORE">
+	    select count(1) from dr_channel_keywords where code = #{code} and keyword = #{keyword} and kCode=#{kCode}
+	  </selectKey>
+	  <if test="id > 0">
+	    update dr_channel_keywords 
+	    set status = #{status}
+	    where code = #{code} and keyword = #{keyword}
+	  </if>
+	  <if test="id == 0">
+	    insert into dr_channel_keywords (keyword,kCode,code,cid,status,addUserKey,addTime) 
+	    values(#{keyword},#{kCode},#{code},#{cid},#{status},#{addUserKey},sysdate())
+	  </if>
+	</insert>
+	<select id="selectKeywordListByParam" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrChannelKeyWords">
+		select k.*,u.name from dr_channel_keywords k 
+		left join sys_users u on k.addUserKey = u.user_ky
+		 where 1=1 
+		<if test="code != null and code !=''"> and k.code = #{code}</if>
+		<if test="keyword != null and keyword !=''"> and k.keyword like CONCAT('%',#{keyword},'%') </if>
+		order by k.addTime desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="selectKeywordListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(k.id) from dr_channel_keywords k 
+		 where 1=1 
+		<if test="code != null and code !=''"> and k.code = #{code}</if>
+		<if test="keyword != null and keyword !=''"> and k.keyword like CONCAT('%',#{keyword},'%')</if>
+	</select>
+	<update id="updateKeyWordStatusById" >
+		update dr_channel_keywords set status = #{status} where id = #{id}
+	</update>
+	<select id="getKeyWordUrlByCpaId" parameterType="Integer" resultType="com.jsjf.model.cpa.DrChannelKeyWords">
+		select c.`name`,c.`code`,cpa.activityName,cpa.activityCode,k.keyword,k.kCode,ifnull(CONCAT(cpa.url,'-',k.kCode),cpa.url) as url 
+		from dr_cpa_info cpa
+		left join dr_channel_info c ON cpa.cid = c.id
+		left JOIN dr_channel_keywords k ON c.id = k.cid  and k.status=1
+		where cpa.id=#{id}
+	</select>
+	
+</mapper>

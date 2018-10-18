@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrcustomerAllotDAO">
+<!-- 添加登陆用户 -->
+	<insert id="insert" parameterType="com.jsjf.model.member.DrCustomerAllot"
+		keyProperty="id" useGeneratedKeys="true">
+		insert into dr_customerAllot (
+		uid,
+		userKy,
+		createUserKy,
+		createDate
+		)
+		values
+		(#{uid,jdbcType=INTEGER},
+		#{userKy,jdbcType=INTEGER},
+		#{createUserKy,jdbcType=INTEGER},
+		SYSDATE()
+		)
+	</insert>
+
+	<delete id="delete" parameterType="com.jsjf.model.member.DrCustomerAllot">
+		delete from dr_customerAllot where uid = #{uid,jdbcType=INTEGER}
+	</delete>
+	
+	<insert id="insertHistroy" parameterType="com.jsjf.model.member.DrCustomerAllot">
+		insert into dr_customerAllot_history (uid,userKy,createUserKy,createDate) select uid,userKy,#{createUserKy,jdbcType=INTEGER},NOW() from dr_customerAllot  where id=#{id,jdbcType=INTEGER}
+	</insert>
+	
+	<update id="freezeCustomerByUid" parameterType="java.util.Map">
+		update js_customer set allot=#{allot}  where  uid in 
+		<foreach collection="uids" close=")" index="index" open="(" separator="," item="item">
+				#{item}
+		</foreach>
+	</update>
+
+	<select id="selectCustomerByUid" parameterType="java.util.Map" resultType="com.jsjf.model.member.DrCustomerAllot">
+		select * from dr_customerAllot where uid=#{uid} limit 1
+	</select>
+</mapper>

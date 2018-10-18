@@ -1,0 +1,17 @@
+package com.jsjf.dao.store;
+
+import com.jsjf.model.store.CommodityExchange;
+
+public interface CommodityExchangeDao {
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(CommodityExchange record);
+
+    int insertSelective(CommodityExchange record);
+
+    CommodityExchange selectByPrimaryKey(Integer id);
+
+    int updateByPrimaryKeySelective(CommodityExchange record);
+
+    int updateByPrimaryKey(CommodityExchange record);
+}

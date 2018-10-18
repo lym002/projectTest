@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.ActivityFriendDetailDAO">
+	<resultMap id="ActivityFriendResult" type="com.jsjf.model.activity.ActivityFriendDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />
+		<result column="days" property="days" jdbcType="INTEGER" />
+		<result column="awardType" property="awardType" jdbcType="INTEGER" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP"/>
+		<result column="investLimit" property="investLimit" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="appReward" property="appReward" jdbcType="DECIMAL"/>
+	</resultMap>
+	
+	<!-- 添加活动 -->
+	<insert id="insert" parameterType="com.jsjf.model.activity.ActivityFriendDetail" keyProperty="id" useGeneratedKeys="true">
+		insert into js_activity_friend_detail(fid,days,awardType,addDate,investLimit,amount,appReward)
+		values(#{fid},#{days},#{awardType},#{addDate},#{investLimit},#{amount},#{appReward})
+	</insert>
+	
+	<select id="findActivityFriendDetails" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select id as id,fid as fid,days as days ,amount as amount, awardType as awardType,investLimit as investLimit,appReward 
+		from js_activity_friend_detail where 1=1
+		<if test="fid !=null and fid !='' ">
+			and fid = #{fid:INTEGER}
+		</if> 
+	</select>
+	
+</mapper>

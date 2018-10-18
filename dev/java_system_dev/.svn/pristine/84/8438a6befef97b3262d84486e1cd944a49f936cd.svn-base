@@ -1,0 +1,45 @@
+package com.jsjf.dao.activity;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.BypCommodityBean;
+import com.jsjf.model.activity.BypCommodityDetailBean;
+
+public interface FestivaiActivityDao {
+
+	public List<BypCommodityDetailBean> queryFestivaIActivityList(
+			Map<String, Object> param);
+
+	public Integer queryFestivaIActivityListCount(Map<String, Object> param);
+
+	public void updateFestivaIActivity(BypCommodityDetailBean bypCommodityBean);
+
+	public List<Integer> sendPrizeSms();
+
+	public List<BypCommodityDetailBean> getSendPrizeSms();
+
+	public void updateSendPrizeSms(Integer ids[]);
+
+	public List<BypCommodityDetailBean> queryDownloadDetail(
+			Map<String, Object> param);
+
+	public List<BypCommodityDetailBean> queryPrizeStatistics(
+			Map<String, Object> param);
+
+	public List<Integer> queryPrizeUid(Map<String, Object> param);
+
+	public void addPrizeStatistics(BypCommodityDetailBean bean);
+
+	public List<BypCommodityDetailBean> queryPrid(Integer type);
+
+	public void addBatchCode(List<BypCommodityDetailBean> beanList);
+
+	public Integer queryIsNotTj(Map<String, Object> param);
+
+	public Integer queryIsNotCps(Map<String, Object> map);
+
+
+	
+}

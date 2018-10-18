@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsActivityProductDAO">
+	<resultMap id="JsActivityProductResult" type="com.jsjf.model.product.JsActivityProduct">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="atid" property="atid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="VARCHAR" />
+		<result column="prizeCode" property="prizeCode" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="prizeImgUrl" property="prizeImgUrl" jdbcType="VARCHAR" />
+		<result column="activityPeriods" property="activityPeriods" jdbcType="VARCHAR" />														
+		<result column="appTitle" property="appTitle" jdbcType="VARCHAR" />
+		<result column="pcDetailImg" property="pcDetailImg" jdbcType="VARCHAR" />														
+	</resultMap>
+	
+	<!-- 修改 产品活动关联 js_activity_product  -->
+	<update id="updateJsActivityProduct" parameterType="java.util.HashMap">
+		update js_activity_product set 		
+		status=#{status:INTEGER}
+		where pid = #{pid:INTEGER} and atid= #{atid:INTEGER}
+	</update>
+	
+	<!-- 查询活动期限 -->
+	<select id="selectActivityPeriods" resultType="Integer" parameterType="java.util.HashMap">
+		select activityPeriods from js_activity_product
+			<trim prefix=" where " prefixOverrides="and">
+				<if test="pid != null and pid != '' ">
+					and pid = #{pid}
+				</if>
+				<if test="atid !=null and atid != ''">
+					and atid = #{atid}
+				</if>
+			</trim>
+	</select>
+	
+	
+	<!-- 查询活动固定编码 -->	
+	<select id="selectActivityCodeFixation"  resultType="String" parameterType="Integer">	
+		SELECT codeFixation from js_activity_template where id = #{atid}
+	</select>
+	
+		<!-- 查询活动模板信息 -->	
+	<select id="selectActivityTemplate"  resultType="java.util.HashMap" parameterType="Integer">	
+		SELECT id,name,createTime,codeFixation,digit from js_activity_template where id = #{atid}
+	</select>
+		<!-- 查询活动信息 -->	
+	<select id="selectActivityProduct"  resultType="java.util.HashMap" parameterType="Integer">	
+		SELECT p.*,t.`name`,t.codeFixation,t.digit 
+			from js_activity_product p 
+			LEFT JOIN js_activity_template t ON p.atid = t.id
+		 where p.pid = #{pid}
+	</select>
+	
+		<!-- 查 -->	
+	<select id="selectActivityProductByPid"  resultType="java.util.HashMap" parameterType="java.util.HashMap">	
+		SELECT jap.activityPeriods,jap.prizeCode,
+			 IFNULL(CONCAT(LEFT(japi.prizeMobile,3),"****",RIGHT(japi.prizeMobile,3)),NULL) prizeMobile,
+			jap.prizeImgUrl,jap.prizeUrl,japi.prizeVideoLink,japi.prizeVideoUrl,japi.prizeHeadPhoto,jap.pid,japi.prizeContent
+			FROM  js_activity_product jap 
+			LEFT JOIN dr_product_invest dpi ON jap.pid = dpi.pid
+			LEFT JOIN js_activity_product_invest_info japi ON japi.piid = dpi.id
+			where jap.`status` = 3 and japi.prizeStatus =2 and jap.pid = #{pid}
+	</select>
+	
+	
+</mapper>

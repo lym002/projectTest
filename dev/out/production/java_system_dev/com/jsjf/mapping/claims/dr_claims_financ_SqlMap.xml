@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsFinancDAO">
+	<resultMap id="DrClaimsFinancResult" type="com.jsjf.model.claims.DrClaimsFinanc">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="companyName" property="companyName" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />	
+		<result column="certificateType" property="certificateType" jdbcType="INTEGER" />
+		<result column="certificateNo" property="certificateNo" jdbcType="VARCHAR" />
+		<result column="mechanismNo" property="mechanismNo" jdbcType="VARCHAR" />
+		<result column="industryType" property="industryType" jdbcType="VARCHAR" />
+		<result column="businessNo" property="businessNo" jdbcType="VARCHAR" />	
+		<result column="taxNo" property="taxNo" jdbcType="VARCHAR" />
+		<result column="companyPhone" property="companyPhone" jdbcType="VARCHAR" />
+		<result column="companyMail" property="companyMail" jdbcType="VARCHAR" />
+		<result column="registerFund" property="registerFund" jdbcType="DECIMAL" />
+		<result column="registerCurrency" property="registerCurrency" jdbcType="VARCHAR" />
+		<result column="establishDate" property="establishDate" jdbcType="TIMESTAMP" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<!-- 获取融资性担保企业信息-->
+	<select id="getDrClaimsFinancByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsFinanc">
+		select * from dr_claims_financ
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	
+	<!-- 添加融资性担保企业信息 -->
+	<insert id="insertDrClaimsFinanc" parameterType="com.jsjf.model.claims.DrClaimsFinanc">
+		insert into dr_claims_financ(lid,companyName,name,sex,phone,certificateType,certificateNo,mechanismNo,industryType,
+		businessNo,taxNo,companyPhone,companyMail,registerFund,registerCurrency,establishDate,address)
+		values (#{lid:INTEGER},#{companyName:VARCHAR},#{name:VARCHAR},#{sex:INTEGER},#{phone:VARCHAR},
+		#{certificateType:INTEGER},#{certificateNo:VARCHAR},#{mechanismNo:VARCHAR},#{industryType:VARCHAR},
+		#{businessNo:VARCHAR},#{taxNo:VARCHAR},#{companyPhone:VARCHAR},#{companyMail:VARCHAR},
+		#{registerFund:DECIMAL},#{registerCurrency:VARCHAR},#{establishDate:TIMESTAMP},#{address:VARCHAR})
+	</insert>
+	
+	<!-- 修改融资性担保企业信息 -->
+	<update id="updateDrClaimsFinanc" parameterType="com.jsjf.model.claims.DrClaimsFinanc">
+		update dr_claims_financ
+		<set>
+			<if test="companyName != null"> companyName = #{companyName:VARCHAR},</if>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="sex != null"> sex = #{sex:INTEGER},</if>
+			<if test="phone != null"> phone = #{phone:VARCHAR},</if>
+			<if test="certificateType != null"> certificateType = #{certificateType:INTEGER},</if>
+			<if test="certificateNo != null"> certificateNo = #{certificateNo:VARCHAR},</if>
+			<if test="mechanismNo != null"> mechanismNo = #{mechanismNo:VARCHAR},</if>
+			<if test="industryType != null"> industryType = #{industryType:VARCHAR},</if>
+			<if test="businessNo != null"> businessNo = #{businessNo:VARCHAR},</if>
+			<if test="taxNo != null"> taxNo = #{taxNo:VARCHAR},</if>
+			<if test="companyPhone != null"> companyPhone = #{companyPhone:VARCHAR},</if>
+			<if test="companyMail != null"> companyMail = #{companyMail:VARCHAR},</if>
+			<if test="registerFund != null"> registerFund = #{registerFund:DECIMAL},</if>
+			<if test="registerCurrency != null"> registerCurrency = #{registerCurrency:VARCHAR},</if>
+			<if test="establishDate != null"> establishDate = #{establishDate:TIMESTAMP},</if>
+			<if test="address != null"> address = #{address:VARCHAR}</if>
+		</set>
+		where lid = #{lid:INTEGER}
+	</update>
+	
+	<!-- 删除融资性担保企业信息 -->
+	<delete id="deleteDrClaimsFinanc" parameterType="java.lang.Integer" >
+	    delete from dr_claims_financ where lid = #{lid:INTEGER} 
+	</delete>
+</mapper>

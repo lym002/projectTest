@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductReservationLogDAO">
+	<resultMap id="JsProductReservationLogResult" type="com.jsjf.model.product.JsProductReservationLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="prid" property="prid" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />
+	</resultMap>
+	
+
+	<!-- 获取预约记录-->
+	<select id="selectJsProductReservationLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.JsProductReservationLog">
+		select prl.*,m.mobilePhone,mbi.realName 
+		from js_product_reservation_log prl
+		LEFT JOIN dr_member m on prl.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi on prl.uid = mbi.uid
+		<where>
+			<if test="prid != null"> and  prl.prid = #{prid:INTEGER}</if>
+			<if test="realName != null and realName != '' "> and  INSTR(mbi.realName,#{realName:VARCHAR})>0</if>
+			<if test="mobilePhone != null and mobilePhone != ''"> and  INSTR(m.mobilePhone,#{mobilePhone:VARCHAR})>0</if>
+			<if test="logStartTime != null"> and  DATE_FORMAT(prl.addTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ >= ]]> DATE_FORMAT(#{logStartTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')</if>
+			<if test="logEndTime != null"> and  DATE_FORMAT(prl.addTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ <= ]]> DATE_FORMAT(#{logEndTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s')</if>
+		</where>
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取预约记录条数 -->
+	<select id="selectJsProductReservationLogCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(prl.id)
+		from js_product_reservation_log prl
+		LEFT JOIN dr_member m on prl.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi on prl.uid = mbi.uid
+		<where>
+			<if test="prid != null "> and  prl.prid = #{prid:INTEGER}</if>
+			<if test="realName != null and realName != '' "> and  INSTR(mbi.realName,#{realName:VARCHAR})>0</if>
+			<if test="mobilePhone != null and mobilePhone != ''"> and  INSTR(m.mobilePhone,#{mobilePhone:VARCHAR})>0</if>
+			<if test="logStartTime != null"> and DATE_FORMAT(prl.addTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ >= ]]> DATE_FORMAT(#{logStartTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s') </if>
+			<if test="logEndTime != null"> and DATE_FORMAT(prl.addTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ <= ]]> DATE_FORMAT(#{logEndTime:TIMESTAMP},'%Y-%m-%d %H:%i:%s') </if>
+		</where>
+	</select>
+	
+	
+	
+</mapper>

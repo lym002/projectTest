@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.JsMessagePushDAO">
+	<resultMap id="JsMessagePushResult" type="com.jsjf.model.system.JsMessagePush">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="city" property="city" jdbcType="INTEGER" />
+		<result column="isInvest" property="isInvest" jdbcType="INTEGER" />
+		<result column="weal" property="weal" jdbcType="INTEGER" />
+		<result column="investMax" property="investMax" jdbcType="INTEGER" />
+		<result column="investMin" property="investMin" jdbcType="INTEGER" />
+		<result column="balanceMax" property="balanceMax" jdbcType="INTEGER" />
+		<result column="balanceMin" property="balanceMin" jdbcType="INTEGER" />
+		<result column="payment" property="payment" jdbcType="INTEGER" />
+		<result column="liveness" property="liveness" jdbcType="INTEGER" />
+		<result column="livenessType" property="livenessType" jdbcType="INTEGER" />
+		<result column="sendStartDate" property="sendStartDate" jdbcType="DATE" />
+		<result column="sendEndDate" property="sendEndDate" jdbcType="DATE" />
+		<result column="sendTime" property="sendTime" jdbcType="TIME" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="upDateTime" property="upDateTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="ischeck" property="ischeck" jdbcType="INTEGER" />
+		<result column="audienceId" property="audienceId" jdbcType="INTEGER" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />
+		<result column="platform" property="platform" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<sql id="base_sql">
+		id,title,content,status,type,city,isInvest,weal,investMax,investMin,balanceMax,balanceMin,payment,
+		liveness,livenessType,sendStartDate,sendEndDate,sendTime,addTime,upDateTime,addUser,updateUser,ischeck,audienceId,channel,url,platform
+	</sql>
+	
+	<select id="selectObjectById" parameterType="Integer" resultMap="JsMessagePushResult">
+		select <include refid="base_sql"/>  from js_message_push where id = #{id}
+	</select>
+	
+	<select id="selectObjectList" parameterType="java.util.HashMap" resultMap="JsMessagePushResult">
+		select <include refid="base_sql"/>  from js_message_push 
+		<where> 
+			<if test="status != null"> and status = #{status}</if>
+			<if test="platform != null"> and platform = #{platform}</if>
+			<if test="type != null"> and type = #{type}</if>
+			<if test="title != null and title !='' "> and title like concat('%',trim(#{title}),'%')</if>
+			<if test="startDate != null or endDate != null ">
+				<if test="startDate != null and startDate !=''">
+					and  (DATE_FORMAT(sendStartDate,'%Y-%m-%d') >= #{startDate} 
+					or DATE_FORMAT(sendEndDate,'%Y-%m-%d') >= #{startDate} )
+				</if>
+				<if test="endDate != null and startDate !=''">
+					and ( #{endDate} >= DATE_FORMAT(sendStartDate,'%Y-%m-%d')
+					or #{endDate} >= DATE_FORMAT(sendEndDate,'%Y-%m-%d') )
+				</if>
+			</if>
+			<if test="nowDate !=null and nowDate !=''">
+				and  CURDATE() >= DATE_FORMAT(sendStartDate,'%Y-%m-%d') 
+					and DATE_FORMAT(sendEndDate,'%Y-%m-%d') >= CURDATE() 
+			</if>
+		</where>
+		<if test="orders !=null and orders !=''">
+			order by ${orders}
+		</if>
+		<if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>	
+	</select>
+	<select id="selectObjectListCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(1)  from js_message_push 
+		<where> 
+			<if test="status != null"> and status = #{status}</if>
+			<if test="platform != null"> and platform = #{platform}</if>
+			<if test="type != null"> and type = #{type}</if>
+			<if test="title != null and title !='' "> and title like concat('%',trim(#{title}),'%')</if>
+			<if test="startDate != null or endDate != null ">
+				<if test="startDate != null and startDate !=''">
+					and  (DATE_FORMAT(sendStartDate,'%Y-%m-%d') >= #{startDate} 
+					or DATE_FORMAT(sendEndDate,'%Y-%m-%d') >= #{startDate} )
+				</if>
+				<if test="endDate != null and startDate !=''">
+					and ( #{endDate} >= DATE_FORMAT(sendStartDate,'%Y-%m-%d')
+					or #{endDate} >= DATE_FORMAT(sendEndDate,'%Y-%m-%d') )
+				</if>
+			</if>
+			<if test="nowDate !=null and nowDate !=''">
+			and  CURDATE() >= DATE_FORMAT(sendStartDate,'%Y-%m-%d') 
+					and DATE_FORMAT(sendEndDate,'%Y-%m-%d') >= CURDATE()
+			</if>			
+		</where>
+	</select>
+	<insert id="insert" parameterType="com.jsjf.model.system.JsMessagePush">
+		INSERT INTO js_message_push
+			( title, content, city, type,isInvest, weal, investMax, investMin, balanceMax, balanceMin, payment,
+				 liveness, livenessType, sendStartDate, sendEndDate, sendTime, addTime, addUser,channel,url,platform)
+			VALUES (#{title}, #{content}, #{city},#{type}, #{isInvest}, #{weal}, #{investMax}, #{investMin}, #{balanceMax}, #{balanceMin}, #{payment},
+					  #{liveness}, #{livenessType}, #{sendStartDate}, #{sendEndDate}, #{sendTime},NOW(), #{addUser},#{channel},#{url},#{platform});
+	
+	</insert>
+	<update id="updateByMap" parameterType="java.util.HashMap">
+			UPDATE js_message_push 
+			<trim prefix="set" suffixOverrides=",">				
+				<if test=" title != null and title !='' "> title = #{title},</if>
+				<if test=" content != null and title !='' "> content = #{content},</if>
+				<if test=" status != null "> status = #{status},</if>
+				<if test=" type != null "> type = #{type},</if>
+				<if test=" city != null "> city = #{city},</if>
+				<if test=" isInvest != null "> isInvest = #{isInvest},</if>
+				<if test=" weal != null "> weal = #{weal},</if>
+				<if test=" investMax != null "> investMax = #{investMax},</if>
+				<if test=" investMin != null "> investMin = #{investMin},</if>
+				<if test=" balanceMax != null "> balanceMax = #{balanceMax},</if>
+				<if test=" balanceMin != null "> balanceMin = #{balanceMin},</if>
+				<if test=" payment != null "> payment = #{payment},</if>
+				<if test=" liveness != null "> liveness = #{liveness},</if>
+				<if test=" livenessType != null "> livenessType = #{livenessType},</if>
+				<if test=" sendStartDate != null "> sendStartDate = #{sendStartDate},</if>
+				<if test=" sendEndDate != null "> sendEndDate = #{sendEndDate},</if>
+				<if test=" sendTime != null "> sendTime = #{sendTime},</if>			
+				<if test=" upDateTime != null "> upDateTime = #{upDateTime},</if>				
+				<if test=" updateUser != null "> updateUser = #{updateUser},</if>
+				<if test=" scheduleId != null "> scheduleId = #{scheduleId},</if>				
+				<if test=" sendno != null "> sendno = #{sendno},</if>
+				<if test=" ischeck != null "> ischeck = #{ischeck},</if>
+				<if test=" audienceId != null "> audienceId = #{audienceId},</if>
+				<if test=" channel != null "> channel = #{channel},</if>
+				<if test=" url != null "> url = #{url},</if>
+				<if test=" platform != null "> platform = #{platform},</if>
+				<if test=" platform == null "> platform = null,</if>
+			</trim>
+			where id = #{id} 
+	</update>
+	<update id="update" parameterType="com.jsjf.model.system.JsMessagePush">
+			UPDATE js_message_push 
+			<trim prefix="set" suffixOverrides=",">				
+				<if test=" title != null and title !='' "> title = #{title},</if>
+				<if test=" content != null and title !='' "> content = #{content},</if>
+				<if test=" status != null "> status = #{status},</if>
+				<if test=" type != null "> type = #{type},</if>
+				<if test=" city != null "> city = #{city},</if>
+				<if test=" city == null "> city = null,</if>
+				<if test=" isInvest != null "> isInvest = #{isInvest},</if>
+				<if test=" isInvest == null "> isInvest = null,</if>
+				<if test=" weal != null "> weal = #{weal},</if>
+				<if test=" weal == null "> weal = null,</if>
+				<if test=" investMax != null "> investMax = #{investMax},</if>
+				<if test=" investMin != null "> investMin = #{investMin},</if>
+				<if test=" investMax == null "> investMax = null,</if>
+				<if test=" investMin == null "> investMin = null,</if>
+				<if test=" balanceMax != null "> balanceMax = #{balanceMax},</if>
+				<if test=" balanceMin != null "> balanceMin = #{balanceMin},</if>
+				<if test=" balanceMax == null "> balanceMax = null,</if>
+				<if test=" balanceMin == null "> balanceMin = null,</if>
+				<if test=" payment != null "> payment = #{payment},</if>
+				<if test=" liveness != null "> liveness = #{liveness},</if>
+				<if test=" payment == null "> payment = null,</if>
+				<if test=" liveness == null "> liveness = null,</if>
+				<if test=" livenessType != null "> livenessType = #{livenessType},</if>
+				<if test=" sendStartDate != null "> sendStartDate = #{sendStartDate},</if>
+				<if test=" sendEndDate != null "> sendEndDate = #{sendEndDate},</if>
+				<if test=" sendTime != null "> sendTime = #{sendTime},</if>			
+				<if test=" upDateTime != null "> upDateTime = #{upDateTime},</if>				
+				<if test=" updateUser != null "> updateUser = #{updateUser},</if>
+				<if test=" ischeck != null "> ischeck = #{ischeck},</if>
+				<if test=" audienceId != null "> audienceId = #{audienceId},</if>
+				<if test=" channel != null "> channel = #{channel},</if>
+				<if test=" scheduleId != null and scheduleId!='' "> scheduleId = #{scheduleId},</if>
+				<if test=" url != null "> url = #{url},</if>
+				<if test=" platform != null "> platform = #{platform},</if>
+				<if test=" platform == null "> platform = null,</if>
+			</trim>
+			where id = #{id} 
+	</update>
+	
+	<!-- 查询符合条件的用户 -->
+	<select id="selectPushMember" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT dm.uid from dr_member dm 
+		where 
+		 dm.uid in (
+			SELECT DISTINCT dev.uid from js_push_device  dev
+			LEFT JOIN js_push_app app ON dev.appId = app.id
+			where app.id and dev.id 
+				<if test="channel !=null">
+					and app.type  = #{channel}
+				</if>
+				<if test="platform !=null">
+					and app.device = #{platform}
+				</if>
+		)
+		<!-- 是否投资 -->
+		<if test="isInvest != null">
+			and dm.uid
+			<if test="isInvest !=1">
+				not
+			</if>
+			 in (SELECT dpi.uid from 
+			 dr_product_invest dpi 
+				LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+			where dp.type =2 GROUP BY dpi.uid
+			)
+		</if>
+		<!-- 账户福利 -->
+		<if test="isWeal != null">
+			and dm.uid
+			<if test="isWeal !=1">
+				not
+			</if>
+			  in (SELECT dmf.uid from dr_member_favourable dmf 	
+				where dmf.`status` =0 GROUP BY dmf.uid )
+		</if>
+		<!-- 账户余额 -->
+		<if test="balanceMin != null or balanceMax != null">
+			and dm.uid in (
+				SELECT uid from dr_member_funds 
+			where 1=1
+			<if test="balanceMin != null">
+				and balance+fuiou_balance >= #{balanceMin}  
+			</if>
+			<if test="balanceMax != null">
+				and #{balanceMax} >= balance+fuiou_balance
+			</if>
+			)
+		</if>
+		<!-- 账户福利 -->
+		<if test="payment !=null">
+			and dm.uid in (
+				SELECT DISTINCT uid from dr_product_invest_repayinfo 
+				WHERE #{payment} >= DATEDIFF(shouldTime,CURDATE()) and DATEDIFF(shouldTime,CURDATE())>=0				
+			)
+		</if>
+		<!-- 活跃情况 -->
+		<if test="livenessType !=null and liveness !=null ">
+			and dm.uid in (
+				SELECT dm.uid from dr_member dm
+				where  dm.uid <if test="livenessType !=1">
+								not
+							</if>
+						in (SELECT dl.uid from dr_member_app_login_log dl WHERE  
+							 #{liveness} >= DATEDIFF(CURDATE(),dl.addtime) 
+						)	
+			)
+		</if>
+		<!-- 投资峰值 -->
+		<if test="investMin!= null or investMax!=null">
+		and dm.uid  in (
+			SELECT DISTINCT dpi.uid from dr_product_invest dpi 
+				LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+				where dp.type = 2
+				GROUP BY dpi.uid,DATE_FORMAT(dpi.investTime,'%Y-%m-%d') HAVING 
+				<trim prefixOverrides="and">
+					<if test="investMin != null">
+						and SUM(dpi.amount)>=#{investMin}
+					</if>
+					<if test="investMax != null">
+						and #{investMax}>=SUM(dpi.amount)
+					</if>
+				</trim>
+		)
+		</if>
+	</select> 
+</mapper>

@@ -1,0 +1,81 @@
+body{width: 100%;height: 100%;background: #232b38 url(../images/login-bg.jpg) no-repeat center top;overflow: hidden;}
+.login-wrap{width: 464px;overflow: hidden;position: absolute;top: 50%;left: 50%;margin: -270px 0 0 -232px;}
+.login-wrap .login-mode{
+	width: 464px;
+	float: left;
+}
+.data-mode{
+	width: 400px;
+	height: 200px;
+	background: rgba(255,255,255,.6);
+	float: left;
+	overflow: hidden;
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+.data-mode .data{
+	width: 400px;
+	height: 180px;
+	overflow: hidden;
+	margin: 10px auto 0;
+}
+.data-mode ul{
+	width: 380px;
+	margin: 0 auto;
+	overflow: hidden;
+}
+.data-mode ul li{
+	font-size: 12px;
+	color: #666;
+	line-height: 24px;
+	overflow: hidden;
+}
+.data-mode ul span{
+	font-weight: bold;
+}
+.login-wrap h1{width: 251px;height: 150px;margin: 0 auto;}
+.title{height: 34px;text-align: right;color: #fff;font-size: 18px;padding-top: 25px;}
+.title i{font-size: 14px;margin-left: 8px;}
+.login-wrap label{width: 447px;height: 59px;display: block;background: #fff;padding-left: 17px;}
+.login-wrap label i{width: 23px;height: 27px;float: left;background: url(../images/work-icon.png) no-repeat;margin: 16px 17px 0 0;}
+.login-wrap .username{border-bottom: 1px solid #d9d9d9;}
+.login-wrap .mobileCode{border-top: 1px solid #d9d9d9;}
+.login-wrap .passwd{margin-bottom: 10px;}
+.login-wrap .passwd i{background-position: 0 -27px;}
+.login-wrap .code i{background-position: 0 -54px;}
+.login-wrap input{font-size: 16px;border: none;*border-color: #fff;height: 32px;float: left;line-height: 32px;margin-top: 13px;width: 310px;}
+.login-wrap .code input{width: 174px;}
+.login-wrap label p{width: 65px;height: 32px;line-height: 32px;margin-top: 13px;font-size: 16px;color: #9a9a9a;float: left;}
+.code-wrap{width: 464px;height: 59px;overflow: hidden;}
+.code-wrap label{width: 311px;float: left;margin-right: 2px;}
+.code-wrap label img{border: none;}
+.code-wrap a{float: left;}
+.login-wrap .sub{border: none;outline: none;width: 464px;height: 59px;display: block;text-align: center;line-height: 59px;color: #18263d;background: #f8b718;font-size: 24px;cursor: pointer;float: none;margin: 0;}
+.sub-wrap{height: 79px;overflow: hidden;background: url(../images/btn-bg.png) center bottom no-repeat;margin-top: 39px;}
+.foot-wrap{height: 43px;line-height: 43px;background: #1b212b;border-top: 3px solid #28313f;text-align: center;color: #d5d5d6;position: fixed;_position: absolute;bottom: 0;width: 100%;}
+.foot-wrap .name{color: #cf9a1d;margin-left: 8px;}
+.code-wrap img{width: 134px;height: 59px;border: none;}
+
+/* home */
+.work-home{width: 100%;height: 100%;}
+.home-wrap{padding-top: 204px;position: relative;}
+.home-wrap h1{text-indent: -999em;width: 827px;height: 86px;margin: 0 auto 15px;background: url(../images/work-title.png) no-repeat;}
+.home-wrap .welcome{width: 1159px;height: 67px;background: url(../images/welcome-bg.png) no-repeat 0 0;text-indent: -999em;margin: 0 auto;}
+.home-wrap .show-wrap{width: 1619px;overflow: hidden;margin: 0 auto;}
+.home-wrap .show-wrap ul{width: 1627px;}
+.home-wrap .show-wrap li{float: left;margin-right: 6px;}
+.home-wrap .intro{font-size: 28px;text-align: center;color: #363636;font-style: italic;margin-top: 82px;}
+
+/* top */
+.top-wrap{height: 99px;background: #41506e;padding: 0 30px 0 22px;}
+.top-wrap .logo{float: left;margin-top: 13px;}
+.top-wrap .info{width: 220px;float: right;margin-top: 20px;line-height: 32px;color: #fff;text-align: right;}
+.top-wrap .change-wrap span{margin: 0 11px;}
+.top-wrap .change-wrap a:hover{text-decoration: underline;}
+.top-wrap .change-wrap .change{color: #f8bc2f;}
+.top-wrap .change-wrap .exit{color: #0dbfda;}
+
+#mobileCodeText{cursor: pointer;width: 134px;height: 59px;background: #f86c18;color: #fff;display: inline-block;font-size: 18px;text-align: center;line-height: 59px;}
+#mobileCodeText:hover{background: #f86000;}
+#mobileCodeText.nouse{background: #bbbbbb;cursor: default;}

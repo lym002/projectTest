@@ -1,0 +1,305 @@
+package com.jsjf.service.activity.impl;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.ActivityFriendDAO;
+import com.jsjf.dao.member.DrCompanyFundsLogDAO;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberFundsDAO;
+import com.jsjf.dao.member.DrMemberFundsLogDAO;
+import com.jsjf.dao.member.DrMemberFundsRecordDAO;
+import com.jsjf.dao.member.JsCompanyAccountLogDAO;
+import com.jsjf.model.member.DrCompanyFundsLog;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.model.member.DrMemberFundsLog;
+import com.jsjf.model.member.DrMemberFundsRecord;
+import com.jsjf.model.member.JsCompanyAccountLog;
+import com.jsjf.service.activity.ActivityReversalService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jzh.FuiouConfig;
+
+/**
+ * 返现红包
+ * 
+ * @author xxq
+ *
+ */
+@Service
+@Transactional
+public class ActivityReversalServiceImpl implements ActivityReversalService {
+	@Autowired
+	DrMemberDAO drMemberDAO;
+
+	@Autowired
+	private JsCompanyAccountLogDAO jsCompanyAccountLogDAO;
+
+	@Autowired
+	private DrMemberFundsDAO drMemberFundsDAO;
+
+	@Autowired
+	private DrMemberFundsRecordDAO drMemberFundsRecordDAO;
+
+	@Autowired
+	private DrMemberFundsLogDAO drMemberFundsLogDAO;
+
+	@Autowired
+	private DrCompanyFundsLogDAO drCompanyFundsLogDAO;
+
+	@Autowired
+	private ActivityFriendDAO activityFriendDAO;
+
+	@Autowired
+	RedisClientTemplate redisClientTemplate;
+
+	private static final BigDecimal UnCLAIMED = new BigDecimal(18);// TODO:XXQ
+																	// 需要配置文件配置红包金额
+
+	/**
+	 * 返现红包
+	 */
+	@Override
+	public void reversal() throws Exception {
+		// 1.获取能返现的推荐人
+		List<Map<String, Integer>> uidList = activityFriendDAO.getUidS();
+		// 2.循环遍历
+		if (uidList != null && uidList.size() > 0) {
+			for (Map<String, Integer> uInfo : uidList) {
+				reversalImplement(uInfo);
+			}
+		}
+	}
+
+	/**
+	 * 返红包最近@HZY
+	 */
+	@Override
+	public void reversals() throws Exception {
+		// 1.获取能返现的推荐人,根据档次进行判断返现金额
+		List<Map<String, Integer>> uidList = activityFriendDAO
+				.getEnvelopeLevel(1000,4999);
+		// 2.循环遍历
+		if (Utils.isObjectNotEmpty(uidList) && uidList.size() > 0) {
+			for (Map<String, Integer> uInfo : uidList) {
+				reversalImplement(uInfo, new BigDecimal(8));
+			}
+		}
+		uidList.clear();
+		uidList = activityFriendDAO
+				.getEnvelopeLevel(5000,9999);
+		if (Utils.isObjectNotEmpty(uidList) && uidList.size() > 0) {
+			for (Map<String, Integer> uInfo : uidList) {
+				reversalImplement(uInfo, new BigDecimal(28));
+			}
+		}
+		uidList.clear();
+		uidList = activityFriendDAO
+				.getEnvelopeLevel(10000,99999999);
+		if (Utils.isObjectNotEmpty(uidList) && uidList.size() > 0) {
+			for (Map<String, Integer> uInfo : uidList) {
+				reversalImplement(uInfo, new BigDecimal(58));
+			}
+		}
+	}
+
+	/**
+	 * 红包返现执行
+	 * 
+	 * @param uid
+	 * @throws Exception
+	 */
+	@Override
+	public void reversalImplement(Map<String, Integer> uInfo) throws Exception {
+		DrMember dm = drMemberDAO.selectByPrimaryKey(uInfo.get("referrerId"));
+		BaseResult result = new BaseResult();
+		Map<String, Object> mapTrans = new HashMap<String, Object>();
+		String remitMchntTxnSsn = Utils.createOrderNo(6,
+				uInfo.get("referrerId"), "");// 流水号
+		mapTrans.put("mchnt_txn_ssn", remitMchntTxnSsn);
+		mapTrans.put("out_cust_no", FuiouConfig.LOGIN_ID);
+		mapTrans.put("in_cust_no", dm.getMobilephone());
+		mapTrans.put("amt", UnCLAIMED);
+		mapTrans.put("rem", "好友注册返现");
+		mapTrans.put("contract_no", "");
+		mapTrans.put("icd_name", "好友注册返现");
+
+		result = FuiouConfig.transferBmu(mapTrans);// 转帐
+
+		if (!result.isSuccess()) {// 存管处理失败 输出日志
+			System.out.println("推荐好友红包返现失败:" + result.getErrorMsg() + ",uid="
+					+ uInfo.get("referrerId") + ",mobile="
+					+ dm.getMobilephone());
+		} else {
+
+			// 3.记公司交易记录日志
+			JsCompanyAccountLog companyAccountLog = new JsCompanyAccountLog();
+			companyAccountLog.setCompanyfunds(11);// 资金类型
+			companyAccountLog.setType(0);// 支出
+			companyAccountLog.setAmount(UnCLAIMED);// 金额
+			/*
+			 * companyAccountLog.setBalance(jsCompanyAccountLogDAO.getBlanceByFuiou
+			 * ().subtract(unclaimed));
+			 */
+			companyAccountLog.setStatus(3);// 成功
+			companyAccountLog.setRemark(dm.getMobilephone() + "好友首笔投资返现");
+			companyAccountLog.setAddTime(new Date());
+			companyAccountLog.setChannelType(2);// 存管
+			companyAccountLog.setUid(dm.getUid());// 用户id
+			jsCompanyAccountLogDAO.insertCompanyAccountLog(companyAccountLog);
+			// 4.个人用户资金更新
+			DrMemberFunds funds = drMemberFundsDAO
+					.queryDrMemberFundsByUid(uInfo.get("referrerId"));
+			funds.setFuiou_balance(funds.getFuiou_balance().add(UnCLAIMED));
+			funds.setFuiou_investProfit(funds.getFuiou_investProfit().add(
+					UnCLAIMED));// 已收益加上红包收益
+			drMemberFundsDAO.updateDrMemberFunds(funds);
+
+			// 5.用户资金交易记录表
+			DrMemberFundsRecord fundsRecord = new DrMemberFundsRecord(null,
+					null, uInfo.get("referrerId"), 4, 1, UnCLAIMED,
+					funds.getFuiou_balance(), 3, "推荐好友返现18元", null);
+			drMemberFundsRecordDAO.insert(fundsRecord);
+
+			// 6.用户资金日志明显表
+			DrMemberFundsLog logs = new DrMemberFundsLog(
+					uInfo.get("referrerId"), fundsRecord.getId(), UnCLAIMED,
+					20, 1, "推荐好友返现18元");
+			drMemberFundsLogDAO.insertDrMemberFundsLog(logs);
+
+			// 7.公司资金交易记录表
+			DrCompanyFundsLog cfundsLog = new DrCompanyFundsLog(11,
+					uInfo.get("referrerId"), null, UnCLAIMED, 0, "推荐好友返现18元", 0);
+			drCompanyFundsLogDAO.insertDrCompanyFundsLog(cfundsLog);
+
+			Map<String, Object> param = new HashMap<String, Object>();
+			param.put("user_id", uInfo.get("uid"));
+			param.put("y_user_id", uInfo.get("referrerId"));
+			param.put("amont", UnCLAIMED);
+			param.put("remark", "邀请返现红包");
+			activityFriendDAO.addActivityUser(param);
+		}
+	}
+
+	@Override
+	public void selectReversal() {
+		// 落地页：定时查询好友邀请返现总额的排名
+		List<Map<String, Object>> list = activityFriendDAO.selectReversal();
+		Map<String, Object> param = new HashMap<String, Object>();
+
+		String oldAmount = null;
+		Object oldRownum = 1;
+		if (!Utils.isEmptyList(list)) {
+			List<Map<String, Object>> newlist = new ArrayList<Map<String, Object>>();
+			for (Map<String, Object> map : list) {
+				String amount = map.get("amount").toString();
+				if (oldAmount != null) {
+					if (oldAmount.equals(amount)) {
+						map.put("rownum", oldRownum);
+					}
+				}
+				oldRownum = map.get("rownum");
+				oldAmount = amount.toString();
+				newlist.add(map);
+
+			}
+
+			for (Map<String, Object> map : newlist) {
+				param.put(map.get("uid").toString(), map);// 没个推荐人的
+															// 排名,手机,uid,投资年化总额
+			}
+			param.put("top",
+					newlist.size() > 10 ? new ArrayList<Map<String, Object>>(
+							newlist.subList(0, 10)) : newlist);// 排行榜
+		}
+		redisClientTemplate.set("threePresentMap".getBytes(),
+				SerializeUtil.serialize(param));
+
+	}
+
+	@Override
+	public void reversalImplement(Map<String, Integer> uInfo, BigDecimal min)
+			throws Exception {
+		DrMember dm = drMemberDAO.selectByPrimaryKey(uInfo.get("referrerId"));
+		BaseResult result = new BaseResult();
+		Map<String, Object> mapTrans = new HashMap<String, Object>();
+		String remitMchntTxnSsn = Utils.createOrderNo(6,
+				uInfo.get("referrerId"), "");// 流水号
+		mapTrans.put("mchnt_txn_ssn", remitMchntTxnSsn);
+		mapTrans.put("out_cust_no", FuiouConfig.LOGIN_ID);
+		mapTrans.put("in_cust_no", dm.getMobilephone());
+		mapTrans.put("amt", min);
+		mapTrans.put("rem", "好友注册返现");
+		mapTrans.put("contract_no", "");
+		mapTrans.put("icd_name", "好友注册返现");
+
+		result = FuiouConfig.transferBmu(mapTrans);// 转帐
+
+		if (!result.isSuccess()) {// 存管处理失败 输出日志
+			System.out.println("推荐好友红包返现失败:" + result.getErrorMsg() + ",uid="
+					+ uInfo.get("referrerId") + ",mobile="
+					+ dm.getMobilephone());
+		} else {
+
+			// 3.记公司交易记录日志
+			JsCompanyAccountLog companyAccountLog = new JsCompanyAccountLog();
+			companyAccountLog.setCompanyfunds(11);// 资金类型
+			companyAccountLog.setType(0);// 支出
+			companyAccountLog.setAmount(min);// 金额
+			/*
+			 * companyAccountLog.setBalance(jsCompanyAccountLogDAO.getBlanceByFuiou
+			 * ().subtract(unclaimed));
+			 */
+			companyAccountLog.setStatus(3);// 成功
+			companyAccountLog.setRemark(dm.getMobilephone() + "好友首笔投资返现");
+			companyAccountLog.setAddTime(new Date());
+			companyAccountLog.setChannelType(2);// 存管
+			companyAccountLog.setUid(dm.getUid());// 用户id
+			jsCompanyAccountLogDAO.insertCompanyAccountLog(companyAccountLog);
+			// 4.个人用户资金更新
+			DrMemberFunds funds = drMemberFundsDAO
+					.queryDrMemberFundsByUid(uInfo.get("referrerId"));
+			funds.setFuiou_balance(funds.getFuiou_balance().add(min));
+			funds.setFuiou_investProfit(funds.getFuiou_investProfit().add(min));// 已收益加上红包收益
+			drMemberFundsDAO.updateDrMemberFunds(funds);
+
+			// 5.用户资金交易记录表
+			DrMemberFundsRecord fundsRecord = new DrMemberFundsRecord(null,
+					null, uInfo.get("referrerId"), 4, 1, min,
+					funds.getFuiou_balance(), 3, "推荐好友返现" + min + "元", null);
+			drMemberFundsRecordDAO.insert(fundsRecord);
+
+			// 6.用户资金日志明显表
+			DrMemberFundsLog logs = new DrMemberFundsLog(
+					uInfo.get("referrerId"), fundsRecord.getId(), min, 20, 1,
+					"推荐好友返现" + min + "元");
+			drMemberFundsLogDAO.insertDrMemberFundsLog(logs);
+
+			// 7.公司资金交易记录表
+			DrCompanyFundsLog cfundsLog = new DrCompanyFundsLog(11,
+					uInfo.get("referrerId"), null, min, 0,
+					"推荐好友返现" + min + "元", 0);
+			drCompanyFundsLogDAO.insertDrCompanyFundsLog(cfundsLog);
+
+			Map<String, Object> param = new HashMap<String, Object>();
+			param.put("user_id", uInfo.get("uid"));
+			param.put("y_user_id", uInfo.get("referrerId"));
+			param.put("amont", min);
+			param.put("remark", "邀请返现红包");
+			activityFriendDAO.addActivityUser(param);
+		}
+	}
+
+}

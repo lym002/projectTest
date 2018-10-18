@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsNoviceContinueRecordDAO">
+	<resultMap id="JsNoviceContinueRecordResult" type="com.jsjf.model.product.JsNoviceContinueRecord">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="newInvestId" property="newInvestId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="shouldTime" property="shouldTime" jdbcType="TIMESTAMP" />
+		<result column="period" property="period" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />
+		<result column="realName" property="realName" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="VARCHAR" />
+		<result column="pCode" property="pCode" jdbcType="VARCHAR" />
+		<result column="recommCodes" property="recommCodes" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<select id="selectJsNoviceContinueRecord" parameterType="Integer" resultMap="JsNoviceContinueRecordResult" >
+		select * from js_novice_continue_record
+		where uid = #{uid} order by id
+		limit 0,1
+	</select>
+	<!-- 获取续投记录-->
+	<select id="getJsNoviceContinueRecordList" parameterType="java.util.HashMap" resultMap="JsNoviceContinueRecordResult">
+		select concat(left(mbi.realname,1),'**') as realname,concat(left(m.mobilePhone,3),'****',right(m.mobilePhone,4)) as mobilePhone,ncr.addTime 
+		,ncr.shouldtime,ncr.period,ifnull(p.`code`,'-') as pCode,ncr.amount,ncr.`status`,ncr.reward,m.recommCodes
+		from js_novice_continue_record ncr
+		left join dr_member m on ncr.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi on ncr.uid = mbi.uid
+		LEFT JOIN dr_product_invest pi on ncr.investId = pi.id
+		LEFT JOIN dr_product_info p on pi.pid = p.id
+		<where>
+			<if test="realName != null"> and INSTR(mbi.realname,#{realName}) > 0  </if>
+			<if test="recommCodes != null and recommCodes !='' "> and m.recommCodes = trim(#{recommCodes})  </if>
+			<if test="mobilePhone != null"> and INSTR(m.mobilePhone,#{mobilePhone}) > 0  </if>
+			<if test="period != null"> and ncr.period = #{period}  </if>
+			<if test="status != null"> and ncr.status = #{status}  </if>
+			<if test="startAddTime != null">and DATE_FORMAT(ncr.addTime,'%Y-%m-%d')>=DATE_FORMAT(#{startAddTime},'%Y-%m-%d')</if>
+			<if test="endAddTime != null">and DATE_FORMAT(#{endAddTime},'%Y-%m-%d')>=DATE_FORMAT(ncr.addTime,'%Y-%m-%d')</if>
+			<if test="startShouldTime != null">and DATE_FORMAT(ncr.shouldtime,'%Y-%m-%d')>=DATE_FORMAT(#{startShouldTime},'%Y-%m-%d')</if>
+			<if test="endShouldTime != null">and DATE_FORMAT(#{endShouldTime},'%Y-%m-%d')>=DATE_FORMAT(ncr.shouldtime,'%Y-%m-%d')</if>
+		</where>
+		order by ncr.addTime desc 
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取续投记录条数 -->
+	<select id="getJsNoviceContinueRecordCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(ncr.id)
+		from js_novice_continue_record ncr
+		left join dr_member m on ncr.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi on ncr.uid = mbi.uid
+		<where>
+			<if test="realName != null"> and INSTR(mbi.realname,#{realName}) > 0  </if>
+			<if test="recommCodes != null and recommCodes !='' "> and m.recommCodes = trim(#{recommCodes})  </if>
+			<if test="mobilePhone != null"> and INSTR(m.mobilePhone,#{mobilePhone}) > 0  </if>
+			<if test="period != null"> and ncr.period = #{period}  </if>
+			<if test="status != null"> and ncr.status = #{status}  </if>
+			<if test="startAddTime != null">and DATE_FORMAT(ncr.addTime,'%Y-%m-%d')>=DATE_FORMAT(#{startAddTime},'%Y-%m-%d')</if>
+			<if test="endAddTime != null">and DATE_FORMAT(#{endAddTime},'%Y-%m-%d')>=DATE_FORMAT(ncr.addTime,'%Y-%m-%d')</if>
+			<if test="startShouldTime != null">and DATE_FORMAT(ncr.shouldtime,'%Y-%m-%d')>=DATE_FORMAT(#{startShouldTime},'%Y-%m-%d')</if>
+			<if test="endShouldTime != null">and DATE_FORMAT(#{endShouldTime},'%Y-%m-%d')>=DATE_FORMAT(ncr.shouldtime,'%Y-%m-%d')</if>
+		</where>
+		order by ncr.addTime desc 
+	</select>
+	
+	<!-- 获取当日需要续投用户 -->
+	<select id="getNewHandContinueList" parameterType="java.util.HashMap" resultMap="JsNoviceContinueRecordResult">
+		select ncr.id,ncr.uid,ncr.amount,ncr.joinType
+		from js_novice_continue_record ncr
+		<where>
+			<if test="period != null"> and ncr.period = #{period}  </if>
+			<if test="status != null"> and ncr.status = #{status}  </if>
+			<if test="shouldTime != null">and DATE_FORMAT(ncr.shouldtime,'%Y-%m-%d') = DATE_FORMAT(#{shouldTime},'%Y-%m-%d')</if>
+		</where>
+		order by ncr.addTime asc
+	</select>
+	
+	<select id="getContinuePeriodList" resultType="Integer">
+		select DISTINCT period from js_novice_continue_record
+		where DATE_FORMAT(shouldtime,'%Y%m%d')=DATE_FORMAT(NOW(),'%Y%m%d')
+			and `status`=0; 
+	</select>
+	
+	<update id="updateJsNoviceContinueRecord" parameterType="com.jsjf.model.product.JsNoviceContinueRecord">
+		update js_novice_continue_record set investId = #{investId},status=#{status} where id = #{id}
+	</update>
+</mapper>

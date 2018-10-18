@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsNoviceContinueRecordDAO">
+	<resultMap id="JsNoviceContinueRecordResult" type="com.jsjf.model.product.JsNoviceContinueRecord">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="newInvestId" property="newInvestId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="shouldtime" property="shouldtime" jdbcType="TIMESTAMP" />
+		<result column="period" property="period" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />														
+		<result column="reward" property="reward" jdbcType="DECIMAL" />														
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />														
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />														
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,uid,newInvestId,addTime,shouldtime,period,amount,status,investId,joinType,reward	
+	</sql>
+	
+	<insert id="insert" parameterType="com.jsjf.model.product.JsNoviceContinueRecord">
+		INSERT INTO js_novice_continue_record ( uid, newInvestId, addTime,
+		 shouldtime, period, amount, status, investId, joinType,reward) 
+		VALUES ( #{uid}, #{newInvestId},now(), #{shouldtime}, #{period}, #{amount},
+		 #{status}, #{investId}, #{joinType},#{reward});
+	</insert>
+	<select id="selectJsNoviceContinueRecordByMap" resultMap="JsNoviceContinueRecordResult" parameterType="java.util.HashMap">
+			select <include refid="Base_Column_List"/> from js_novice_continue_record
+			<trim prefix=" where " prefixOverrides="and">
+				<if test="uid !=null">and uid =#{uid}</if>
+			</trim>
+			<if test="offset !=null and limit !=null">
+				limit #{offset},#{limit}
+			</if>
+	</select>
+	
+	<select id="selectResultByMap" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select CONCAT(LEFT(dm.mobilePhone ,3),'****',RIGHT(dm.mobilePhone,4)) mobilePhone,jnr.reward as amount
+			from
+			js_novice_continue_record jnr LEFT JOIN dr_member dm on jnr.uid = dm.uid
+		limit #{offset},#{limit}
+	</select>
+	
+</mapper>

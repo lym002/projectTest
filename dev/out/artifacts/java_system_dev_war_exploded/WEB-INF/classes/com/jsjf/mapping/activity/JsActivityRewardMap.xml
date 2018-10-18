@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.activity.JsActivityRewardDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.activity.JsActivityReward">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="atid" jdbcType="INTEGER" property="atid" />
+    <result column="couponId" jdbcType="INTEGER" property="couponid" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="amount" jdbcType="DECIMAL" property="amount" />
+    <result column="num" jdbcType="INTEGER" property="num" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="classes" jdbcType="INTEGER" property="classes" />
+    <result column="probability" jdbcType="DECIMAL" property="probability" />
+    <result column="orders" jdbcType="INTEGER" property="orders" />
+    <result column="addTime" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="updateTime" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="name" jdbcType="VARCHAR" property="dpaName" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    jar.id, jar.type, jar.atid, jar.couponId, jar.name, jar.amount, 
+    jar.num, jar.status, jar.classes, jar.probability, jar.orders, 
+    jar.addTime, jar.updateTime, jar.remark,dap.name as dpaName
+  </sql>
+  
+  <select id="queryJsActivityRewardList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from js_activity_reward
+    jar LEFT JOIN dr_activity_parameter dap on 
+		 jar.couponId = dap.id
+		 where 1=1
+		 <if test="name != null and name != ''">
+				and jar.name = #{name}
+		</if>
+		 <if test="type != null and type != ''">
+				and jar.type = #{type}
+		</if>
+		 <if test="atid != null and atid != ''">
+				and jar.atid = #{atid}
+		</if>
+		 <if test="couponid != null and couponid != ''">
+				and jar.couponid = #{couponid}
+		</if>
+		 <if test="status != null and status != ''">
+				and jar.status = #{status}
+		</if>
+		 <if test="classes != null and classes != ''">
+				and jar.classes = #{classes}
+		</if>
+  </select>
+  
+   <select id="queryJsActivityRewardListCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(0)
+	 	from js_activity_reward
+	 	jar LEFT JOIN dr_activity_parameter dap on 
+		 jar.couponId = dap.id
+	 	where 1=1
+		 <if test="name != null and name != ''">
+				and jar.name = #{name}
+		</if>
+		 <if test="type != null and type != ''">
+				and jar.type = #{type}
+		</if>
+		 <if test="atid != null and atid != ''">
+				and jar.atid = #{atid}
+		</if>
+		 <if test="couponid != null and couponid != ''">
+				and jar.couponid = #{couponid}
+		</if>
+		 <if test="status != null and status != ''">
+				and jar.status = #{status}
+		</if>
+		 <if test="classes != null and classes != ''">
+				and jar.classes = #{classes}
+		</if>
+	</select>
+  
+  <delete id="deleteActivityReward" parameterType="java.lang.Integer">
+    delete from js_activity_reward
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="addActivityReward" parameterType="com.jsjf.model.activity.JsActivityReward" keyProperty="id" useGeneratedKeys="true">
+    insert into js_activity_reward
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="type != null">
+        type,
+      </if>
+      <if test="atid != null">
+        atid,
+      </if>
+      <if test="couponid != null">
+        couponId,
+      </if>
+      <if test="name != null">
+        name,
+      </if>
+      <if test="amount != null">
+        amount,
+      </if>
+      <if test="num != null">
+        num,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="classes != null">
+        classes,
+      </if>
+      <if test="probability != null">
+        probability,
+      </if>
+      <if test="orders != null">
+        orders,
+      </if>
+      <if test="addTime != null">
+        addTime,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="type != null">
+        #{type,jdbcType=INTEGER},
+      </if>
+      <if test="atid != null">
+        #{atid,jdbcType=INTEGER},
+      </if>
+      <if test="couponid != null">
+        #{couponid,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="amount != null">
+        #{amount,jdbcType=DECIMAL},
+      </if>
+      <if test="num != null">
+        #{num,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="classes != null">
+        #{classes,jdbcType=INTEGER},
+      </if>
+      <if test="probability != null">
+        #{probability,jdbcType=DECIMAL},
+      </if>
+      <if test="orders != null">
+        #{orders,jdbcType=INTEGER},
+      </if>
+      <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateActivityReward" parameterType="com.jsjf.model.activity.JsActivityReward">
+    update js_activity_reward
+    <set>
+      <if test="type != null">
+        type = #{type,jdbcType=INTEGER},
+      </if>
+      <if test="atid != null">
+        atid = #{atid,jdbcType=INTEGER},
+      </if>
+      <if test="couponid != null">
+        couponId = #{couponid,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="amount != null">
+        amount = #{amount,jdbcType=DECIMAL},
+      </if>
+      <if test="num != null">
+        num = #{num,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="classes != null">
+        classes = #{classes,jdbcType=INTEGER},
+      </if>
+      <if test="probability != null">
+        probability = #{probability,jdbcType=DECIMAL},
+      </if>
+      <if test="orders != null">
+        orders = #{orders,jdbcType=INTEGER},
+      </if>
+      <if test="updateTime != null">
+        updateTime = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  
+  <!-- 优惠券下拉框 -->
+<select id="queryCouponIdList" resultMap="BaseResultMap">
+	select id as couponid,name as dpaName
+	from dr_activity_parameter
+	
+</select>
+  
+</mapper>

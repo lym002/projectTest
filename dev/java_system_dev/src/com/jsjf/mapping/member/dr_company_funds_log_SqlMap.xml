@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrCompanyFundsLogDAO" >
+	<resultMap id="DrCompanyFundsLogResult" type="com.jsjf.model.member.DrCompanyFundsLog" >
+		<result column="logid" property="logId" jdbcType="INTEGER" />
+		<result column="funds_type_id" property="fundsTypeId" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="adduser" property="addUser" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 插入公司收支记录 -->
+	<insert id="insertDrCompanyFundsLog" parameterType="com.jsjf.model.member.DrCompanyFundsLog" useGeneratedKeys="true" keyProperty="logId" keyColumn="logId">
+		insert into dr_company_funds_log (logid, funds_type_id, uid,pid,
+		amount,type,remark, addtime, adduser)
+		values (#{logId:INTEGER}, #{fundsTypeId:INTEGER}, #{uid:INTEGER},
+		 #{pid:INTEGER},#{amount:DECIMAL}, #{type:INTEGER}, #{remark:VARCHAR},
+		SYSDATE(),#{addUser:INTEGER})
+	</insert>
+	
+	<!-- 插入公司收支记录放款 -->
+	<insert id="insertDrCompanyFundsLogFK" parameterType="com.jsjf.model.member.DrCompanyFundsLog" useGeneratedKeys="true" keyProperty="logId" keyColumn="logId">
+		insert into dr_company_funds_log (logid, funds_type_id, uid,pid,
+		amount,type,remark, addtime, adduser,status)
+		values (#{logId:INTEGER}, #{fundsTypeId:INTEGER}, #{uid:INTEGER},
+		 #{pid:INTEGER},#{amount:DECIMAL}, #{type:INTEGER}, #{remark:VARCHAR},
+		SYSDATE(),#{addUser:INTEGER},#{status:INTEGER})
+	</insert>
+	
+	<update id="updateDrCompanyFundsLog" parameterType="com.jsjf.model.member.DrCompanyFundsLog">
+		update dr_company_funds_log 
+			<set>
+				<if test="status != null">
+				status = #{status:INTEGER}
+				</if>
+			</set>
+			<where>
+			logId = #{logId:INTEGER}
+	   </where> 
+	</update>
+	
+	
+	<update id="updateDrCompanyFundsLogByPid" parameterType="com.jsjf.model.member.DrCompanyFundsLog">
+		update dr_company_funds_log 
+			<set>
+				<if test="status != null">
+				status = #{status:INTEGER}
+				</if>
+			</set>
+			<where>
+			pid = #{pid} and funds_type_id=#{fundsTypeId}
+	   </where> 
+	</update>
+	
+	<!-- CONCAT(LEFT(m.mobilePhone,3),'****',RIGHT(,4)), CONCAT(LEFT(,1),'**')-->
+	<select id="getDrCompanyFundsLogList"  parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrCompanyFundsLog">
+		select cfl.logid,cfl.funds_type_id as fundsTypeId,cfl.uid,cfl.pid,
+		cfl.amount,cfl.type,cfl.remark,cfl.addtime,CONCAT(LEFT(m.mobilePhone,3),'****',RIGHT(m.mobilePhone,4)) as phone,
+		CONCAT(LEFT(mbi.realname,1),'**') as realname,pi.code as pcode
+		 from dr_company_funds_log cfl
+		LEFT JOIN dr_member m ON cfl.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi  ON m.uid = mbi.uid
+		LEFT JOIN dr_product_info  pi ON cfl.pid = pi.id
+		<where>
+			if(cfl.amount=0,0,1) and cfl.status = 1 
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="(type != null and type != '') or type==0"> 
+				and cfl.type = #{type}
+			</if>
+			
+			<if test="fundTypes != null and fundTypes !='' "> 
+				and cfl.funds_type_id in
+				<foreach item="item" index="index" collection="fundTypes" open="(" separator="," close=")">  
+					 #{item}  
+				</foreach> 
+			</if>
+			<if test="pcode !=null and pcode!=''">
+				and pi.code=#{pcode}
+			</if>
+			
+		</where>
+		<![CDATA[ order by cfl.logid desc ]]> 
+			limit #{offset},#{limit} 
+	</select>
+	
+	<!-- 获得公司收支记录总记录数  -->
+	<select id="getDrCompanyFundsLogCounts" parameterType="java.util.HashMap" resultType="int">
+		select count(1)
+		from dr_company_funds_log cfl
+		LEFT JOIN dr_member m ON cfl.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi  ON m.uid = mbi.uid
+		LEFT JOIN dr_product_info  pi ON cfl.pid = pi.id
+		<where>
+			if(cfl.amount=0,0,1) and cfl.status = 1 
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="(type != null and type != '') or type==0"> 
+				and cfl.type = #{type}
+			</if>
+			
+			<if test="fundTypes != null and fundTypes !='' "> 
+				and cfl.funds_type_id in
+				<foreach item="item" index="index" collection="fundTypes" open="(" separator="," close=")">  
+					 #{item}  
+				</foreach> 
+			</if>
+			<if test="pcode !=null and pcode!=''">
+				and pi.code=#{pcode}
+			</if>		
+		</where>
+	</select>
+	
+	<!-- 统计支出收支 -->
+	<select id="getDrCompanyFundsLogSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select sum(cfl.amount)
+		from dr_company_funds_log cfl
+		LEFT JOIN dr_member m ON cfl.uid = m.uid
+		LEFT JOIN dr_member_base_info mbi  ON m.uid = mbi.uid
+		LEFT JOIN dr_product_info  pi ON cfl.pid = pi.id
+		<where>
+		 cfl.status = 1
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(cfl.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="(type != null and type != '') or type==0"> 
+				and cfl.type = #{type}
+			</if>
+			<if test="fundTypes != null and fundTypes !='' "> 
+				and cfl.funds_type_id in
+				<foreach item="item" index="index" collection="fundTypes" open="(" separator="," close=")">  
+					 #{item}  
+				</foreach> 
+			</if>
+			<if test="pcode !=null and pcode!=''">
+				and pi.code=#{pcode}
+			</if>
+		</where>
+	</select>
+	
+</mapper>

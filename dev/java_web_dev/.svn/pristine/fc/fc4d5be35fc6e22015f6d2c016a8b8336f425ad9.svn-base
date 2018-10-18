@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.JsCompanyAccountLogDAO" >
+	<!-- 插入公司收支记录 -->
+	<insert id="insertCompanyAccountLog" parameterType="com.jsjf.model.member.JsCompanyAccountLog" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+		insert into js_company_account_log(id, companyfunds, type,amount,
+		balance,status,remark, addtime, channelType,uid,pid)
+		values (#{id},#{companyfunds},#{type},#{amount},
+		#{balance},#{status},#{remark},#{addtime},#{channelType},#{uid},#{pid})
+	</insert>
+	
+	<update id="updateCompanyAccountLog" parameterType="com.jsjf.model.member.JsCompanyAccountLog">
+		update js_company_account_log
+		<set>
+			<if test="companyfunds != null"> companyfunds = #{companyfunds},</if>
+			<if test="type != null"> type = #{type},</if>
+			<if test="amount != null"> amount = #{amount},</if>
+			<if test="balance != null"> balance = #{balance},</if>
+			<if test="remark != null"> remark = #{remark},</if>
+			<if test="addtime != null"> addtime = #{addtime},</if>
+			<if test="channelType != null"> channelType = #{channelType},</if>
+		</set>
+		where id=#{id}
+	</update>
+	<select id="getCompanyAccountLog" parameterType="java.util.Map" resultType="java.util.Map">
+		select jcal.id as id,DATE_FORMAT(jcal.addTime,'%Y-%m-%d %H:%i:%s') as addTime,sc.cnvalue as companyfundsName,
+		jcal.companyfunds as companyfunds,jcal.type,
+		case when(jcal.type=1) then jcal.amount else '' end as sr,
+		case when(jcal.type=0) then jcal.amount else '' end as zc,
+		jcal.balance as balance,jcal.remark as remark,
+		jcal.channelType as channelType,
+		case when(jcal.channelType=1) then '金运通' else '存管' end as channelTypeName,
+		dpi.fullName as fullName
+		from js_company_account_log jcal
+		left join sys_chooseoption sc on sc.category='companyfunds' and sc.code=jcal.companyfunds
+    	left join dr_product_info dpi on dpi.id=jcal.pid
+		where jcal.status=3
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="type!=null and type!=''">
+			and jcal.type =#{type}
+		</if> 
+		<if test="channelType!=null and channelType!=''">
+			and jcal.channelType =#{channelType}
+		</if> 
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName =#{fullName}
+		</if> 
+		order by jcal.addTime desc,jcal.id desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="getCompanyAccountLogCount" parameterType="java.util.Map" resultType="int">
+		select count(1)
+		from js_company_account_log jcal
+		left join dr_product_info dpi on dpi.id=jcal.pid
+		where jcal.status=3
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="type!=null and type!=''">
+			and jcal.type =#{type}
+		</if> 
+		<if test="channelType!=null and channelType!=''">
+			and jcal.channelType =#{channelType}
+		</if>
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName =#{fullName}
+		</if> 
+	</select>
+	
+	<!-- 统计收入 -->
+  	<select id="getCompanyAccountSRSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select ifnull(sum(jcal.amount),0)
+		from js_company_account_log jcal
+		left join dr_product_info dpi on dpi.id=jcal.pid
+		where jcal.status=3  and  jcal.type=1
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="channelType!=null and channelType!=''">
+			and jcal.channelType =#{channelType}
+		</if>
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName =#{fullName}
+		</if> 
+  	</select>
+  	
+  	<!-- 统计支出 -->
+  	<select id="getCompanyAccountZCSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+  		select ifnull(sum(jcal.amount),0)
+		from js_company_account_log jcal
+		where jcal.status=3  and  jcal.type=0
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="companyfunds!=null">
+			and jcal.companyfunds=#{companyfunds}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(jcal.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="channelType!=null and channelType!=''">
+			and jcal.channelType =#{channelType}
+		</if>
+  	</select>
+  	
+  	<select id="getBlanceByFuiou" resultType="java.math.BigDecimal">
+			select IFNULL(balance,0) from js_company_account_log where channelType=2 and status=3 order by addtime desc,id desc limit 1
+  	</select>
+  	
+  	<select id="getBlanceByJYT" resultType="java.math.BigDecimal">
+			select balance from js_company_account_log where channelType=1 and status=3 order by addtime desc,id desc limit 1
+  	</select>
+</mapper>

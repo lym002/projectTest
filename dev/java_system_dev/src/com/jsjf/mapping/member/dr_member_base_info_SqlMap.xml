@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberBaseInfoDAO">
+	<resultMap id="DrMemberBaseInfoResult" type="com.jsjf.model.member.DrMemberBaseInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="realname" property="realName" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="birthdate" property="birthDate" jdbcType="DATE" />
+		<result column="email" property="email" jdbcType="VARCHAR" />
+		<result column="idcards" property="idCards" jdbcType="VARCHAR" />
+		<result column="idaddress" property="idAddress" jdbcType="VARCHAR" />
+		<result column="nowaddress" property="nowAddress" jdbcType="VARCHAR" />
+		<result column="marry" property="marry" jdbcType="INTEGER" />
+		<result column="industrytype" property="industryType" jdbcType="SMALLINT" />
+		<result column="job" property="job" jdbcType="VARCHAR" />
+		<result column="degree" property="degree" jdbcType="VARCHAR" />
+		<result column="gschool" property="gschool" jdbcType="VARCHAR" />
+		<result column="salary" property="salary" jdbcType="SMALLINT" />
+		<result column="companySize" property="companySize" jdbcType="SMALLINT" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updtime" property="updTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	<select id="selectByParam" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberBaseInfo">
+		select mb.* from dr_member_base_info mb
+		LEFT JOIN dr_member m on mb.uid = m.uid
+		<where>
+			<if test="mobilePhone != null">
+				m.mobilePhone = #{mobilePhone}
+			</if>
+			<if test="idcards != null">
+				and mb.idcards = #{idcards}
+			</if>
+			<if test="realName != null"> 
+				and mb.realname= #{realName} 
+			</if>
+		</where>
+
+	</select>
+	<update id="updateByUidSelective" parameterType="com.jsjf.model.member.DrMemberBaseInfo">
+		update dr_member_base_info
+		<set>
+			<if test="realName != null">
+				realname = #{realName,jdbcType=VARCHAR},
+			</if>
+			<if test="sex != null">
+				sex = #{sex,jdbcType=INTEGER},
+			</if>
+			<if test="birthDate != null">
+				birthdate = #{birthDate,jdbcType=DATE},
+			</if>
+			<if test="email != null">
+				email = #{email,jdbcType=VARCHAR},
+			</if>
+			<if test="idCards != null">
+				idcards = #{idCards,jdbcType=VARCHAR},
+			</if>
+			<if test="idAddress != null">
+				idaddress = #{idAddress,jdbcType=VARCHAR},
+			</if>
+			<if test="nowAddress != null">
+				nowaddress = #{nowAddress,jdbcType=VARCHAR},
+			</if>
+			<if test="marry != null">
+				marry = #{marry,jdbcType=INTEGER},
+			</if>
+			<if test="industryType != null">
+				industrytype = #{industryType,jdbcType=SMALLINT},
+			</if>
+			<if test="job != null">
+				job = #{job,jdbcType=VARCHAR},
+			</if>
+			<if test="degree != null">
+				degree = #{degree,jdbcType=VARCHAR},
+			</if>
+			<if test="gschool != null">
+				gschool = #{gschool,jdbcType=VARCHAR},
+			</if>
+			<if test="salary != null">
+				salary = #{salary,jdbcType=SMALLINT},
+			</if>
+			<if test="companySize != null">
+				companySize = #{companySize,jdbcType=SMALLINT},
+			</if>
+			updtime = SYSDATE()
+		</set>
+		where uid = #{uid,jdbcType=INTEGER}
+	</update>
+
+	<!--通过 用户主键 获取用户信息-->
+	<select id="queryMemberBaseInfoByUid" parameterType="java.lang.Integer" resultType="com.jsjf.model.member.DrMemberBaseInfo">
+		 select c.* from 
+		 dr_member_base_info c
+		 where  c.uid = #{uid}
+	</select>
+	
+	<select id="selectByCard" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberBaseInfo">
+		select mb.* from dr_member_base_info mb
+		where mb.idcards = #{idCards,jdbcType=VARCHAR}
+	</select>
+	<select id="selectPersonRegBatchUpload" resultType="java.util.Map" >
+		SELECT mem.uid as mid, base.nowaddress as address, base.realname AS realname,
+		case base.sex when 1 then 0 else 1 end as sex,mem.mobilePhone AS mobilePhone,
+		mem.mchnt_txn_ssn as mchntTxnSsn,
+		base.idcards AS idcards,DATE_FORMAT(mem.regdate,'%Y%m%d %H:%i:%S') AS regdate
+		FROM dr_member_base_info base 
+		LEFT JOIN dr_member mem ON base.uid = mem.uid
+		WHERE base.realname is not null
+		and mem.isFuiou = 1 and (mem.fileStatus is NULL) 
+		<!-- 个人报备，日终报前一天计息的投资数据，即查询满标日期是报备时间1S天前的投资数据 -->
+		AND <![CDATA[LEFT(mchnt_txn_ssn,8) >= DATE_SUB(CURDATE(),INTERVAL 1 DAY)]]>
+		AND <![CDATA[LEFT(mchnt_txn_ssn,8) < CURDATE()]]>
+		<!-- or mem.fileStatus = 3 -->
+		
+
+	</select>
+</mapper>

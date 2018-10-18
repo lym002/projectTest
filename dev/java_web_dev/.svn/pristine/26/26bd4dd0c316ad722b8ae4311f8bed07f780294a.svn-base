@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrCouponsIssuedRulesDAO">
+	<resultMap id="DrCouponsIssuedRulesResult" type="com.jsjf.model.activity.DrCouponsIssuedRules">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="couponType" property="couponType" jdbcType="INTEGER" />
+		<result column="coupons" property="coupons" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result property="addName" column="addName" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updateName" jdbcType="VARCHAR"/><!--修改人姓名 -->
+		<result property="message" column="message" jdbcType="VARCHAR"/>
+		<result property="isCps" column="isCps" jdbcType="INTEGER"/><!--渠道使用 -->
+	</resultMap>
+	
+	<!-- 添加规则 -->
+	<insert id="insertCouponsIssuedRules" parameterType="com.jsjf.model.activity.DrCouponsIssuedRules">
+		insert into dr_coupons_issued_rules(name,type,startTime,endTime,couponType,coupons,status,addUser,addTime)
+		values(#{name},#{type},#{startTime},#{endTime},#{couponType},#{coupons},0,#{addUser},now())
+	</insert>
+	
+	<select id="getCouponsIssuedRulesById" parameterType="Integer" resultMap="DrCouponsIssuedRulesResult">
+		select * from dr_coupons_issued_rules
+		where id = #{id}
+	</select>
+	
+	<!-- 查询活动列表总条数 -->
+	<select id="getCouponsIssuedRulesList" parameterType="java.util.HashMap"  resultMap="DrCouponsIssuedRulesResult">
+		select *
+		from dr_coupons_issued_rules 
+		<where>
+			DATE_FORMAT(startTime,'%Y%m%d %H%i%s') <![CDATA[ <= ]]> DATE_FORMAT(now(),'%Y%m%d %H%i%s')
+			and DATE_FORMAT(endTime,'%Y%m%d %H%i%s') <![CDATA[ > ]]> DATE_FORMAT(now(),'%Y%m%d %H%i%s')
+			<if test="type != null">
+				and type = #{type}
+			</if>
+			<if test="status != null">
+				and status =#{status}
+			</if>
+			<if test="isCps != null">
+				and isCps = #{isCps}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getCouponsIssuedRules" parameterType="java.util.HashMap"  resultType="com.jsjf.model.activity.DrCouponsIssuedRules">
+		select * from dr_coupons_issued_rules 
+		<where>
+			<if test="type != null">
+				and type = #{type}
+			</if>
+			<if test="status != null">
+				and status =#{status}
+			</if>
+			<if test="nowTime != null">
+				<![CDATA[ and now() >= startTime and now()<=endTime ]]>
+			</if>
+		</where>
+		limit 0,1
+	</select>
+	
+	<!-- 修改活动 -->
+	<update id="updateCouponsIssuedRules" parameterType="com.jsjf.model.activity.DrCouponsIssuedRules" >
+		update dr_coupons_issued_rules 
+		<set>	
+			<if test="type != null and type != ''">
+				type = #{type},
+			</if>
+			<if test="name != null and name != ''">
+				name = #{name},
+			</if>
+			<if test="startTime != null and startTime != ''">
+				startTime = #{startTime},
+			</if>
+			<if test="endTime != null and endTime != ''" >
+				endTime = #{endTime},
+			</if>
+			<if test="couponType != null and couponType != ''">
+				couponType = #{couponType},
+			</if>
+			<if test="status != null and status != ''">
+				status = #{status},
+			</if>
+			<if test="updateUser != null and updateUser != ''">
+				updateUser = #{updateUser:INTEGER},updateTime = now()
+			</if>
+		</set>		
+		<where>
+			 id = #{id:INTEGER}
+		</where>
+	</update>
+	<!-- 查询红包规则列表获取可以领取的红包id -->
+	<select id="selectRedEnvelope" parameterType="java.util.HashMap" resultMap="DrCouponsIssuedRulesResult">
+		select *
+		from dr_coupons_issued_rules
+		<where>
+			1=1
+			<if test="type != null">
+				and type = #{type}
+			</if>
+			<if test="status != null">
+				and status =#{status}
+			</if>
+			<if test="isCps != null">
+				and isCps = #{isCps}
+			</if>
+			LIMIT 1
+		</where>
+	</select>
+	<!-- 查询用户领取的红包 -->
+	<select id="selectUserRedEnvelope" parameterType="java.util.HashMap" resultMap="DrCouponsIssuedRulesResult">
+		select dap.id,dmf.amount
+		from
+		dr_member_favourable dmf
+		LEFT JOIN
+		dr_activity_parameter dap ON
+		dmf.code =dap.code
+		<where>
+			1=1
+			<if test="uid!=null">
+				and uid=#{uid}
+			</if>
+			<if test="ids!=null">
+				and dmf.code in (SELECT code from dr_activity_parameter where ID in
+				<foreach collection="ids" item="item" open="(" close=")" separator="," >
+					#{item}
+				</foreach>
+				)
+			</if>
+			and date_format(dmf.addtime,'%Y-%m')=date_format(now(),'%Y-%m')
+		</where>
+	</select>
+	<!-- 查询top10 -->
+	<select id="selectRedEnvelopeTop" parameterType="java.util.HashMap" resultMap="DrCouponsIssuedRulesResult">
+		select dap.id,dmf.amount,dap.addTime,dap.`name`,CONCAT(left(dm.mobilePhone,3),'****',right(dm.mobilePhone,4)) mobilePhone
+		from
+		dr_member_favourable dmf
+		LEFT JOIN
+		dr_activity_parameter dap ON
+		dmf.code =dap.code
+		LEFT JOIN dr_member dm on dm.uid=dmf.uid
+		<where>
+			1=1
+			<if test="ids!=null">
+				and dmf.code in (SELECT code from dr_activity_parameter where ID in
+				<foreach collection="ids" item="item" open="(" close=")" separator="," >
+					#{item}
+				</foreach>
+				)
+			</if>
+		</where>
+		ORDER BY dap.addTime desc
+		LIMIT 0,10
+	</select>
+	<!-- 根据主键查询红包对象 -->
+	<select id="selectByMapPrimaryKey" parameterType="java.util.HashMap" resultMap="DrCouponsIssuedRulesResult">
+		select * from dr_activity_parameter
+		<where>
+			1=1
+			<if test="fid!=null">
+				and id=#{fid}
+			</if>
+		</where>
+	</select>
+</mapper>

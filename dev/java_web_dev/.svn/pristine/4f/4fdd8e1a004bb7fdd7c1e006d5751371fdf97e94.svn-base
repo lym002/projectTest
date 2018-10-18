@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsGuaranteeDAO">
+	<resultMap id="DrClaimsGuaranteeResult" type="com.jsjf.model.claims.DrClaimsGuarantee">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="isPawn" property="isPawn" jdbcType="INTEGER" />
+		<result column="pawnType" property="pawnType" jdbcType="INTEGER" />
+		<result column="assessAmount" property="assessAmount" jdbcType="DECIMAL" />
+		<result column="isAcceptance" property="isAcceptance" jdbcType="INTEGER" />	
+		<result column="guarantor" property="guarantor" jdbcType="VARCHAR" />
+		<result column="isGuarantee" property="isGuarantee" jdbcType="INTEGER" />
+		<result column="guaranteeType" property="guaranteeType" jdbcType="INTEGER" />
+		<result column="guarantee" property="guarantee" jdbcType="VARCHAR" />
+		<result column="isFinanc" property="isFinanc" jdbcType="INTEGER" />	
+		<result column="financType" property="financType" jdbcType="INTEGER" />
+		<result column="guaranteeAmount" property="guaranteeAmount" jdbcType="DECIMAL" />
+	</resultMap>
+	
+</mapper>

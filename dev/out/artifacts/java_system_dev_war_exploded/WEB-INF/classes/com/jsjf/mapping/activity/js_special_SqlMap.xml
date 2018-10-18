@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsSpecialDao">
+	
+	<sql id="Base_Column_List">
+		id,PCTopBanner,H5TopBanner,PCRightBanner,title,context,
+		status,addUser,addDate,updateUser,updateDate
+	</sql>
+	<select id="selectList" resultType="com.jsjf.model.activity.JsSpecial" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_special order by id desc limit  1
+	</select>
+	 
+	 <update id="update" parameterType="com.jsjf.model.activity.JsSpecial">
+	 	update js_special
+	 		<set>
+		 		<if test="PCTopBanner !=null and PCTopBanner !=''">
+		 			 PCTopBanner = #{PCTopBanner:VARCHAR},
+		 		</if>
+		 		<if test="H5TopBanner != null and H5TopBanner !='' ">
+		 			H5TopBanner = #{H5TopBanner:VARCHAR},
+		 		</if>
+		 		<if test="PCRightBanner !=null and PCRightBanner !=''">
+		 			PCRightBanner = #{PCRightBanner:VARCHAR},
+		 		</if>
+		 		<if test="title !=null and title !=''">
+		 			title = #{title},
+		 		</if>
+		 		<if test="context !=null and context !=''">
+		 			context = #{context},
+		 		</if>
+		 		<if test="status != null">
+		 			status = #{status},
+		 		</if>
+		 		<if test="addUser != null">
+		 			addUser = #{addUser:INTEGER},
+		 		</if>
+		 		<if test="addDate != null and addDate !=''">
+		 			addDate = #{addDate:TIMESTAMP},
+		 		</if>
+		 		<if test="updateUser != null">
+		 			updateUser = #{updateUser:INTEGER},
+		 		</if>
+		 		<if test="updateDate != null and updateDate !=''">
+		 			updateDate = #{updateDate:TIMESTAMP}
+		 		</if>
+	 		</set>
+	 	where id = #{id:INTEGER}
+	 </update>
+
+	 <insert id = "insert" parameterType="com.jsjf.model.activity.JsSpecial" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+	 	 insert into js_special(PCTopBanner,H5TopBanner,PCRightBanner,title,context,
+		status,addUser,addDate,updateUser,updateDate)values(#{PCTopBanner:VARCHAR},
+			#{H5TopBanner:VARCHAR},#{PCRightBanner:VARCHAR},#{title:VARCHAR},#{context:VARCHAR},#{status},
+			#{addUser:INTEGER},#{addDate:TIMESTAMP},#{updateUser:INTEGER},#{updateDate:TIMESTAMP})
+	 </insert>
+</mapper>

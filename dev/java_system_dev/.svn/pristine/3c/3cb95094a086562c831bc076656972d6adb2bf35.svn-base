@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.integral.UserDetailIntegralDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.integral.UserDetailIntegralBean">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="uid" jdbcType="INTEGER" property="uid" />
+    <result column="integral_source_id" jdbcType="INTEGER" property="integralSourceId" />
+    <result column="user_detail_integral" jdbcType="DECIMAL" property="userDetailIntegral" />
+    <result column="expiration_time" jdbcType="TIMESTAMP" property="expirationTime" />
+    <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    
+    <result column="mobilePhone" jdbcType="VARCHAR" property="mobilePhone" />
+    <result column="task_type" jdbcType="VARCHAR" property="taskType" />
+
+  </resultMap>
+  <sql id="Base_Column_List">
+    budi.id, budi.uid, integral_source_id, user_detail_integral, expiration_time, budi.add_time, budi.update_time,mobilePhone,task.task_type
+  </sql>
+  <select id="queryDetailintegralList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_user_detail_integral budi left join dr_member dm on budi.uid=dm.uid
+    left join byp_task_integral_rules task on budi.task_integral_id = task.id
+    where 1=1
+    <if test="integralSourceId !=null and integralSourceId !=''">
+		 and integral_source_id = #{integralSourceId}
+	</if>
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone}
+	</if>
+	<if test="startaddTime !=null and startaddTime !=''">
+		 and budi.add_time <![CDATA[ >= ]]> #{startaddTime}
+	</if>
+	<if test="endaddTime !=null and endaddTime !=''">
+		 and budi.add_time <![CDATA[ <= ]]> #{endaddTime}
+	</if>
+	order by budi.add_time desc
+    <if test="limit !=null">
+		limit #{offset},#{limit}
+	</if>
+  </select>
+  
+   <select id="queryDetailintegralListCount" parameterType="java.util.Map" resultType="INTEGER">
+    select 
+    count(0)
+    from byp_user_detail_integral budi left join dr_member dm on budi.uid=dm.uid
+     left join byp_task_integral_rules task on budi.task_integral_id = task.id
+    where 1=1
+    <if test="integralSourceId !=null and integralSourceId !=''">
+		 and integral_source_id = #{integralSourceId}
+	</if>
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone}
+	</if>
+	<if test="startaddTime !=null and startaddTime !=''">
+		 and budi.add_time <![CDATA[ >= ]]> #{startaddTime}
+	</if>
+	<if test="endaddTime !=null and endaddTime !=''">
+		 and budi.add_time <![CDATA[ <= ]]> #{endaddTime}
+	</if>
+   
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_user_detail_integral
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    insert into byp_user_detail_integral (id, uid, integral_source_id, 
+      user_detail_integral, expiration_time, add_time, 
+      update_time)
+    values (#{id,jdbcType=INTEGER}, #{uid,jdbcType=INTEGER}, #{integralSourceId,jdbcType=INTEGER}, 
+      #{userDetailIntegral,jdbcType=DECIMAL}, #{expirationTime,jdbcType=TIMESTAMP}, #{addTime,jdbcType=TIMESTAMP}, 
+      #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    insert into byp_user_detail_integral
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="uid != null">
+        uid,
+      </if>
+      <if test="integralSourceId != null">
+        integral_source_id,
+      </if>
+      <if test="userDetailIntegral != null">
+        user_detail_integral,
+      </if>
+      <if test="expirationTime != null">
+        expiration_time,
+      </if>
+      <if test="addTime != null">
+        add_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="uid != null">
+        #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="integralSourceId != null">
+        #{integralSourceId,jdbcType=INTEGER},
+      </if>
+      <if test="userDetailIntegral != null">
+        #{userDetailIntegral,jdbcType=DECIMAL},
+      </if>
+      <if test="expirationTime != null">
+        #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    update byp_user_detail_integral
+    <set>
+      <if test="uid != null">
+        uid = #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="integralSourceId != null">
+        integral_source_id = #{integralSourceId,jdbcType=INTEGER},
+      </if>
+      <if test="userDetailIntegral != null">
+        user_detail_integral = #{userDetailIntegral,jdbcType=DECIMAL},
+      </if>
+      <if test="expirationTime != null">
+        expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addTime != null">
+        add_time = #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    update byp_user_detail_integral
+    set uid = #{uid,jdbcType=INTEGER},
+      integral_source_id = #{integralSourceId,jdbcType=INTEGER},
+      user_detail_integral = #{userDetailIntegral,jdbcType=DECIMAL},
+      expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      add_time = #{addTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  
+  <!-- 积分管理查询 -->
+   <select id="queryIntegralManageList" parameterType="java.util.Map" resultType="com.jsjf.model.integral.UserDetailIntegralBean">
+		 SELECT
+			concat(substring(dmbi.realname,1,1),"*") AS realname,
+			concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) as mobilePhone,
+			gran_use_table.grand_integral AS grandIntegral,
+			dm.user_integral_use AS userIntegralUse,
+			gran_use_table.use_integral AS useIntegral,
+			(
+				gran_use_table.grand_integral - dm.user_integral_use - gran_use_table.use_integral
+			) AS loseIntegral
+		FROM
+			byp_user_detail_integral budi
+		LEFT JOIN dr_member dm ON budi.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dmbi.uid = dm.uid
+		LEFT JOIN (
+			SELECT
+				a.uid,
+				ifnull(a.user_detail_integral, 0) grand_integral,
+				ifnull(b.user_detail_integral, 0) use_integral
+			FROM
+				(
+					SELECT
+						uid,
+						sum(user_detail_integral) AS user_detail_integral
+					FROM
+						byp_user_detail_integral
+					WHERE
+						user_detail_integral <![CDATA[ > ]]> 0
+					GROUP BY
+						uid
+				) a
+			LEFT JOIN (
+				SELECT
+					uid,
+					sum(user_detail_integral) AS user_detail_integral
+				FROM
+					byp_user_detail_integral
+				WHERE
+					user_detail_integral <![CDATA[ < ]]> 0
+				GROUP BY
+					uid
+			) b ON a.uid = b.uid
+		) AS gran_use_table ON gran_use_table.uid = dm.uid
+   where 1=1
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone}
+	</if>
+	<if test="integralType == 1">
+		<if test="greaterIntegral !=null and greaterIntegral !=''">
+		 	and gran_use_table.grand_integral <![CDATA[ > ]]> #{greaterIntegral}
+		</if>
+		<if test="lessIntegral !=null and lessIntegral !=''">
+		 	and gran_use_table.grand_integral <![CDATA[ < ]]> #{lessIntegral}
+		</if>
+	</if>
+	<if test="integralType == 2">
+		<if test="greaterIntegral !=null and greaterIntegral !=''">
+		 	and dm.user_integral_use <![CDATA[ > ]]> #{greaterIntegral}
+		</if>
+		<if test="lessIntegral !=null and lessIntegral !=''">
+		 	and dm.user_integral_use  <![CDATA[ < ]]> #{lessIntegral}
+		</if>
+	</if>
+	<if test="integralType == 3">
+		<if test="greaterIntegral !=null and greaterIntegral !=''">
+		 	and gran_use_table.use_integral <![CDATA[ > ]]> #{greaterIntegral}
+		</if>
+		<if test="lessIntegral !=null and lessIntegral !=''">
+		 	and gran_use_table.use_integral <![CDATA[ < ]]> #{lessIntegral}
+		</if>
+	</if>
+	<if test="integralType == 4">
+		<if test="greaterIntegral !=null and greaterIntegral !=''">
+		 	and (
+				gran_use_table.grand_integral - dm.user_integral_use - gran_use_table.use_integral
+			) <![CDATA[ > ]]> #{greaterIntegral}
+		</if>
+		<if test="lessIntegral !=null and lessIntegral !=''">
+		 	and (
+				gran_use_table.grand_integral - dm.user_integral_use - gran_use_table.use_integral
+			) <![CDATA[ < ]]> #{lessIntegral}
+		</if>
+	</if>
+	<!-- <if test="startaddTime !=null and startaddTime !=''">
+		 and budi.add_time <![CDATA[ >= ]]> #{startaddTime}
+	</if>
+	<if test="endaddTime !=null and endaddTime !=''">
+		 and budi.add_time <![CDATA[ <= ]]> #{endaddTime}
+	</if> -->
+	GROUP BY budi.uid
+	order by grandIntegral desc
+    <if test="limit !=null">
+		limit #{offset},#{limit}
+	</if>
+  </select>
+  
+  <select id="queryIntegralManageListCount" parameterType="java.util.Map" resultType="INTEGER">
+  select count(0) from ( 
+		 SELECT
+			count(0)
+		FROM
+			byp_user_detail_integral budi
+		LEFT JOIN dr_member dm ON budi.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dmbi.uid = dm.uid
+		LEFT JOIN (
+			SELECT
+				a.uid,
+				ifnull(a.user_detail_integral, 0) grand_integral,
+				ifnull(b.user_detail_integral, 0) use_integral
+			FROM
+				(
+					SELECT
+						uid,
+						sum(user_detail_integral) AS user_detail_integral
+					FROM
+						byp_user_detail_integral
+					WHERE
+						user_detail_integral <![CDATA[ > ]]> 0
+					GROUP BY
+						uid
+				) a
+			LEFT JOIN (
+				SELECT
+					uid,
+					sum(user_detail_integral) AS user_detail_integral
+				FROM
+					byp_user_detail_integral
+				WHERE
+					user_detail_integral <![CDATA[ < ]]> 0
+				GROUP BY
+					uid
+			) b ON a.uid = b.uid
+		) AS gran_use_table ON gran_use_table.uid = dm.uid
+    where 1=1
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone}
+	</if>
+	<if test="startaddTime !=null and startaddTime !=''">
+		 and budi.add_time <![CDATA[ >= ]]> #{startaddTime}
+	</if>
+	<if test="endaddTime !=null and endaddTime !=''">
+		 and budi.add_time <![CDATA[ <= ]]> #{endaddTime}
+	</if>
+	GROUP BY budi.uid
+	) a
+    
+  </select>
+	<select id="queryTodayInvestTask" resultType="java.lang.Integer">
+		    SELECT count(id) from byp_user_detail_integral budi
+    WHERE <![CDATA[ DATE_FORMAT(budi.`add_time`,'%y-%m-%d') >= DATE_FORMAT(now(),'%y-%m-%d')]]> and <![CDATA[ DATE_FORMAT(budi.`add_time`,'%y-%m-%d') <= DATE_FORMAT(now(),'%y-%m-%d')]]> and budi.task_integral_id = 3
+	AND budi.`uid` = #{uid} GROUP BY budi.`add_time` order by budi.`add_time` limit 1;
+	</select>
+	<select id="queryExpirationIntegral" resultType="java.util.Map">
+		   SELECT uid,SUM(user_detail_integral) expirationIntegral FROM byp_user_detail_integral WHERE DATE_FORMAT(expiration_time,'%Y%M%d') = DATE_FORMAT(#{expirationTime},'%Y%M%d') GROUP BY uid
+	</select>
+</mapper>

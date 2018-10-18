@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityLuckyMoneyDAO">
+	<resultMap id="JsActivityLuckyMoneyResult" type="com.jsjf.model.activity.JsActivityLuckyMoney">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />	
+		<result column="shaerUid" property="shaerUid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,uid,amount,shaerUid,addTime,updateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultType="com.jsjf.model.activity.JsActivityLuckyMoney" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_activity_lucky_money where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsActivityLuckyMoneyByMap" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	select concat(substring(m.`mobilePhone`,1,3),"****",substring(m.mobilePhone,8)) as mobilePhone,jalm.* from js_activity_lucky_money jalm
+	 	left join dr_member m on m.uid = jalm.uid 
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="uid != null">R
+	 			<if test="uid == -1">
+	 				and jalm.uid is null
+	 			</if>
+	 			<if test="uid == -2">
+	 				and jalm.uid is not null
+	 			</if>
+	 			<if test="uid !=-1 and uid != -2">
+	 				and jalm.uid = #{uid}
+	 			</if>
+	 		</if>
+	 		<if test="shaerUid != null">
+	 			and jalm.shaerUid = #{shaerUid}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 
+	 <select id="update" parameterType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	update js_activity_lucky_money 
+	 		set uid = #{uid}
+	 			,updateTime = now()
+	 	where id = #{id}
+	 </select>
+
+	 <insert id = "insert" parameterType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	 insert into js_activity_lucky_money(uid,amount,shaerUid,addtime,updateTime)values(#{uid},#{amount},#{shaerUid},now(),#{updateTime})
+	 </insert>
+	 
+	 <select id ="selectByshaerUid" parameterType="Integer" resultType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	select <include refid="Base_Column_List" /> from js_activity_lucky_money where shaerUid = #{uid:INTEGER}
+	 </select>
+	<!-- 根据手机号查询 是否有分享记录 -->	
+	 <select id ="selectByshaerPhone" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	select jalm.* from `js_activity_lucky_money` jalm 
+				left join `dr_member` dm on dm.`uid` = jalm.`shaerUid`
+				where 1 = 1  and (jalm.aid is null or jalm.aid = 0) 
+	 			<if test="flag == -1">
+	 				and jalm.uid is null
+	 			</if>
+	 		<if test="mobilePhone != null">
+	 			and dm.`mobilePhone`=#{mobilePhone:VARCHAR}
+	 		</if>
+	 		<if test="time !=null">
+	 		    and DATE_FORMAT(NOW(),'%Y-%m-%d') = DATE_FORMAT(jalm.`addTime`,'%Y-%m-%d')
+	 		</if>
+	 </select>
+
+</mapper>

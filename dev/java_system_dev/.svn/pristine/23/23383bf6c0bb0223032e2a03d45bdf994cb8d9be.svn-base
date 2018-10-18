@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrCouponsIssuedRulesDAO">
+	<resultMap id="DrCouponsIssuedRulesResult" type="com.jsjf.model.activity.DrCouponsIssuedRules">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="scene" property="scene" jdbcType="INTEGER" />
+		<result column="couponType" property="couponType" jdbcType="INTEGER" />
+		<result column="coupons" property="coupons" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result property="addName" column="addName" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updateName" jdbcType="VARCHAR"/><!--修改人姓名 -->
+		<result column="message" property="message" jdbcType="VARCHAR"/>
+		<result column="message" property="message" jdbcType="VARCHAR"/>
+		<result column="isCps" property="isCps" jdbcType="INTEGER"/>
+	</resultMap>
+	
+	<!-- 添加规则 -->
+	<insert id="insertCouponsIssuedRules" parameterType="com.jsjf.model.activity.DrCouponsIssuedRules">
+		insert into dr_coupons_issued_rules(name,type,startTime,endTime,scene,couponType,coupons,status,addUser,addTime,message,isCps)
+		values(#{name},#{type},#{startTime},#{endTime},#{scene},#{couponType},#{coupons},0,#{addUser},now(),#{message},#{isCps})
+	</insert>
+	
+	<select id="getCouponsIssuedRulesById" parameterType="Integer" resultMap="DrCouponsIssuedRulesResult">
+		select id,type,name,startTime,endTime,scene,couponType,status,coupons,message,isCps,
+		(select group_concat(dap.`name`) from dr_activity_parameter dap where FIND_IN_SET(dap.ID,coupons)) as couponNames 
+		from dr_coupons_issued_rules
+		where id = #{id}
+	</select>
+	
+	<!-- 查询活动列表 -->
+	<select id="getCouponsIssuedRulesList" parameterType="java.util.HashMap"  resultMap="DrCouponsIssuedRulesResult">
+		select a.id,a.type,a.name,a.startTime,a.endTime,a.scene,a.couponType,a.status,a.message,a.addTime,a.updateTime,b.`name` as addName,c.`name` as updateName,coupons,
+		(select group_concat(dap.`name`) from dr_activity_parameter dap where FIND_IN_SET(dap.ID,a.coupons)) as couponNames,isCps
+		from dr_coupons_issued_rules a
+		left join sys_users b ON a.addUser = b.user_ky
+		left join sys_users c ON a.updateUser = c.user_ky
+		<where>
+			<if test="types != null">
+				and a.type in
+				<foreach collection="types" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="couponTypes != null">
+				and a.couponType in
+				<foreach collection="couponTypes" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="statuses != null">
+				and a.status in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+	 		order by a.status asc,a.addTime desc
+		</where>
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getCouponsIssuedRulesListForReg" parameterType="java.util.HashMap"  resultMap="DrCouponsIssuedRulesResult">
+		select *
+		from dr_coupons_issued_rules 
+		<where>
+			DATE_FORMAT(startTime,'%Y%m%d %H%i%s') <![CDATA[ <= ]]> DATE_FORMAT(now(),'%Y%m%d %H%i%s')
+			and DATE_FORMAT(endTime,'%Y%m%d %H%i%s') <![CDATA[ > ]]> DATE_FORMAT(now(),'%Y%m%d %H%i%s')
+			<if test="type != null">
+				and type = #{type}
+			</if>
+			<if test="status != null">
+				and status =#{status}
+			</if>
+			<if test="isCps != null">
+				and isCps = #{isCps}
+			</if>
+			<if test="isCpses != null">
+				and	isCps in 
+				<foreach item="item" index="index" collection="isCpses" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 查询活动列表总条数 -->
+	<select id="getCouponsIssuedRulesTotal" parameterType="java.util.HashMap"  resultType="INTEGER">
+		select count(1)
+		from dr_coupons_issued_rules 
+		<where>
+			<if test="types != null">
+				and type in
+				<foreach collection="types" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="couponTypes != null">
+				and couponType in
+				<foreach collection="couponTypes" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="statuses != null">
+				and status in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 修改活动 -->
+	<update id="updateCouponsIssuedRules" parameterType="com.jsjf.model.activity.DrCouponsIssuedRules" >
+		update dr_coupons_issued_rules 
+		<set>	
+			<if test="type != null  or status == 0"><!-- 值为0 会默认成null -->
+				type = #{type},
+			</if>
+			<if test="name != null and name != ''">
+				name = #{name},
+			</if>
+			<if test="startTime != null and startTime != ''">
+				startTime = #{startTime},
+			</if>
+			<if test="endTime != null and endTime != ''" >
+				endTime = #{endTime},
+			</if>
+			<if test="scene != null and scene != ''">
+				scene = #{scene},
+			</if>
+			<if test="couponType != null and couponType != ''">
+				couponType = #{couponType},
+			</if>
+			<if test="status != null">
+				status = #{status},
+			</if>
+			<if test="coupons != null">
+				coupons = #{coupons},
+			</if>
+			<if test="message != null">
+				message = #{message},
+			</if>
+			<if test="isCps != null ">	
+				isCps = #{isCps},			
+			</if>
+			<if test="isCps ==-1 ">
+				isCps = null,
+			</if>
+			<if test="updateUser != null and updateUser != ''">
+				updateUser = #{updateUser:INTEGER},updateTime = now()
+			</if>
+		</set>		
+		<where>
+			 id = #{id:INTEGER}
+		</where>
+	</update> 
+	
+</mapper>

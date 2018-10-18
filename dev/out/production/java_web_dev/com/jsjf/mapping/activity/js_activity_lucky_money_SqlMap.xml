@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityLuckyMoneyDAO">
+	<resultMap id="JsActivityLuckyMoneyResult" type="com.jsjf.model.activity.JsActivityLuckyMoney">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />	
+		<result column="shaerUid" property="shaerUid" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,uid,amount,shaerUid,addTime,updateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsActivityLuckyMoneyResult" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_activity_lucky_money where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsActivityLuckyMoneyByMap" parameterType="java.util.HashMap" resultMap="JsActivityLuckyMoneyResult">
+	 	select <include refid="Base_Column_List" /> from js_activity_lucky_money
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="uid != null">
+	 			<if test="uid == -1">
+	 				and uid is null
+	 			</if>
+	 			<if test="uid !=-1">
+	 				and uid = #{uid}
+	 			</if>
+	 		</if>
+	 		<if test="shaerUid != null">
+	 			and shaerUid = #{shaerUid}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 
+	 <select id="update" parameterType="com.jsjf.model.activity.JsActivityLuckyMoney">
+	 	update js_activity_lucky_money 
+	 		set uid = #{uid}
+	 			,updateTime = now()
+	 	where id = #{id}
+	 </select>
+</mapper>

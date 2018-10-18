@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrFeedbackDAO">
+	<resultMap id="DrFeedbackResult" type="com.jsjf.model.member.DrFeedback">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="handleId" property="handleId" jdbcType="INTEGER" />
+		<result column="contactInformation" property="contactInformation" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="feedbackTime" property="feedbackTime" jdbcType="DATE" />
+		<result column="handleResult" property="handleResult" jdbcType="VARCHAR" />
+		<result column="handleTime" property="handleTime" jdbcType="DATE" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="statusName" property="statusName" jdbcType="VARCHAR" />
+		
+	</resultMap>
+	<insert id="insertFeedback" parameterType="com.jsjf.model.member.DrFeedback" >
+		INSERT INTO dr_feedback (
+			id,
+			uid,
+			contactInformation,
+			content,
+			feedbackTime,
+			handleResult,
+			handleTime,
+			handleId,
+			status
+		)
+		VALUES
+			(
+				#{id:INTEGER},
+				#{uid:INTEGER},
+				#{contactInformation:VARCHAR},
+				#{content:VARCHAR},
+				#{feedbackTime:DATE},
+				#{handleResult:VARCHAR},
+				#{handleTime:DATE},
+				#{handleId:INTEGER},
+				#{status:INTEGER}
+			)
+	</insert>
+	<update id="updateDrFeedback" parameterType="com.jsjf.model.member.DrFeedback">
+	update dr_feedback
+		<set>
+			<if test="uid != null">
+				uid = #{uid:INTEGER},
+			</if>
+			<if test="contactInformation != null">
+				contactInformation = #{contactInformation:VARCHAR},
+			</if>
+			<if test="content != null">
+				content = #{content:VARCHAR},
+			</if>
+			<if test="feedbackTime != null">
+				feedbackTime = #{feedbackTime:DATE},
+			</if>
+			<if test="handleResult != null">
+				handleResult = #{handleResult:VARCHAR},
+			</if>
+			<if test="handleTime != null ">
+				handleTime = #{handleTime:DATE},
+			</if>
+			<if test="handleId != null">
+				handleId = #{handleId:INTEGER},
+			</if>
+			<if test="status != null ">
+				status = #{status:INTEGER},
+			</if>
+		</set>
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</update>
+	
+	<select id="selectByPrimaryKey" resultMap="DrFeedbackResult" parameterType="com.jsjf.model.member.DrFeedback" >
+   		select 
+			CASE WHEN dmbi.sex=1 then concat(substring(dmbi.realname,1,1),'先生') 
+					 when dmbi.sex=2 then concat(substring(dmbi.realname,1,1),'女士')
+				ELSE '' END as realName,
+			dm.mobilePhone as mobilePhone,ff.*,
+			case when ff.status=0 then '未处理' else '已处理' end as statusName 
+		from dr_feedback ff 
+		left JOIN dr_member dm ON ff.uid = dm.uid
+		left join dr_member_base_info dmbi ON ff.uid = dmbi.uid 
+		where ff.id= #{id:INTEGER}
+	</select>
+	
+	<select id="getDrFeedbackList" resultMap="DrFeedbackResult" parameterType="java.util.HashMap" >
+    	select 
+		CASE WHEN dmbi.sex=1 then concat(substring(dmbi.realname,1,1),'先生') 
+				 when dmbi.sex=2 then concat(substring(dmbi.realname,1,1),'女士')
+			ELSE '' END as realName,
+		dm.mobilePhone as mobilePhone,ff.*,
+		case when ff.status=0 then '未处理' else '已处理' end as statusName,dm.recommCodes as recommCodes
+		from dr_feedback ff 
+		left JOIN dr_member dm ON ff.uid = dm.uid
+		left join dr_member_base_info dmbi ON ff.uid = dmbi.uid 
+		where 1=1
+    	<if test="status !=null">
+			and ff.status = #{status} 
+		</if>
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and dm.mobilePhone like CONCAT('%',${mobilePhone},'%' )  
+		</if>
+		order by feedbackTime desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="getDrFeedbackCounts" resultType="int" parameterType="java.util.HashMap">
+		select count(1) from dr_feedback ff 
+		left JOIN dr_member dm ON ff.uid = dm.uid
+		where 1=1
+    	<if test="status !=null">
+			and ff.status = #{status} 
+		</if>
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and dm.mobilePhone  like CONCAT('%',${mobilePhone},'%' )
+		</if>
+	
+	</select>
+</mapper>

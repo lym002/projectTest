@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrLotteryParamDAO">
+	<resultMap id="DrLotteryParamResult" type="com.jsjf.model.activity.DrLotteryParam">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="aid" property="aid" jdbcType="INTEGER" />
+		<result column="giftId" property="giftId" jdbcType="INTEGER" />
+		<result column="giftName" property="giftName" jdbcType="VARCHAR" />
+		<result column="probability" property="probability" />
+	</resultMap>
+	<select id="selectByAid" resultMap="DrLotteryParamResult">
+		select _rowid as `index`,id,aid,giftId,giftName,probability from dr_lottery_param where aid = #{aid}
+	</select>
+</mapper>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeOrderShareDAO">
+	<resultMap id="JsProductPrizeOrderShareResult" type="com.jsjf.model.product.JsProductPrizeOrderShare">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pcImgUrl" property="pcImgUrl" jdbcType="VARCHAR" />
+		<result column="h5ImgUrl" property="h5ImgUrl" jdbcType="VARCHAR" />
+		<result column="sort" property="sort" jdbcType="INTEGER" />
+		<result column="isShow" property="isShow" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		
+	</resultMap>
+	
+	<sql id="sql_base">
+		id,pcImgUrl,h5ImgUrl,sort,isShow,addtime,uid,type		
+	</sql>
+	
+	<select id="selectByPrimaryKey" resultMap="JsProductPrizeOrderShareResult" parameterType="INTEGER">
+		select <include refid="sql_base"/> from js_product_prize_orderShare where id = #{id}
+	</select>
+	
+	
+	<select id="selectObjectList" resultMap="JsProductPrizeOrderShareResult" parameterType="java.util.Map">
+		select <include refid="sql_base"/>
+		 from js_product_prize_orderShare
+		 <where>
+		 	<if test="isShow !=null">
+		 		isShow = #{isShow}
+		 	</if>
+		 </where>
+		 <if test="orders != null and orders !=''">
+		 	order by ${orders}
+		 </if>
+	  	<if test="limit !=null and offset !=null">
+		 	limit #{offset},#{limit}
+		 </if>
+	
+	</select>
+	
+	<select id="selectObjectCount" resultType="Integer" parameterType="java.util.Map">
+		select count(1)
+		 from js_product_prize_orderShare
+		 <where>
+		 	<if test="isShow !=null">
+		 		isShow = #{isShow}
+		 	</if>
+		 </where>
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.product.JsProductPrizeOrderShare" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO js_product_prize_orderShare 
+			( pcImgUrl, h5ImgUrl, sort, isShow, addtime)
+			 VALUES ( #{pcImgUrl}, #{h5ImgUrl}, #{sort}, #{isShow},now());
+	</insert>
+	
+	<update id="update" parameterType="com.jsjf.model.product.JsProductPrizeOrderShare">
+		UPDATE js_product_prize_orderShare
+		<trim prefix="set" suffixOverrides=",">
+			<if test="pcImgUrl !=null and pcImgUrl !=''"> pcImgUrl = #{pcImgUrl},</if>
+			<if test="h5ImgUrl !=null and h5ImgUrl !=''"> h5ImgUrl = #{h5ImgUrl},</if>
+			<if test="sort !=null "> sort = #{sort},</if>
+			<if test="isShow !=null "> isShow = #{isShow},</if>
+			<if test="addtime !=null "> addtime = #{addtime},</if>
+			<if test="remark !=null "> remark = #{remark},</if>
+			<if test="type !=null "> type = #{type},</if>
+		</trim>
+		where id = #{id}
+	</update>
+	
+	<select id="selectOrderShare" parameterType="java.util.Map" resultType="java.util.Map">
+		select concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+		jppo.describes as describes,jppo.url as url,id as id,jppo.sort as sort,jppo.remark,
+		jppo.isShow as isShow,jppo.addtime as addtime from js_product_prize_orderShare jppo
+		left join dr_member dm on dm.uid=jppo.uid
+		where jppo.uid is not null
+		<if test="isShow!=null and isShow!=''">
+			and jppo.isShow=#{isShow}
+		</if>	
+		<if test="mobilePhone!=null and mobilePhone!=''">
+			and dm.mobilePhone=#{mobilePhone}
+		</if>
+		<if test="startAddtime != null and startAddtime !='' "> 
+			<![CDATA[and DATE_FORMAT(jppo.addtime,'%Y-%m-%d') >= #{startAddtime}]]>
+		</if>
+		<if test="endAddtime != null and endAddtime !='' "> 
+			<![CDATA[and DATE_FORMAT(jppo.addtime,'%Y-%m-%d') <= #{endAddtime}]]>
+		</if>	
+		order by jppo.isShow desc,jppo.addtime desc
+		<if test="limit !=null and offset !=null">
+		 	limit #{offset},#{limit}
+		 </if>
+	</select>
+	
+	<select id="selectOrderShareCount" resultType="Integer" parameterType="java.util.Map">
+		select count(1) from js_product_prize_orderShare jppo
+		left join dr_member dm on dm.uid=jppo.uid
+		where jppo.uid is not null	
+		<if test="isShow!=null and isShow!=''">
+			and jppo.isShow=#{isShow}
+		</if>	
+		<if test="mobilePhone!=null and mobilePhone!=''">
+			and dm.mobilePhone=#{mobilePhone}
+		</if>
+		<if test="startAddtime != null and startAddtime !='' "> 
+			<![CDATA[and DATE_FORMAT(jppo.addtime,'%Y-%m-%d') >= #{startAddtime}]]>
+		</if>
+		<if test="endAddtime != null and endAddtime !='' "> 
+			<![CDATA[and DATE_FORMAT(jppo.addtime,'%Y-%m-%d') <= #{endAddtime}]]>
+		</if>		
+	</select>
+</mapper>

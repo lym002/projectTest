@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInvestTransferDAO">
+	<resultMap id="DrProductInvestResult" type="com.jsjf.model.product.DrProductInvestTransfer">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="transferorUid" property="transferorUid" jdbcType="INTEGER" />
+		<result column="assigneeUid" property="assigneeUid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="transferorInvestId" property="transferorInvestId" jdbcType="INTEGER" />
+		<result column="assigneeInvestId" property="assigneeInvestId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		
+	</resultMap>
+	<insert id="batchInsert" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			insert into dr_product_invest_transfer (transferorUid, assigneeUid, pid, transferorInvestId, assigneeInvestId, amount, addTime) values
+			(#{item.transferorUid}, #{item.assigneeUid}, #{item.pid}, #{item.transferorInvestId}, #{item.assigneeInvestId}, #{item.amount}, #{item.addTime})
+		</foreach>
+		
+	</insert>
+</mapper>

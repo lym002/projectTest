@@ -1,0 +1,265 @@
+package com.jsjf.service.toutiao.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.SystemConstant;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.toutiao.TouTiaoMapper;
+import com.jsjf.model.toutiao.TTDeviceInfo;
+import com.jsjf.model.toutiao.TTParamsDto;
+import com.jsjf.service.toutiao.TouTiaoService;
+import com.jytpay.utils.StringUtil;
+import com.jzh.http.HttpClientHelper;
+import com.sftpay.utils.Base64;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import sun.misc.BASE64Encoder;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+@Service
+public class TouTiaoServiceImpl implements TouTiaoService {
+
+    private static transient Logger log = Logger.getLogger(TouTiaoServiceImpl.class);
+
+    @Autowired
+    private TouTiaoMapper mapper;
+
+    @Override
+    public int deleteByPrimaryKey(Integer id) {
+        return mapper.deleteByPrimaryKey(id);
+    }
+
+    @Override
+    public int insert(TTDeviceInfo record) {
+        return mapper.insert(record);
+    }
+
+    @Override
+    public int insertSelective(TTDeviceInfo record) {
+        return mapper.insertSelective(record);
+    }
+
+    @Override
+    public TTDeviceInfo selectByPrimaryKey(Integer id) {
+        return mapper.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public int updateByPrimaryKeySelective(TTDeviceInfo record) {
+        return mapper.updateByPrimaryKeySelective(record);
+    }
+
+    @Override
+    public int updateByPrimaryKey(TTDeviceInfo record) {
+        return mapper.updateByPrimaryKey(record);
+    }
+
+    /**
+     * 获取过期时间
+     * @return
+     */
+    public String getOldTime() {
+        Calendar calendar = Calendar.getInstance();
+        try {
+                calendar.set(Calendar.DAY_OF_YEAR, calendar.get(Calendar.DAY_OF_YEAR)-7);
+        }catch (Exception e){
+            log.error("过期时间获取错误！",e);
+        }
+        String date = DateUtil.formatDate(calendar.getTime(),"yyyy-MM-dd 00:00:00");
+        return date;
+    }
+
+
+    /**
+     * 激活回调
+     *
+     * @param  用户设备信息
+     */
+    @Override
+    public void callback(Map<String, Object> param) throws Exception {
+        param.put("createdTime",getOldTime());
+        //获取监测参数获取用户设备信息
+        TTDeviceInfo userDeviceInfo = mapper.getUserDeviceInfoByParams(param);
+        //如果为空，则表明无该实体对象
+        if (Utils.isObjectEmpty(userDeviceInfo)) {
+            return;
+        }
+        String os = userDeviceInfo.getOs();
+        if (StringUtil.isEmpty(os)){
+            os = "0";
+        }
+        String muid = null; //安卓取imei进行MD5加密，ios取idfa
+        if ("0".equals(os)) {
+            //muid赋值
+            String imei = userDeviceInfo.getImei();
+            muid = Utils.md5ByHex(imei);
+        } else if ("1".equals(os)) {
+            muid = userDeviceInfo.getIdfa();
+        }
+        //回调url设置，回调参数String.format(SystemConstant.TOU_TIAO_ACTIVATE_URL, userDeviceInfo.getCallback(), muid, os, userDeviceInfo.getTs());
+        param.clear();
+        param.put("callback", userDeviceInfo.getCallback());//userDeviceInfo.getCallback());
+        param.put("muid", muid);
+        param.put("os", os);
+        param.put("ts", System.currentTimeMillis());
+        param.put("url", SystemConstant.TOU_TIAO_ACTIVATE_URL);
+        String url = getUrl(param);
+        //http://ad.toutiao.com/track/activate/?callback={callback_param}&muid=
+        //对url进行签名
+        url = getSignatureUrl(url, Integer.parseInt(os));
+        call2TouTiao(url, userDeviceInfo);
+    }
+
+    private String getUrl(Map<String, Object> params) {
+        String url = params.get("url")+"";
+        params.remove("url");
+        // 添加url参数
+        if (params != null) {
+            Iterator<String> it = params.keySet().iterator();
+            StringBuffer sb = null;
+            while (it.hasNext()) {
+                String key = it.next();
+                String value = params.get(key)+"";
+                if (sb == null) {
+                    sb = new StringBuffer();
+                    sb.append("?");
+                } else {
+                    sb.append("&");
+                }
+                sb.append(key);
+                sb.append("=");
+                sb.append(value);
+            }
+            url += sb.toString();
+        }
+        return url;
+    }
+
+    /**
+     * 获取签名的url
+     *
+     * @param url 需要签名的url
+     * @param os  系统类型
+     * @return
+     */
+    private String getSignatureUrl(String url, int os) throws Exception {
+        System.out.println(url);
+        String key = null;//todo key is null
+        if (os == 0) {//android
+            key = SystemConstant.TOU_TIAO_ANDROID_KEY;
+        } else if (os == 1) {
+            key = SystemConstant.TOU_TIAO_IOS_KEY;
+        } else {
+            throw new Exception("无法处理os类型,os = " + os + " : " + os);
+        }
+        //使用HMAC-SHA1签名方法对url进行签名
+        String signature = getHmacSHA1(url, key);
+        //对signature进行base64加密
+        signature = Base64.encode(signature.getBytes());
+        url = url + "&signature=" + signature;
+        return url;
+    }
+
+    /**
+     * HMAC-SHA1签名
+     *
+     * @param message
+     * @param key
+     * @return
+     */
+    public static String getHmacSHA1(String message, String key) throws Exception {
+        String hmacSha1 = null;
+        try {
+            // url encode
+            message = URLEncoder.encode(message, "UTF-8");
+            // hmac-sha1加密
+            Mac mac = Mac.getInstance("HmacSHA1");
+            SecretKeySpec spec = new SecretKeySpec(key.getBytes(), "HmacSHA1");
+            mac.init(spec);
+            byte[] byteHMAC = mac.doFinal(message.getBytes());
+            // base64 encode
+            hmacSha1 = new BASE64Encoder().encode(byteHMAC);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+        return hmacSha1;
+    }
+
+    private static final String IOS10_INVALID_IDFA = "00000000-0000-0000-0000-000000000000";
+    private static final String IOS9_INVALID_IDFA = "00000000000000000000000000000000";
+    /**
+     * 判断idfa是否合法
+     *
+     * @param idfa
+     * @return
+     */
+    public static boolean checkIdfa(String idfa) {
+        if (Utils.isObjectEmpty(idfa) || IOS9_INVALID_IDFA.equals(idfa) || IOS10_INVALID_IDFA.equals(idfa)) {
+            return false;
+        }
+        return true;
+    }
+    /**
+     * 启动子线程回调今日头条接口
+     *
+     * @param url            回调地址
+     * @param userDeviceInfo 用户设备信息
+     */
+    private void call2TouTiao(final String url, final TTDeviceInfo info) {
+        new Thread() {
+            public void run() {
+                String result = "";
+                // get请求返回结果
+                CloseableHttpClient client = HttpClients.createDefault();
+                // 发送get请求
+                HttpGet request = new HttpGet(url);
+                System.out.println(url);
+                // 设置请求和传输超时时间
+                RequestConfig requestConfig = RequestConfig.custom()
+                        .setSocketTimeout(2000).setConnectTimeout(2000).build();
+                request.setConfig(requestConfig);
+                try {
+                    CloseableHttpResponse response = client.execute(request);
+                    if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                        //读取服务器返回过来的json字符串数据
+                        HttpEntity entity = response.getEntity();
+                        result = EntityUtils.toString(entity, "utf-8");
+                        if (Utils.isObjectNotEmpty(result)) {
+                            JSONObject jsonObject = JSONObject.parseObject(result);
+                            if (Utils.isObjectNotEmpty(jsonObject) && jsonObject.get("ret") == 0) {
+                                //回调成功，此处可以根据自己的业务做处理，此处我主要是保存了回调次数
+                                deleteByPrimaryKey(info.getId());
+                                System.out.println("回调成功");
+                            }
+                        }
+                    }
+                }catch (Exception e){
+                    System.out.println(e.getMessage());
+                }
+            }
+        }.start();
+    }
+
+}

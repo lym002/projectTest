@@ -1,0 +1,54 @@
+package com.zcdj.controller;
+
+import com.jsjf.common.ConfigUtil;
+import com.zcdj.dto.SyncProduct;
+import com.zcdj.util.Md5Utils;
+import com.zcdj.util.SubmitUtil;
+import net.sf.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+public class TestController {
+	
+	/**
+	 * 发送请求调用接口
+	 * @throws Exception
+	 */
+	public void testPost() throws Exception{
+		Map<String, Object> para = new TreeMap<>();
+		para.put("orgCode", ConfigUtil.KEY);//你的平台编码
+		List<SyncProduct> list =  new ArrayList<>();
+		for(int i=0;i<3;i++){
+            SyncProduct dto = new SyncProduct();
+			dto.setContractNo("CN00"+(i+1));
+			dto.setPlatformProductName("产品"+(i+1));
+			dto.setProductNo("PN00"+(i+1));
+			list.add(dto);
+		}
+		para.put("list", list);//接口所需数据
+		para.put("json", JSONObject.fromObject(para).toString());//整个map转换成json字符串
+		String jsonString = SubmitUtil.buildSubmit(para, ConfigUtil.URL+"/financial/syncProductInfo");
+		//TODO 根据返回结果继续处理
+	}
+	
+	/**
+	 * 接受请求
+	 * @param data
+	 */
+	public void testReceiver(String data){
+		JSONObject jsonObject = JSONObject.fromObject(data);
+		String orgCode = jsonObject.getString("orgCode");
+		String signature = ConfigUtil.KEY;
+		List<Map<String, Object>> list = jsonObject.getJSONArray("list");
+		Map<String, Object> map = new TreeMap<>();
+		map.put("orgCode", orgCode);
+		map.put("list", list);
+		if (Md5Utils.validateMD5Sign(JSONObject.fromObject(map).toString(), signature, jsonObject.getString("signature"))) {//MD5校验成功
+			//根据实际业务需求继续处理
+		}else {//校验失败
+			//返回失败及MD5校验失败错误码
+		}
+	}
+}

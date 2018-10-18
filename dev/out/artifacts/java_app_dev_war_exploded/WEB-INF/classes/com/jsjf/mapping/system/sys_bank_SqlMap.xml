@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysBankDAO">
+	<resultMap id="SysBankResult" type="com.jsjf.model.system.SysBank">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="bankJC" property="bankJC" jdbcType="VARCHAR" />
+		<result column="bankCode" property="bankCode" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="singleQuotaJYT" property="singleQuotaJYT" jdbcType="INTEGER" />
+		<result column="dayQuotaJYT" property="dayQuotaJYT" jdbcType="INTEGER" />
+		<result column="singleQuotaSFT" property="singleQuotaSFT" jdbcType="INTEGER" />
+		<result column="dayQuotaSFT" property="dayQuotaSFT" jdbcType="INTEGER" />
+		<result column="isUserJYTWY" property="isUserJYTWY" jdbcType="INTEGER" />
+		<result column="isUserJYTRZ" property="isUserJYTRZ" jdbcType="INTEGER" />
+		<result column="isUserSFTRZ" property="isUserSFTRZ" jdbcType="INTEGER" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />		
+	</resultMap>
+	<select id="selectSysBank" parameterType="java.util.HashMap" resultType="com.jsjf.model.system.SysBank">
+		SELECT * from sys_bank
+		<where>
+			bankName  LIKE CONCAT("%",#{bankName:VARCHAR}) or  #{bankName:VARCHAR}  LIKE CONCAT("%",bankName,"%")
+		</where>
+	</select>
+	
+	<select id="selectSysBankQuotaList" resultType="java.util.HashMap">
+		select 
+			id,bankName,if(channel=1,singleQuotaJYT,singleQuotaSFT)as singleQuota,
+			if(channel=1,dayQuotaJYT,dayQuotaSFT)as dayQuota 
+		from sys_bank 
+		where 
+			if(channel=1,singleQuotaJYT,singleQuotaSFT)>0 
+			and if(channel=1,dayQuotaJYT,dayQuotaSFT)>0 ORDER BY singleQuota DESC,dayQuota DESC
+	</select>
+	<select id="selectBankByCode" resultType="String" parameterType="String">
+		SELECT bankName from sys_bank where bankCode = #{bankCode};
+	</select>
+</mapper>

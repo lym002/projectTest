@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.app.SysAppRenewalDAO">
+	<resultMap id="SysAppRenewalResult" type="com.jsjf.model.app.SysAppRenewal">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="version" property="version" jdbcType="VARCHAR" />
+		<result column="isForceUpdate" property="isForceUpdate" jdbcType="SMALLINT" />
+		<result column="containers" property="containers" jdbcType="SMALLINT" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="SMALLINT" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result property="addName" column="addName" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updateName" jdbcType="VARCHAR" />
+		<result column="releaseVersion" property="releaseVersion" jdbcType="VARCHAR"/>
+	</resultMap>
+
+	<select id="getSysAppRenewalList" parameterType="java.util.HashMap" resultMap="SysAppRenewalResult">
+		select * from sys_app_renewal 
+		<where>
+			<if test="status != null"> and status=#{status}</if>
+			<if test="containers != null"> and containers=#{containers}</if>
+		</where>
+		order by addTime desc
+		limit 0,1
+	</select>
+</mapper>

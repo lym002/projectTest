@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrRecommendedSettingsDetailDAO">
+	<resultMap id="DetailResult" type="com.jsjf.model.activity.DrRecommendedSettingsDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="rid" property="rid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="reward" property="reward" jdbcType="DECIMAL" />
+	</resultMap>
+	
+	<insert id="insertDetail" parameterType="com.jsjf.model.activity.DrRecommendedSettingsDetail">
+		insert into dr_recommended_settings_detail(rid,amount,reward)
+		values(#{rid},#{amount},#{reward})
+	</insert>
+	
+	<select id="getDetailByRid" parameterType="java.util.HashMap" resultMap="DetailResult">
+		select id,rid,amount,reward
+		from dr_recommended_settings_detail
+		<where>
+			<if test="rid != null ">
+				and rid =#{rid:INTEGER}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 获取离传入进金额最接近的金额且此金额小于等于传入金额 -->
+	<select id="getDetailByRidAndAmount" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.DrRecommendedSettingsDetail">
+		select id,rid,amount,reward FROM dr_recommended_settings_detail
+		<where>
+			<if test="rid != null">
+				and rid = #{rid:INTEGER}
+			</if>
+			<if test="amount != null">
+				and amount &lt;= #{amount:DECIMAL}
+				order by ABS(amount-#{amount:DECIMAL})
+			</if>
+		</where>
+			LIMIT 0,1
+	</select>
+	
+	<select id="getDetailByRidTotal" parameterType="java.util.HashMap" resultType="INTEGER">
+		select COUNT(1)
+		from dr_recommended_settings_detail
+		<where>
+			<if test="rid != null ">
+				and rid =#{rid:INTEGER}
+			</if>
+		</where>
+	</select>
+</mapper>

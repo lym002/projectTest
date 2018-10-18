@@ -1,0 +1,91 @@
+package com.jsjf.common;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ConfigUtil {
+
+	//生产环境
+		//private static final String domainName = "https://www.test.cn";
+	//测试
+	private static final String domainName = "http://192.168.1.13";
+		private static final String IMG_FILE_URL = "/opt/www";
+
+	public static final String ADMIN_LOGIN_USER = "adminLoginUser";// 后台登陆用户
+
+	//加载数据字典
+	public static Map<String,Map<Integer,String>> dictionaryMap = new HashMap<String,Map<Integer,String>>();
+	
+	// 文章存放路劲
+	public static final String articleImgPath = "/upload/atricle/";
+	// 保全
+	public static final String esignPath = "/upload/esign/";
+	//保全关联指定用户证件类型
+	public static final String ID_TYPE = "ID_CARD";
+	// 广告存放路劲
+	public static final String bannerImgPath = "/upload/banner/";
+	//风控图片
+	public static final String claimsPic = "/upload/claimsPic/";
+	public static final String productPic = "/upload/productPic/";
+	
+	//奖品图片
+	public static final String ActivityPic = "/upload/activity/";
+	
+	public static final String synPayProductUrl = "http://jsapi.iok.la:12004/pay-web/product/synProductInfo.do";
+	public static final String synRefundUrl = "http://jsapi.iok.la:12004/pay-web/product/paymentConfirm.do";
+	
+	//e签宝的初始值
+	public static final String encoding = "UTF-8";
+	public static final String algorithm = "HmacSHA256";
+	//项目编号
+	public static final String projectId = "1111563517";
+	//项目秘钥
+	public static final String projectSecret = "95439b0863c241c63a861b87d1e647b7";
+	public static final String eviUrl = "http://smlcunzheng.tsign.cn:8083/evi-service/evidence/v1/preservation/original/url";
+	//指定用户https://evislb.tsign.cn:443/evi-service/evidence/v1/preservation/original/relate
+	public static final String relevUserUrl = "http://smlcunzheng.tsign.cn:8083/evi-service/evidence/v1/preservation/original/relate";
+	//e签宝正式环境查看地址：
+	public static final String esignUrl="https://smlcunzheng.tsign.cn/evi-web/static/certificate-info.html";
+	public static final String apisUrl =  "http://121.40.164.61:8080/tgmonitor/rest/app!getAPIInfo2";
+	//运营手机号
+	public static final String yyPhone = "15692109272";
+	//redis锁
+    public static final String AboutTheCash ="AboutTheCash.";
+
+	public static String getSynpayproducturl() {
+		return synPayProductUrl;
+	}
+
+	public static String getSynrefundurl() {
+		return synRefundUrl;
+	}
+
+	public static String getImgFileUrl() {
+		return IMG_FILE_URL;
+	}
+	
+	public static String getDomainname() {
+		return domainName;
+	}	
+	public static String getEsignPath() {
+		return esignPath;
+	}
+
+	public static String getProjectid() {
+		return projectId;
+	}
+
+	public static String getProjectsecret() {
+		return projectSecret;
+	}
+
+	public static String getEsignurl() {
+		return esignUrl;
+	}
+
+	public static String getApisurl() {
+		return apisUrl;
+	}
+
+}

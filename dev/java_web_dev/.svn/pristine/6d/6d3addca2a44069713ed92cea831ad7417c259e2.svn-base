@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberBankDAO" >
+	<resultMap id="DrMemberBankResult" type="com.jsjf.model.member.DrMemberBank" >
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="bankNum" property="bankNum" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="CHAR" />
+		<result column="type" property="type" jdbcType="BIT" />
+		<result column="status" property="status" jdbcType="BIT" />
+		<result column="channel" property="channel" jdbcType="BIT" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="cardFlag" property="cardFlag" jdbcType="INTEGER" />
+		<result column="agreementNo" property="agreementNo" jdbcType="VARCHAR" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />		
+	</resultMap>
+	<!-- 添加银行卡 -->
+	<insert id="insertDrMemberBank" useGeneratedKeys="true" keyProperty="bankId" parameterType="com.jsjf.model.member.DrMemberBank" >
+	  insert into dr_member_bank (uid,bankNum,bankName,mobilePhone,type,status,channel,addTime,
+	  cardFlag,agreementNo,addUser)
+	  values (#{uid:INTEGER},#{bankNum:VARCHAR},#{bankName:VARCHAR},#{mobilePhone:VARCHAR},#{type:BIT},#{status:BIT},
+	     #{channel:BIT},SYSDATE(),#{cardFlag:INTEGER},#{agreementNo:VARCHAR},#{addUser:INTEGER})
+	</insert>
+	
+	<!-- 查询认证的卡 -->
+	<select id="selectIdentificationBank" resultMap="DrMemberBankResult" parameterType="java.lang.Integer" >
+		select * from dr_member_bank 
+		where status !=9 and type = 1 and uid= #{uid:INTEGER}
+	</select>
+	
+	<!-- 查询认证的卡 -->
+	<select id="selectFuiouIdentificationBank" resultMap="DrMemberBankResult" parameterType="java.lang.Integer" >
+		select * from dr_member_bank 
+		where status !=9 and type = 3 and uid= #{uid:INTEGER}
+	</select>
+	
+	<!-- 修改 -->
+	<update id="updateDrMemberBank" parameterType="com.jsjf.model.member.DrMemberBank">
+		update dr_member_bank
+		<trim prefix="set" suffixOverrides=",">
+			<if test="agreementNo !=null and agreementNo !=''">
+				agreementNo = #{agreementNo:VARCHAR},
+			</if>
+			<if test="mobilePhone !=null and mobilePhone !=''">
+				mobilePhone = #{mobilePhone},
+			</if>
+		</trim>
+		where
+			id=#{id:INTEGER}
+	</update>
+</mapper>

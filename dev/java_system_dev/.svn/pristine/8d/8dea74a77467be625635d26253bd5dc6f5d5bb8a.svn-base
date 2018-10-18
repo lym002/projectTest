@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.JsMemberInfoDAO">
+	<resultMap id="JsMemberInfo" type="com.jsjf.model.member.JsMemberInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR"/>
+		<result column="phone" property="phone" jdbcType="VARCHAR"/>
+		<result column="address" property="address" jdbcType="VARCHAR"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="getJsMemberInfoList" parameterType="java.util.Map" resultType="com.jsjf.model.member.JsMemberInfo">
+		select  jmi.name name,dm.mobilephone mobilephone,di.amount investAmount,dpi.code productCode ,dpi.deadline deadline ,dpi.rate rate,
+				DATE_FORMAT(jl.addTime,'%Y-%m-%d %H:%i:%s') addTime ,jmi.address address,phone from js_member_info jmi 
+				left  join `js_product_prize_log` jl  on jl.uid = jmi.`uid` and jl.`type` = 0
+				left join `dr_product_invest` di on di.id= jl.`investId`
+				left join `dr_product_info` dpi on dpi.id = di.`pid`
+				left join dr_member dm on dm.uid = jmi.uid
+				where 1 =1 
+				<if test="productCode != null and productCode !='' ">
+					and instr(dpi.code,#{productCode})>0
+				</if>
+				<if test="name != null and name != '' ">
+					and  instr(jmi.name,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(jl.addTime,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(jl.addTime,'%Y-%m-%d')
+				</if>
+				order by jl.addTime desc 
+				<if test="offset != null and limit != null">
+				limit #{offset},#{limit}
+				</if>
+	</select>
+	
+	<select id="getJsMemberInfoListCount" parameterType="java.util.Map" resultType="int">
+			select  count(1) from `js_member_info` jmi 
+				left  join `js_product_prize_log` jl  on jl.uid = jmi.`uid` and jl.`type` = 0
+				left join `dr_product_invest` di on di.id= jl.`investId`
+				left join `dr_product_info` dpi on dpi.id = di.`pid`
+				where 1 =1 
+				<if test="productCode != null and productCode !='' ">
+					and instr(dpi.code,#{productCode})>0
+				</if>
+				<if test="name!=null and name!='' ">
+					and  instr(jmi.name,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(jl.addTime,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(jl.addTime,'%Y-%m-%d')
+				</if>
+	</select>
+	
+	<!-- 导出 -->
+		<select id="getJsMemberInfoListForExl" parameterType="java.util.Map" resultType="java.util.HashMap">
+		select  jmi.name name,dm.mobilephone mobilephone,di.amount investAmount,dpi.code productCode ,dpi.deadline deadline ,
+				dpi.rate rate,DATE_FORMAT(jl.addTime,'%Y-%m-%d %H:%i:%s') addTime ,jmi.address address,
+				jmi.phone from js_member_info jmi 
+				left  join `js_product_prize_log` jl  on jl.uid = jmi.`uid` and jl.`type` = 0
+				left join `dr_product_invest` di on di.id= jl.`investId`
+				left join `dr_product_info` dpi on dpi.id = di.`pid`
+				left join dr_member dm on dm.uid = jmi.uid
+				where 1 =1 
+				<if test="productCode != null and productCode !='' ">
+					and instr(dpi.code,#{productCode})>0
+				</if>
+				<if test="name!=null and name!='' ">
+					and  instr(jmi.name,#{name})>0
+				</if>
+				<if test="orderFormStart != null and orderFormStart !='' ">
+					and DATE_FORMAT(jl.addTime,'%Y-%m-%d') >= DATE_FORMAT(#{orderFormStart},'%Y-%m-%d')
+				</if>
+				<if test="orderFormEnd != null and orderFormEnd !='' ">
+					and DATE_FORMAT(#{orderFormEnd},'%Y-%m-%d') >= DATE_FORMAT(jl.addTime,'%Y-%m-%d')
+				</if>
+				order by jl.addTime desc 
+	</select>
+	
+</mapper>

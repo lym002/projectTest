@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFundsRecordDAO">
+	<resultMap id="DrMemberFundsRecordResult" type="com.jsjf.model.member.DrMemberFundsRecord">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="tradeType" property="tradeType" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="balance" property="balance" jdbcType="DECIMAL" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="orderNo" property="orderNo" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	
+	<select id="selectByParam" resultMap="DrMemberFundsRecordResult">
+		select id, pid, investId, tradeType, uid, type,amount, balance, status, remark, addTime, orderNo
+		from dr_member_funds_record
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="investId != null"> and investId = #{investId} </if>
+			<if test="orderNo != null"> and orderNo = #{orderNo}</if>
+		</trim>
+	</select>
+	<select id="selectByParamForProductInterest" resultMap="DrMemberFundsRecordResult">
+		select id, pid, investId, tradeType, uid, type,amount, balance, status, remark, addTime, orderNo
+		from dr_member_funds_record
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="investId != null"> and investId = #{investId} </if>
+			<if test="status != null"> and status = #{status}</if>
+		</trim>
+	</select>
+	
+	<select id="getDrMemberFundsRecordList" parameterType="java.util.HashMap" resultMap="DrMemberFundsRecordResult">
+		select dmfr.id, pid, investId, tradeType, dmfr.uid, dmfr.type,amount, balance, dmfr.`status`, remark, addTime, orderNo   
+		from dr_member_funds_record dmfr   
+		left join dr_member dm  on dmfr.uid = dm.uid    
+		<where>
+			<if test="mobilephone!= null and mobilephone != ''">and dm.mobilephone = #{mobilephone}</if>
+			<if test="recommCodes!= null and recommCodes != ''">and dm.recommCodes = #{recommCodes}</if>
+		</where>
+		order by dmfr.id desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="getDrMemberFundsRecordTotal" parameterType="java.util.HashMap" resultType="Integer">
+		select count(dmfr.id)   
+		from dr_member_funds_record dmfr   
+		left join dr_member dm  on dmfr.uid = dm.uid    
+		<where>
+			<if test="mobilephone!= null and mobilephone != ''">and dm.mobilephone = #{mobilephone}</if>
+			<if test="recommCodes!= null and recommCodes != ''">and dm.recommCodes = #{recommCodes}</if>
+		</where>
+	</select>
+	
+	<!-- 获取续投日志 -->
+	<select id="getDrMemberFundsRecordByMap" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberFundsRecord">
+		select *   
+		from dr_member_funds_record    
+		<where>
+			<if test="uid != null"> and uid= #{uid}</if>
+			<if test="status != null"> and status = #{status}</if>
+		</where>
+		order by addTime asc
+		limit 0,1
+	</select>
+	
+	<update id="updateDrMemberFundsRecord" parameterType="com.jsjf.model.member.DrMemberFundsRecord">
+		update dr_member_funds_record
+		<trim prefix=" set " prefixOverrides=",">
+			<if test="status != null"> ,status = #{status}</if>
+			<if test="pid != null"> ,pid = #{pid}</if>
+			<if test="investId != null"> ,investId = #{investId}</if>
+		</trim>
+		<where>
+			<if test="id"> id = #{id}</if>
+		</where>
+	</update>
+	
+	<update id="batchUpdateMemberFundsRecord" parameterType="java.util.List" >
+		<foreach collection="list" item="item" separator=";">
+			update dr_member_funds_record
+			<set>
+				<if test="item.status != null"> status = #{item.status} ,</if>
+				<if test="item.balance != null"> balance = #{item.balance} ,</if>
+				<if test="item.amount != null"> amount = #{item.amount},</if>
+			</set>
+			<where>
+				<if test="item.investId != null"> investId = #{item.investId}</if>
+				<if test="item.orderNo != null"> orderNo = #{item.orderNo}</if>
+				<if test="item.id != null"> and id = #{item.id} </if>
+			</where>
+		</foreach>
+	</update>
+
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMemberFundsRecord"
+		useGeneratedKeys="true" keyProperty="id">
+		insert into dr_member_funds_record
+		(pid, investId, tradeType, uid, type, amount, balance, status, remark,
+		addtime, orderNo)
+		values (#{pid}, #{investId}, #{tradeType}, #{uid},
+		#{type}, #{amount}, #{balance}, #{status}, #{remark},
+		SYSDATE(),#{orderNo})
+	</insert>
+	
+	<update id="updateStatusById" parameterType="com.jsjf.model.member.DrMemberFundsRecord">
+		update dr_member_funds_record
+		<set>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="balance != null">
+				balance = #{balance:DECIMAL}
+			</if>
+		</set>
+		where id = #{id}
+	</update>
+	<update id="updateStatusByNo" parameterType="com.jsjf.model.member.DrMemberFundsRecord">
+		update dr_member_funds_record
+		<set>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="balance != null">
+				balance = #{balance:DECIMAL}
+			</if>
+		</set>
+		where orderNo = #{orderNo:VARCHAR}
+	</update>
+	
+	<select id="selectMemberFundsRecordByOrderNo" parameterType="java.util.Map" resultType="com.jsjf.model.member.DrMemberFundsRecord">
+  		select * from dr_member_funds_record where orderNo=#{paymentnum}
+  	</select>
+  	
+  	<select id="getFundsRecord" parameterType="java.util.Map" resultType="java.util.Map">
+  		select CONCAT(LEFT(dmbi.realname,1),'**') as realname,CONCAT(LEFT(dm.mobilePhone ,3),'****',RIGHT(dm.mobilePhone ,4)) as mobilePhone,
+		DATE_FORMAT(dmfr.addTime,'%Y-%m-%d %H:%i:%s') as addTime,
+		CASE dmfr.tradeType WHEN 1 THEN '充值' WHEN 2 THEN '提现' WHEN 3 THEN '投资' WHEN 4 THEN '活动' WHEN 5 THEN '提现手续费' WHEN 6 THEN '回款' WHEN 7 THEN '体验金' END AS tradeType,
+		case when(dmfr.type=1) then dmfr.amount else '' end as sr,
+		case when(dmfr.type=0) then dmfr.amount else '' end as zc,
+		dmfr.balance as balance,dmfr.remark as remark,dm.recommCodes,
+		if(dmfr.tradeType in (3,4,6),if(dmfr.pid,(SELECT if(project_no='jzh',1,0) from dr_product_info where dmfr.pid = id),if(dmfr.addTime>'2017-06-06',1,0)),
+						if(dmfr.tradeType =1 ,(SELECT if(type in (5,6),1,0) from dr_member_crush where paynum = dmfr.orderNo),
+									if(dmfr.tradeType =2 ,(SELECT if(type =3,1,0) from dr_member_carry where paymentnum = dmfr.orderNo),
+											if(dmfr.tradeType =7,
+														if(dmfr.addTime> '2017-06-06',1,0)
+												,NULL)
+										)
+						)
+		)  as isFuiou
+		
+		from dr_member_funds_record dmfr
+		left join dr_member dm on dm.uid=dmfr.uid
+		left join dr_member_base_info dmbi on dmbi.uid=dmfr.uid
+		where dmfr.status=3
+		<if test="realname!=null and realname!=''">
+			and dmbi.realname like CONCAT('%',#{realname},'%')
+		</if>
+		<if test="mobilephone!=null and mobilephone!=''">
+			and dm.mobilephone like CONCAT('%',#{mobilephone},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes !=''">
+			and dm.recommCodes like CONCAT('%',#{recommCodes},'%')
+		</if>
+		<if test="tradeType!=null and tradeType!=''">
+			and dmfr.tradeType =#{tradeType}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="type!=null and type!=''">
+			and dmfr.type =#{type}
+		</if>
+		<if test="isFuiou !=null">
+				and if(dmfr.tradeType in (3,4,6),if(dmfr.pid,(SELECT if(project_no='jzh',1,0) from dr_product_info where dmfr.pid = id),if(dmfr.addTime>'2017-06-06',1,0)),
+						if(dmfr.tradeType =1 ,(SELECT if(type in (5,6),1,0) from dr_member_crush where paynum = dmfr.orderNo),
+									if(dmfr.tradeType =2 ,(SELECT if(type =3,1,0) from dr_member_carry where paymentnum = dmfr.orderNo),
+											if(dmfr.tradeType =7,
+														if(dmfr.addTime> '2017-06-06',1,0)
+												,NULL)
+										)
+						)
+					) =#{isFuiou}
+		</if>
+		order by dmfr.id desc
+		limit #{offset},#{limit}
+  	</select>
+  	
+  	<select id="getFundsRecordCount" parameterType="java.util.Map" resultType="int">
+  		select count(1)
+		from dr_member_funds_record dmfr
+		left join dr_member dm on dm.uid=dmfr.uid
+		left join dr_member_base_info dmbi on dmbi.uid=dmfr.uid
+		where dmfr.status=3
+		<if test="realname!=null and realname!=''">
+			and dmbi.realname like CONCAT('%',#{realname},'%')
+		</if>
+		<if test="mobilephone!=null and mobilephone!=''">
+			and dm.mobilephone like CONCAT('%',#{mobilephone},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes !=''">
+			and dm.recommCodes like CONCAT('%',#{recommCodes},'%')
+		</if>
+		<if test="tradeType!=null and tradeType!=''">
+			and dmfr.tradeType =#{tradeType}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+		<if test="type!=null and type!=''">
+			and dmfr.type =#{type}
+		</if> 
+  	</select>
+  	
+  	<!-- 统计收入 -->
+  	<select id="getFundsRecordSRSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+  		select ifnull(sum(dmfr.amount),0) from dr_member_funds_record dmfr
+		left join dr_member dm on dm.uid=dmfr.uid
+		left join dr_member_base_info dmbi on dmbi.uid=dmfr.uid
+		where dmfr.status=3 and  dmfr.type=1
+		<if test="realname!=null and realname!=''">
+			and dmbi.realname like CONCAT('%',#{realname},'%')
+		</if>
+		<if test="mobilephone!=null and mobilephone!=''">
+			and dm.mobilephone like CONCAT('%',#{mobilephone},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes !=''">
+			and dm.recommCodes like CONCAT('%',#{recommCodes},'%')
+		</if>
+		<if test="tradeType!=null and tradeType!=''">
+			and dmfr.tradeType =#{tradeType}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+  	</select>
+  	
+  	<!-- 统计支出 -->
+  	<select id="getFundsRecordZCSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+  		select ifnull(sum(dmfr.amount),0) from dr_member_funds_record dmfr
+		left join dr_member dm on dm.uid=dmfr.uid
+		left join dr_member_base_info dmbi on dmbi.uid=dmfr.uid
+		where dmfr.status=3 and  dmfr.type=0
+		<if test="realname!=null and realname!=''">
+			and dmbi.realname like CONCAT('%',#{realname},'%')
+		</if>
+		<if test="mobilephone!=null and mobilephone!=''">
+			and dm.mobilephone like CONCAT('%',#{mobilephone},'%')
+		</if>
+		<if test="tradeType!=null and tradeType!=''">
+			and dmfr.tradeType =#{tradeType}
+		</if>
+		<if test="startaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') >= #{startaddTime}]]>
+		</if>
+		<if test="endaddTime!=null">
+			<![CDATA[and DATE_FORMAT(dmfr.addTime,'%Y-%m-%d') <= #{endaddTime}]]>
+		</if>
+  	</select>
+	<select id="selectUidByCondition" resultType="java.lang.Integer">
+		select
+		distinct uid
+		from dr_member_funds_record
+		where 1=1
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[and addTime >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[and addTime <= #{endDate}]]>
+		</if>
+		<if test="status != null">
+			and status = #{status,jdbcType=INTEGER}
+		</if>
+	</select>
+	<select id="selectInvestSumByOnlineTime" resultType="java.lang.Integer">
+		SELECT SUM(dri.amount) FROM dr_product_invest dri
+		JOIN dr_product_info dr ON dri.pid = dr.id
+		WHERE dri.uid = #{uid} AND dri.`status` != 2 and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{addTime},'%Y-%m-%d')
+		<if test="endTime != null">
+			and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endTime},'%Y-%m-%d')
+		</if>
+		and dr.type = 2 and dr.prizeId is null GROUP BY dri.uid
+	</select>
+	<select id="selectInvestListCountByParam" resultType="java.lang.Integer">
+		SELECT dri.id FROM dr_product_invest dri
+		JOIN dr_product_info dr ON dri.pid = dr.id
+		WHERE dri.uid = #{uid} AND dri.`status` != 2
+		and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d')
+		<if test="endDate != null">
+			and DATE_FORMAT(dri.`investTime`,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d')
+		</if>
+		and dr.type = 2 and dr.prizeId is null limit 1
+	</select>
+	<select id="selectFristRechar" resultType="java.lang.Integer">
+		SELECT count(id) FROM dr_member_funds_record WHERE amount <![CDATA[ >= ]]>100 AND uid = #{uid} AND tradeType = #{tradeType} and addTime > #{addTime} ORDER BY `addTime`
+	</select>
+</mapper>

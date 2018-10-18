@@ -1,0 +1,434 @@
+package com.jsjf.controller.integral;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.jsjf.common.*;
+import com.jsjf.dao.integral.BypCommodityRepertoryDao;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.model.integral.IntegralSourceBean;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.service.activity.BypCommodityDetailService;
+import com.jsjf.service.activity.BypCommodityService;
+import com.jsjf.service.integral.IntegralSourceService;
+import com.jsjf.service.integral.TaskIntegralRulesService;
+import com.jsjf.service.integral.UserDetailIntegralService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jytpay.utils.StringUtil;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@RequestMapping("/integral")
+@Controller
+public class IntegralController {
+
+    private Logger log = Logger.getLogger(this.getClass());
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    private BypCommodityService bypCommodityService;
+    @Autowired
+    private BypCommodityDetailService bypCommodityDetailService;
+    @Autowired
+    private TaskIntegralRulesService taskIntegralRulesService;
+    @Autowired
+    private BypCommodityRepertoryDao bypCommodityRepertoryDao;
+    @Autowired
+    private UserDetailIntegralService uerDetailIntegralService;
+    @Autowired
+    private DrMemberService drMemberService;
+    @Autowired
+    private IntegralSourceService integralSourceService;
+
+    /**
+     * 积分商城首页
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/index")
+    @ResponseBody
+    public String integralIndex(HttpServletRequest req, Integer uid) {
+        BaseResult br = new BaseResult();
+        try {
+            DrMember drMember = drMemberService.selectByPrimaryKey(uid);
+            br = bypCommodityService.selectIntegralShopping(drMember, 2);
+            br.setSuccess(true);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("积分商城获取失败！", e);
+        }
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 查询数据列表
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/queryList")
+    @ResponseBody
+    public String receiveRedPacket(HttpServletRequest req) {
+        BaseResult br = new BaseResult();
+        Map<String, Object> map = new HashMap<>();
+        List<JSONObject> jsonObjects = new ArrayList<>();
+        String type = req.getParameter("type");
+        String msg = "";
+        if (type.equals(2)) msg = "实物商品";
+        else if (type.equals(3)) msg = "红包";
+        try {
+            if (StringUtil.isEmpty(type)) {
+                br.setErrorCode("1002");
+                br.setErrorMsg("参数错误！");
+                br.setSuccess(false);
+                return JSON.toJSONString(br);
+            }
+            List<BypCommodity> list = bypCommodityService.selectCommodityList(Integer.parseInt(type));
+            for (BypCommodity entity : list) {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("prid", entity.getPrid());
+                jsonObject.put("price", entity.getPrice());
+                jsonObject.put("productUrl", entity.getProductUrl());
+                jsonObject.put("needPoints", entity.getNeedPoints());
+                jsonObject.put("prizeName", entity.getPrizename());
+                jsonObjects.add(jsonObject);
+            }
+            map.put("dataList", jsonObjects);
+            br.setMap(map);
+            br.setSuccess(true);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error(msg + "页面获取失败！", e);
+        }
+        map = null;
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 查看积分商品详情/红包详情
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping(value = "/getCommodityInfo")
+    @ResponseBody
+    public String getCommodityInfo(HttpServletRequest req, Integer uid,String pid,String type) {
+        Map<String, Object> dataMap = null;
+        Map<String, Object> resultMap = new HashMap<>();
+        BaseResult br = new BaseResult();
+        try {
+            if (Utils.isObjectNotEmpty(type)) {
+                //查询兑换规则和免责声明
+                PageInfo info = new PageInfo(0, 1);
+                info = integralSourceService.queryIntegralSourceList(info, new IntegralSourceBean());
+                List<IntegralSourceBean> beans = (List<IntegralSourceBean>) info.getRows();
+                IntegralSourceBean bean = beans.get(0);
+                dataMap = bypCommodityRepertoryDao.queryCommodity(Integer.parseInt(pid));
+                if (dataMap == null) dataMap = new HashMap<>();
+                if (uid != null && uid != 0) {
+                    DrMember dm = drMemberService.selectForUpDateByPrimaryKey(uid);
+                    resultMap.put("userIntegral", dm.getUserIntegralUse());//用户积分
+                }
+                dataMap.put("convertRules", bean.getConvert_rules());//兑换规则
+                dataMap.put("disclaimer", bean.getDisclaimer());//免责声明
+                resultMap.put("commodity", dataMap);//免责声明
+                br.setMap(resultMap);
+            }else {
+                DrMember m = drMemberService.selectByPrimaryKey(uid);
+                br = bypCommodityService.selectCommodityInfo(m == null ? null : m.getUid(), pid);
+            }
+            br.setSuccess(true);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("领红包页面获取失败！", e);
+        }
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 兑换实物
+     *
+     * @return
+     */
+    @RequestMapping(value = "/insertConvertByUser", method = RequestMethod.POST)
+    @ResponseBody
+    public String insertConvertByUser(HttpServletRequest req, Integer uid,Integer amount) {
+        BaseResult br = new BaseResult();
+        String value = null;
+        boolean lockFlag = false;
+        try {
+            String pid = req.getParameter("pid");
+            if (Utils.isObjectEmpty(pid)) {
+                br.setErrorMsg("未登录");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return JSON.toJSONString(br);
+            }
+            if (amount != null && amount == 0) amount = 1;
+            if (Utils.isObjectNotEmpty(pid)) {
+                // 更新兑换礼品的相关代码
+                value = String.valueOf(System.currentTimeMillis());
+                lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, SystemConstant.TIME_OUT, TimeUnit.SECONDS, true, value);
+                if (lockFlag) {
+                    br = bypCommodityDetailService.updateIntegralConvertGiftByUidAndPid(
+                            uid, pid,amount);
+                }
+            } else {
+                br.setMsg("没有参数");
+                br.setErrorCode("1003");
+                log.error("兑换实物,未传参");
+            }
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("兑换实物失败！", e);
+        }finally {
+            if (lockFlag) {
+                redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert() + uid, value);//解锁
+            }
+        }
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 兑换红包
+     *
+     * @return
+     */
+    @RequestMapping(value = "/insertRedPacketByUser")
+    @ResponseBody
+    public String insertRedPacketByUser(HttpServletRequest req, Integer uid, Integer pid,Integer amount) {
+        BaseResult br = new BaseResult();
+        String value=null;
+        boolean lockFlag = false;
+        try {
+            if (Utils.isObjectEmpty(uid)) {
+                br.setErrorMsg("未登录");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return JSON.toJSONString(br);
+            }
+            if (amount != null && amount == 0) amount = 1;
+            if (Utils.isObjectNotEmpty(pid)) {
+                // 更新兑换礼品的相关代码
+                value=String.valueOf(System.currentTimeMillis());
+                lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, SystemConstant.TIME_OUT, TimeUnit.SECONDS, true,value);
+                if (lockFlag) {
+                    br = bypCommodityDetailService.updateIntegralRedPacketByUidAndPid(
+                            uid, pid.toString(),amount);
+                }
+            } else {
+                br.setMsg("没有参数");
+                br.setErrorCode("1003");
+                log.error("兑换红包,未传参");
+            }
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("兑换红包失败！", e);
+        }finally {
+            if (lockFlag) {
+                redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert()+uid,value);//解锁
+            }
+        }
+        return JSON.toJSONString(br);
+    }
+
+
+    /**
+     * 查询我的任务列表
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/queryMyTask")
+    @ResponseBody
+    public String queryMyTask(HttpServletRequest req, Integer uid) {
+        BaseResult br = new BaseResult();
+        try {
+            if (Utils.isObjectEmpty(uid)) {
+                br.setErrorMsg("未登录");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return JSON.toJSONString(br);
+            }
+            br = taskIntegralRulesService.selectMyTask(uid);
+            br.setSuccess(true);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("积分商城任务查询错误!", e);
+        }
+        return JSON.toJSONString(br, SerializerFeature.DisableCircularReferenceDetect);
+    }
+    /**
+     * 测试
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/test")
+    @ResponseBody
+    public String test(HttpServletRequest req) {
+        BaseResult br = new BaseResult();
+        try {
+            br = uerDetailIntegralService.queryEarnPoint(1273);
+        } catch (Exception e) {
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            log.error("测试!", e);
+        }
+        return JSON.toJSONString(br, SerializerFeature.DisableCircularReferenceDetect);
+    }
+
+    /**
+     * 获得积分列表
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/queryEarnPoint")
+    @ResponseBody
+    public String queryEarnPoint(HttpServletRequest req, Integer uid) {
+        BaseResult br = new BaseResult();
+        try {
+            if (Utils.isObjectEmpty(uid)) {
+                br.setErrorMsg("未登录");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return JSON.toJSONString(br);
+            }
+            br = uerDetailIntegralService.queryEarnPoint(uid);
+        } catch (Exception e) {
+            br.setErrorCode("9999");
+            br.setSuccess(false);
+            log.error("获得积分列表获取失败" + e);
+        }
+        return JSON.toJSONString(br, SerializerFeature.DisableCircularReferenceDetect);
+    }
+
+    /**
+     * 消费积分列表
+     *
+     * @param req
+     * @return
+     */
+    @RequestMapping("/queryConsumptionPoint")
+    @ResponseBody
+    public String queryConsumptionPoint(HttpServletRequest req, Integer uid) {
+        BaseResult br = new BaseResult();
+        try {
+            if (Utils.isObjectEmpty(uid)) {
+                br.setErrorMsg("未登录");
+                br.setSuccess(false);
+                br.setErrorCode("9998");
+                return JSON.toJSONString(br);
+            }
+            br = uerDetailIntegralService.queryConsumptionPoint(uid);
+        } catch (Exception e) {
+            br.setErrorCode("9999");
+            br.setSuccess(false);
+            log.error("消费积分列表获取失败" + e);
+        }
+        return JSON.toJSONString(br, SerializerFeature.DisableCircularReferenceDetect);
+    }
+
+    /**
+     * 兑换top10
+     * @param req
+     * @return
+     */
+    @RequestMapping("/queryTop10")
+    @ResponseBody
+    public String queryTop10(HttpServletRequest req){
+        BaseResult br = new BaseResult();
+        try {
+            br = uerDetailIntegralService.queryTopTenCommodity();
+        }catch (Exception e){
+            log.error("top10查询错误",e);
+        }
+        return JSON.toJSONString(br, SerializerFeature.DisableCircularReferenceDetect);
+    }
+    /**
+     * 积分签到
+     * @param req
+     * @return
+     */
+    @RequestMapping("/integralSignin")
+    @ResponseBody
+    public String integralSignin(HttpServletRequest req, Integer uid){
+        BaseResult br = new BaseResult();
+        String value=null;
+        boolean lockFlag = false;
+        try {
+            value=String.valueOf(System.currentTimeMillis());
+            lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, SystemConstant.TIME_OUT, TimeUnit.SECONDS, true, value);
+            if (lockFlag) {
+                br = uerDetailIntegralService.integralSignin(uid);
+            }else {
+                br.setMsg("积分锁定了,客户可能强制刷新签到");
+                br.setSuccess(false);
+                br.setErrorCode("9991");
+            }
+        }catch (Exception e){
+            log.error("签到失败:"+e.getMessage());
+        }finally {
+            if (lockFlag) {
+                redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert()+uid,value);//解锁
+            }
+        }
+        return JSON.toJSONString(br);
+    }
+
+    /**
+     * 积分兑换京东卡
+     * @param req
+     * @param uid 用户id
+     * @param pid 京东卡id
+     * @return
+     */
+    @RequestMapping("/integralJDCard")
+    @ResponseBody
+    public String integralJDCard(HttpServletRequest req, Integer uid,Integer pid){
+        BaseResult br = new BaseResult();
+        String value=null;
+        boolean lockFlag = false;
+        HashMap<String,Object> param=new HashMap<>();
+        try {
+            param.put("uid",uid);
+            param.put("pid",pid);
+            value=String.valueOf(System.currentTimeMillis());
+            lockFlag = redisClientTemplate.tryLock(ConfigUtil.getIntegralJDCard() + uid, SystemConstant.TIME_OUT, TimeUnit.SECONDS, true, value);
+            if (lockFlag) {
+                br = uerDetailIntegralService.integralJDCard(param);
+            }else {
+                br.setMsg("京东卡兑换,客户可能强制刷新签到");
+                br.setSuccess(false);
+                br.setErrorCode("9991");
+            }
+        }catch (Exception e){
+            log.error("京东卡兑换:"+"用户id:"+uid+","+e.getMessage());
+        }finally {
+            if (lockFlag) {
+                redisClientTemplate.releaseLock(ConfigUtil.getIntegralJDCard()+uid,value);//解锁
+            }
+        }
+        return  JSON.toJSONString(br);
+    }
+}

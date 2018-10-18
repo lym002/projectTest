@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysBankDAO">
+	<resultMap id="SysBankResult" type="com.jsjf.model.system.SysBank">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="bankJC" property="bankJC" jdbcType="VARCHAR" />
+		<result column="bankCode" property="bankCode" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="singleQuotaJYT" property="singleQuotaJYT" jdbcType="INTEGER" />
+		<result column="dayQuotaJYT" property="dayQuotaJYT" jdbcType="INTEGER" />
+		<result column="singleQuotaSFT" property="singleQuotaSFT" jdbcType="INTEGER" />
+		<result column="dayQuotaSFT" property="dayQuotaSFT" jdbcType="INTEGER" />
+		<result column="isUserJYTWY" property="isUserJYTWY" jdbcType="INTEGER" />
+		<result column="isUserJYTRZ" property="isUserJYTRZ" jdbcType="INTEGER" />
+		<result column="isUserSFTRZ" property="isUserSFTRZ" jdbcType="INTEGER" />
+		<result column="channel" property="channel" jdbcType="INTEGER" />	
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />	
+	</resultMap>
+	<select id="selectSysBank" resultType="com.jsjf.model.system.SysBank">
+		SELECT * from sys_bank
+	</select>
+	
+	<select id="getSysBankByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.system.SysBank">
+		SELECT * from sys_bank
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+	
+	<select id="getSysBankList" parameterType="java.util.HashMap" resultMap="SysBankResult">
+		SELECT * from sys_bank
+		<where>
+			<if test="bankName != null and bankName !='' "> 
+				bankName  LIKE CONCAT("%",#{bankName:VARCHAR}) or  #{bankName:VARCHAR}  LIKE CONCAT("%",bankName)
+			</if>
+		</where>
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="getSysBankCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from sys_bank
+		<where>
+			<if test="bankName != null and bankName !='' "> 
+				bankName like CONCAT('%','${bankName}','%' )
+			</if>
+		</where>
+	</select>
+	
+	<update id="updateSysBank" parameterType="java.lang.Integer">
+		update sys_bank
+		<set>
+			<if test="singleQuotaJYT != null"> singleQuotaJYT = #{singleQuotaJYT:INTEGER},</if>
+			<if test="dayQuotaJYT != null"> dayQuotaJYT = #{dayQuotaJYT:INTEGER},</if>
+			<if test="singleQuotaSFT != null"> singleQuotaSFT = #{singleQuotaSFT:INTEGER},</if>
+			<if test="dayQuotaSFT != null"> dayQuotaSFT = #{dayQuotaSFT:INTEGER},</if>
+			<if test="isUserJYTWY != null"> isUserJYTWY = #{isUserJYTWY:INTEGER},</if>
+			<if test="isUserJYTRZ != null"> isUserJYTRZ = #{isUserJYTRZ:INTEGER},</if>
+			<if test="isUserSFTRZ != null"> isUserSFTRZ = #{isUserSFTRZ:INTEGER},</if>
+			<if test="channel != null"> channel = #{channel:INTEGER},</if>
+			updDate = sysdate(),
+			<if test="updUser != null"> updUser = #{updUser:INTEGER}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	<select id="selectBankByCode" resultType="String" parameterType="String">
+		SELECT bankName from sys_bank where bankCode = #{bankCode};
+	</select>
+</mapper>

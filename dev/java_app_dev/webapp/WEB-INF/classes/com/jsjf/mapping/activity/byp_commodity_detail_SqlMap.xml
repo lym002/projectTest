@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.BypCommodityDetailDAO">
+	<resultMap id="BypCommodityDetailResult" type="com.jsjf.model.activity.BypCommodityDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="prid" property="prid" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="starttime" property="starttime" jdbcType="TIMESTAMP" />
+		<result column="endtime" property="endtime" jdbcType="TIMESTAMP" />
+		<result column="provide" property="provide" jdbcType="TIMESTAMP" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		<result column="prizeName" property="prizeName" jdbcType="VARCHAR" />
+		<result column="price" property="price" jdbcType="INTEGER" />
+		<result column="details" property="details" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="VARCHAR" />
+		<result column="NAME" property="NAME" jdbcType="VARCHAR" />
+	</resultMap>
+	<sql id="byp_commodity_detail">
+		detail.code,detail.uid,detail.status,detail.endtime,commodity.prizeName,detail.addtime,
+		commodity.price,commodity.details,commodity.type,commodity.product_url,commodity.need_points
+	</sql>
+	<select id="doubleTwelve" resultMap="BypCommodityDetailResult"
+		parameterType="Integer">
+		SELECT
+		<include refid="byp_commodity_detail" />
+		from byp_commodity_detail as detail LEFT JOIN byp_commodity as
+		commodity on commodity.prid = detail.prid where uid = #{uid} and detail.status=1
+        <!--拦截5880显示-->
+        and detail.addtime  <![CDATA[<=]]> '2018-1-24'
+	</select>
+	<select id="selectMyAward" resultMap="BypCommodityDetailResult"
+		parameterType="java.util.Map">
+		SELECT
+		<include refid="byp_commodity_detail" />
+		from byp_commodity_detail as detail LEFT JOIN byp_commodity as
+		commodity on commodity.prid = detail.prid where uid = #{uid}
+		<if test="type != null">
+			and commodity.type=#{type}
+		</if>
+	</select>
+	<select id="selectDoubleTwelve" resultType="java.util.Map"
+		parameterType="Integer">
+		select
+		sum(case dpinfo.deadline when '30' then dpi.amount
+		else 0 end)
+		'hirtyDays',
+		sum(case dpinfo.deadline when '60' then
+		dpi.amount else 0
+		end) 'threeScoreDays',
+		sum(case dpinfo.deadline when
+		'180' then
+		dpi.amount else 0 end) 'oneEightyDays'
+		from dr_product_invest dpi
+		LEFT
+		JOIN dr_member dm on dpi.uid=dm.uid
+		LEFT JOIN dr_product_info dpinfo on
+		dpinfo.id=dpi.pid
+		where dpi.uid=#{uid}
+		AND dpi.investTime <![CDATA[>=]]> '2017-12-12 00:00:00'
+		AND
+		dpi.investTime <![CDATA[<=]]>
+		'2017-12-23 00:00:00'
+	</select>
+	<insert id="insertSelective" parameterType="com.jsjf.model.activity.BypCommodityDetail">
+		insert into byp_commodity_detail
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="code != null">
+				code,
+			</if>
+			<if test="prid != null">
+				prid,
+			</if>
+			<if test="uid != null">
+				uid,
+			</if>
+			<if test="status != null">
+				status,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="starttime != null">
+				starttime,
+			</if>
+			<if test="endtime != null">
+				endtime,
+			</if>
+			<if test="provide != null">
+				provide,
+			</if>
+			<if test="address != null">
+				address,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="code != null">
+				#{code,jdbcType=VARCHAR},
+			</if>
+			<if test="prid != null">
+				#{prid,jdbcType=INTEGER},
+			</if>
+			<if test="uid != null">
+				#{uid,jdbcType=INTEGER},
+			</if>
+			<if test="status != null">
+				#{status,jdbcType=TINYINT},
+			</if>
+			<if test="addtime != null">
+				#{addtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="starttime != null">
+				#{starttime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="endtime != null">
+				#{endtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="provide != null">
+				#{provide,jdbcType=TIMESTAMP},
+			</if>
+			<if test="address != null">
+				#{address,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<!-- 查询双旦top10 -->
+	<select id="selectTopIntegralLog" resultType="com.jsjf.model.activity.BypCommodityDetail">
+		SELECT
+	CONCAT(
+		LEFT (c.mobilePhone, 3),
+		'****',
+		RIGHT (c.mobilePhone, 4)
+	) AS mobilePhone,
+	a.addtime,
+	ifnull(b.prizeName, '') AS NAME
+	FROM
+	byp_commodity_detail a
+	LEFT JOIN byp_commodity b ON a.prid = b.prid
+	LEFT JOIN dr_member c ON a.uid = c.uid
+	WHERE
+	b.type = 2
+	ORDER BY
+	a.addtime DESC
+	LIMIT 10
+	</select>
+	<!-- 查询双旦我的兑换记录 -->
+	<select id="selectMyIntegralLog" parameterType="Integer" resultType="com.jsjf.model.activity.BypCommodityDetail">
+	SELECT
+	a.addtime,
+	ifnull(b.prizeName, '') AS NAME
+	FROM
+	byp_commodity_detail a
+	LEFT JOIN byp_commodity b ON a.prid = b.prid
+	LEFT JOIN dr_member c ON a.uid = c.uid
+	WHERE
+	b.type = 2
+	and c.uid=#{uid}
+	ORDER BY
+	a.addtime DESC
+	LIMIT 10
+	</select>
+    <select id="getMyEveryoneJdCard" resultType="java.util.HashMap"
+            parameterType="Integer">
+        SELECT
+        commodity.price as price
+        from byp_commodity_detail as detail LEFT JOIN byp_commodity as
+        commodity on commodity.prid = detail.prid
+        where
+        1=1
+        <if test="uid != null">
+           and detail.uid = #{uid}
+        </if>
+        and detail.status=1
+        <if test="activity_id != null">
+            and commodity.activity_id=#{activity_id}
+        </if>
+        <if test="startDate != null">and detail.addtime  <![CDATA[>=]]> #{startDate}</if>
+        <if test="endDate != null">and detail.addtime <![CDATA[<=]]> #{endDate}</if>
+    </select>
+</mapper>

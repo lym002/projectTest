@@ -1,0 +1,13 @@
+body{background: #f4f3ef;}
+
+/* logo */
+.logo-wrap{width: 960px;margin: 0 auto;padding-top: 26px;}
+.false-wrap{padding-top: 134px;width: 960px;margin: 0 auto;}
+.false-con{width: 960px;height: 244px;background: url(../images/false-con.png) no-repeat;}
+.tip-wrap{padding: 16px 0 0 176px;}
+.tip{color: #646462;font-size: 32px;}
+.tip-wrap ul{margin-top: 23px;}
+.tip-wrap li i{float: left;width: 13px;height: 13px;overflow: hidden;line-height: 0;font-size: 0;border-radius: 50%;background: #d0cfcb;margin: 14px 14px 0 0;}
+.tip-wrap li{line-height: 40px;font-size: 18px;color: #646462;}
+.tip-wrap li a{text-decoration: underline;color: #57cbd1;margin-left: 11px;}
+.right{padding: 260px 0 30px;text-align: center;line-height: 26px;color: #939290;font-size: 14px;}

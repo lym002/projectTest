@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrCarryParamDAO">
+	<resultMap id="DrCarryParamResult" type="com.jsjf.model.member.DrCarryParam">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="dayCounts" property="dayCounts" jdbcType="INTEGER" />		
+		<result column="monthCounts" property="monthCounts" jdbcType="INTEGER" />
+		<result column="fourElementCount" property="fourElementCount" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />		
+		<result column="smsChanel" property="smsChanel" jdbcType="VARCHAR" />	
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+	</resultMap>
+
+	<!-- 获取提现设置列表 -->
+	<select id="getDrCarryParamList" resultType="com.jsjf.model.member.DrCarryParam">
+		select dcp.*,su.name as name from dr_carry_param dcp
+		LEFT JOIN sys_users su on dcp.addUser = su.user_ky
+	</select>
+	<!-- 根据id得到提现设置-->
+	<select id="getDrCarryParam" resultType="com.jsjf.model.member.DrCarryParam">
+		SELECT * FROM dr_carry_param where status=1
+	</select>
+	
+	 <!-- 根据UID判断是否收取手续费 -->
+	<select id="getDrCarryParamIsCharge" resultType="java.lang.Integer">
+	select 
+	case when #{freeMonth}>(select count(1) from dr_member_carry where status =2 and channel != 4
+				and date_format(addtime,'%Y-%m')=date_format(now(),'%Y-%m') and uid=#{uid:INTEGER}) 
+	THEN (case when #{freeMonth} >(select count(1) from dr_member_carry where status =2 and channel != 4
+				and date_format(addtime,'%Y-%m-%d')=date_format(now(),'%Y-%m-%d') and uid=#{uid:INTEGER}) then 0 else 1 end)
+	else 1 end
+	from dr_carry_param where status = 1 
+	</select>
+	<select id="getDrCarryParamIsChargeNew" resultType="java.lang.Integer">
+		SELECT  #{freeMonth} - (SELECT COUNT(1) FROM dr_member_carry WHERE STATUS =2 AND channel != 4
+		AND DATE_FORMAT(ADDTIME,'%Y-%m')=DATE_FORMAT(NOW(),'%Y-%m') AND uid=#{uid} )FROM dr_carry_param WHERE STATUS = 1
+	</select>
+</mapper>

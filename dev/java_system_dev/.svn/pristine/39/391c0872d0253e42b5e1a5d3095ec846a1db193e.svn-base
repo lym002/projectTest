@@ -1,0 +1,40 @@
+package com.jsjf.controller.vip;
+
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.service.vip.VipInfoService;
+
+@Controller
+@RequestMapping("/vipInfo")
+public class VipInfoController {
+	
+	@Autowired
+	private VipInfoService vipInfoService;
+
+	@RequestMapping("/vipInfoView")
+	public String yearInvestView(){
+		return "system/vip/bypVipInfo";
+	}
+	
+	@RequestMapping("/vipInfoList")
+	@ResponseBody
+	public PageInfo vipInfoList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = vipInfoService.queryVipInfoList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+}

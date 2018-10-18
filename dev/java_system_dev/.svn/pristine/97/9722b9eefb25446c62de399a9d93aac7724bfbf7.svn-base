@@ -1,0 +1,140 @@
+package com.jsjf.controller.task;
+
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberCarry;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.member.DrMemberFundsService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import com.jsjf.service.activity.ActivityReversalService;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 邀请好友红包返现 定时任务
+ *
+ * @author xxq
+ */
+@Component
+public class ActivityReversalTask {
+    private static Logger log = Logger.getLogger(ActivityReversalTask.class);
+    @Autowired
+    DrMemberService drMemberService;
+    @Autowired
+    DrMemberCarryService drMemberCarryService;
+    @Autowired
+    public ActivityReversalService activityReversalService;
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    private DrMemberFundsService drMemberFundsService;
+    /**
+     * 定义每半小时执行一次好友邀请返现任务
+     */
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void insertFriendMemberActivityAmount() {
+        try {
+            log.info("=============================开始邀请好友红包返现");
+            //activityReversalService.reversal();
+            activityReversalService.reversals();
+            //落地页：定时查询好友邀请返现总额的排名
+            activityReversalService.selectReversal();
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+        log.info("=============================邀请好友红包返现完成");
+    }
+
+    /**
+     * 定义每半小时执行一次好友邀请返现任务
+     */
+    @Scheduled(cron = "0 20 11 5 2 ?")
+    public void transferToClient() {
+        String msg = "复投返现活动";
+        try {
+            activityReversalService.transferToClient(7405, new BigDecimal(16.67), msg);
+            activityReversalService.transferToClient(1064, new BigDecimal(50), msg);
+            activityReversalService.transferToClient(7210, new BigDecimal(750), msg);
+            activityReversalService.transferToClient(7210, new BigDecimal(750), msg);
+            activityReversalService.transferToClient(7210, new BigDecimal(750), msg);
+            activityReversalService.transferToClient(4111, new BigDecimal(1.83), msg);
+            activityReversalService.transferToClient(7405, new BigDecimal(60.17), msg);
+            activityReversalService.transferToClient(6065, new BigDecimal(201), msg);
+            activityReversalService.transferToClient(6076, new BigDecimal(76.25), msg);
+        } catch (Exception e) {
+            log.error("复投返现失败" + e.getMessage());
+        }
+      /*  String msg = "抢标活动返现";
+        try {
+            activityReversalService.transferToClient(7210, new BigDecimal(18), msg);
+        } catch (Exception e) {
+            log.error("抢标活动返现" + e.getMessage());
+        }*/
+
+/* try {
+            Map<String, Object> backMap = new HashMap<String, Object>(); // 返回参数的map
+            // 放到 redis 缓存
+            Map<String, Object> crushBackMap = new HashMap<String, Object>();
+            crushBackMap.put("type", 52);
+            crushBackMap.put("uid", 2232);
+            crushBackMap.put("investId", 3082);
+            crushBackMap.put("project_no", "CP-20180117202139594237");
+            backMap.put("crushBackMap", crushBackMap);
+            redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(),
+                    SerializeUtil.serialize(backMap.get("crushBackMap")));
+        } catch (Exception e) {
+            log.error("抢标活动返现" + e.getMessage());
+        }*/
+    }
+
+    /**
+     * 定时任务批量修复提现失败
+     * @param
+     */
+    @Scheduled(cron = "0 30 13 9 2 ?")
+    public void repairWithdrawal() {                //流水号                   提现金额
+        //drMemberFundsService.updateRepairWithdrawal("201802081830538534041369",new BigDecimal("3.00"));测试环境
+        //drMemberFundsService.updateRepairWithdrawal("201802081626560223931202",new BigDecimal("2000.00"));测试环境
+        drMemberFundsService.updateRepairWithdrawal("201802081133118359871064",new BigDecimal("5086.66"));
+        drMemberFundsService.updateRepairWithdrawal("201802080900407650311758",new BigDecimal("73000.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802071202164152836756",new BigDecimal("2014.90"));
+        drMemberFundsService.updateRepairWithdrawal("201802080856510807354506",new BigDecimal("20151.53"));
+        drMemberFundsService.updateRepairWithdrawal("201802081352416425733769",new BigDecimal("2014.66"));
+        drMemberFundsService.updateRepairWithdrawal("2018020812462924546626475",new BigDecimal("2005.83"));
+        drMemberFundsService.updateRepairWithdrawal("201802081131210869491804",new BigDecimal("3528.58"));
+        drMemberFundsService.updateRepairWithdrawal("2018020809364631360425754",new BigDecimal("10065.16"));
+        drMemberFundsService.updateRepairWithdrawal("201802080554096401091887",new BigDecimal("68.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802080735365344601069",new BigDecimal("10073.93"));
+        drMemberFundsService.updateRepairWithdrawal("201802071234322457583194",new BigDecimal("4047.32"));
+        drMemberFundsService.updateRepairWithdrawal("201802080631098095471670",new BigDecimal("419.99"));
+        drMemberFundsService.updateRepairWithdrawal("201802081016569157994817",new BigDecimal("201.79"));
+        drMemberFundsService.updateRepairWithdrawal("201802081016200876123364",new BigDecimal("1007.57"));
+        drMemberFundsService.updateRepairWithdrawal("201802081624167030911533",new BigDecimal("30300.00"));
+        drMemberFundsService.updateRepairWithdrawal("2018020810165876637925628",new BigDecimal("1002.91"));
+        drMemberFundsService.updateRepairWithdrawal("201802080804353680883139",new BigDecimal("20150.31"));
+        drMemberFundsService.updateRepairWithdrawal("2018020811412805619025348",new BigDecimal("1000.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802081038026740792630",new BigDecimal("210840.23"));
+        drMemberFundsService.updateRepairWithdrawal("2018020810352734541225191",new BigDecimal("100.29"));
+        drMemberFundsService.updateRepairWithdrawal("201802081623230807722598",new BigDecimal("68.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802080724123448653889",new BigDecimal("20211.18"));
+        drMemberFundsService.updateRepairWithdrawal("201802080814099148187551",new BigDecimal("7153.78"));
+        drMemberFundsService.updateRepairWithdrawal("201802080945412220951982",new BigDecimal("5037.88"));
+        drMemberFundsService.updateRepairWithdrawal("201802081227459787574993",new BigDecimal("1216.79"));
+        drMemberFundsService.updateRepairWithdrawal("201802081203486463997126",new BigDecimal("13801.04"));
+        drMemberFundsService.updateRepairWithdrawal("201802080857122558143835",new BigDecimal("4166.05"));
+        drMemberFundsService.updateRepairWithdrawal("201802081210127948355059",new BigDecimal("568.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802081410006888246884",new BigDecimal("251.35"));
+        drMemberFundsService.updateRepairWithdrawal("20180208103117390582999",new BigDecimal("10.00"));
+        drMemberFundsService.updateRepairWithdrawal("201802071221152324712602",new BigDecimal("10075.76"));
+    }
+
+}

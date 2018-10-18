@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeWishDAO">
+	
+	<select id="selectByPrimaryKey" resultType="java.util.Map" parameterType="INTEGER">
+		select * from js_product_prize_orderShare where id = #{id}
+	</select>
+	
+	
+	<select id="selectObjectList" resultType="java.util.Map" parameterType="java.util.Map">
+		SELECT jw.id,jw.uid,jw.url,jw.remark,DATE_FORMAT(jw.addtime,'%Y-%m-%d %H:%i') as addtime,
+		concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+		dm.recommCodes as recommCodes,CONCAT(LEFT(dmi.realname,1),if(dmi.sex=1,'先生','女士')) as realname
+			 from js_product_prize_wish jw 
+			LEFT JOIN dr_member dm ON jw.uid = dm.uid  
+			LEFT JOIN dr_member_base_info dmi ON dmi.uid = jw.uid
+		 <trim prefix="where" prefixOverrides="and">
+		 	<if test="mobilePhone !=null and mobilePhone !=''">
+		 		and mobilePhone like concat('%',TRIM(#{mobilePhone}),'%')
+		 	</if>
+		 	<if test="startDate !=null and startDate !=''">
+		 		and date_format(jw.addtime,'%Y-%m-%d') >= #{startDate} 
+		 	</if>
+		 	<if test="endDate !=null and endDate !=''">
+		 		and #{endDate} >= date_format(jw.addtime,'%Y-%m-%d')
+		 	</if>
+		 </trim>
+		
+		 <if test="orders != null and orders !=''">
+		 	order by ${orders}
+		 </if>
+		 <if test="limit !=null and offset !=null">
+		 	limit #{offset},#{limit}
+		 </if>
+	
+	</select>
+	
+	<select id="selectObjectCount" resultType="Integer" parameterType="java.util.Map">
+		select count(1)
+			 from js_product_prize_wish jw 
+			LEFT JOIN dr_member dm ON jw.uid = dm.uid
+			LEFT JOIN dr_member_base_info dmi ON dmi.uid = jw.uid
+		 <trim prefix="where" prefixOverrides="and">
+		 	<if test="mobilePhone !=null and mobilePhone !=''">
+		 		and mobilePhone like concat('%',TRIM(#{mobilePhone}),'%')
+		 	</if>
+		 	<if test="startDate !=null and startDate !=''">
+		 		and date_format(jw.addtime,'%Y-%m-%d') >= #{startDate} 
+		 	</if>
+		 	<if test="endDate !=null and endDate !=''">
+		 		and #{endDate} >= date_format(jw.addtime,'%Y-%m-%d')
+		 	</if>
+		 </trim>
+	</select>
+</mapper>

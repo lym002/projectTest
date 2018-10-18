@@ -1,0 +1,2 @@
+INDEX VERSION 1.3+D:\BYPSVN\dev\.metadata\.plugins\org.eclipse.wst.jsdt.core\indexes
+1365186935.index

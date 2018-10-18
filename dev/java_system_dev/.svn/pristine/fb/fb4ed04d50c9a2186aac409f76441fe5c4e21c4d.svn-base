@@ -1,0 +1,129 @@
+package com.jsjf.controller.task;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.common.Utils;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import com.jsjf.model.member.DrMemberCarry;
+import com.jsjf.model.system.SysFuiouNoticeLog;
+import com.jsjf.service.activity.ActivityFriendService;
+import com.jsjf.service.activity.DrActivityParameterService;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.system.SysFuiouNoticeLogService;
+import com.jsjf.service.system.SysMessageLogService;
+
+@Component
+public class ActivityTask {
+    private static Logger log = Logger.getLogger(ActivityTask.class);
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    public DrActivityParameterService drActivityParameterService;
+    @Autowired
+    public SysMessageLogService sysMessageLogService;
+    @Autowired
+    public DrMemberService drMemberService;
+    @Autowired
+    public DrProductInvestService drProductInvestService;
+    @Autowired
+    public ActivityFriendService activityFriendService;
+    @Autowired
+    public SysFuiouNoticeLogService sysFuiouNoticeLogService;
+    @Autowired
+    public DrMemberCarryService drMemberCarryService;
+
+    /**
+     * 分配客户
+     * 等电销来了再开启
+     */
+    @Scheduled(cron = "0 0 8,12 * * ?")
+    public void allotCustomer() {
+        try {
+            drMemberService.allotCustomer();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 定时短信应急发送
+     */
+    @Scheduled(cron = "0 15 10 * * ?")
+    public void sendSmsHandle() {
+        log.info("定时短信应急发送处理开始...");
+        sysMessageLogService.sendSmsHandle();
+        log.info("定时短信应急发送处理结束...");
+    }
+
+    /**
+     * 查询修改银行卡是否通过审核
+     */
+    @Scheduled(cron = "0 26 0 * * ?") //凌晨执行
+    public void queryChangeCard() {
+        try {
+            List<SysFuiouNoticeLog> list = sysFuiouNoticeLogService.queryChangeCard();
+            if (list.size() > 0) {
+                for (SysFuiouNoticeLog sysFuiouNoticeLog : list) {
+                    drMemberService.queryChangeCard(sysFuiouNoticeLog);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 查询订单在存管是否存在
+     */
+    @Scheduled(cron = "0 20 2,11,16,22 * * ?") //凌晨执行
+    public void queryFuiouMemberCarryByStatus() {
+        try {
+            List<DrMemberCarry> list = drMemberCarryService.selectFuiouByStatus();
+            if (list.size() > 0) {
+                for (DrMemberCarry drMemberCarry : list) {
+                    drMemberCarryService.queryFuiouMemberCarryByStatus(drMemberCarry);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 5880活动定时任务
+     */
+    @Scheduled(cron = "0 05 00 * * ?") //凌晨12.05执行统计当日土豪榜
+    public void setEveryoneJdCard() {
+        try {
+            Map<String,Object> map=new HashMap<>();
+            String thisDate = Utils.format(new Date(), "yyyy-MM-dd");
+            String dayBegin = Utils.format(Utils.setDayBegin(thisDate), "yyyy-MM-dd");
+            String dayEnd = Utils.format(Utils.setDayEnd(thisDate), "yyyy-MM-dd");
+            map.put("dayBegin",dayBegin);
+            map.put("dayEnd",dayEnd);
+            String everyoneJdCardStart = redisClientTemplate
+                    .getProperties("EveryoneJdCardStart");
+            String everyoneJdCardEnd = redisClientTemplate
+                    .getProperties("EveryoneJdCardEnd");
+            Date nowDate = new Date();
+            if (nowDate.after(Utils.parseDate(everyoneJdCardStart,
+                    "yyyy-MM-dd HH:mm:ss"))
+                    && nowDate.before(Utils.parseDate(everyoneJdCardEnd,
+                    "yyyy-MM-dd HH:mm:ss"))) {
+                drProductInvestService.setEveryoneJdCard(map);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

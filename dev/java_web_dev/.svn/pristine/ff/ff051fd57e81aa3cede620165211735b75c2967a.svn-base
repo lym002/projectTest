@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.integral.UserDetailIntegralDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.integral.UserDetailIntegralBean">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="uid" jdbcType="INTEGER" property="uid" />
+    <result column="integral_source_id" jdbcType="INTEGER" property="integralSourceId" />
+    <result column="user_detail_integral" jdbcType="DECIMAL" property="userDetailIntegral" />
+    <result column="expiration_time" jdbcType="TIMESTAMP" property="expirationTime" />
+    <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="mobilePhone" jdbcType="VARCHAR" property="mobilePhone" />
+    <result column="needPoints" jdbcType="DECIMAL" property="needPoints" />
+    <result column="prizeName" jdbcType="VARCHAR" property="prizeName" />
+    <result column="task_integral_id" jdbcType="INTEGER" property="taskIntegralId" />
+    <result column="realname" jdbcType="VARCHAR" property="realname" />
+    <result column="sex" jdbcType="INTEGER" property="sex" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, budi.uid, integral_source_id, user_detail_integral, expiration_time, add_time, update_time,mobilePhone
+  </sql>
+  <select id="queryDetailintegralList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_user_detail_integral budi left join dr_member dm on budi.uid=dm.uid
+    where 1=1
+    <if test="integralSourceId !=null and integralSourceId !=''">
+		 and integral_source_id = #{integralSourceId},
+	</if>
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone},
+	</if>
+    <if test="limit !=null">
+		limit #{offset},#{limit}
+	</if>
+  </select>
+  
+   <select id="queryDetailintegralListCount" parameterType="java.util.Map" resultType="INTEGER">
+    select 
+    count(0)
+    from byp_user_detail_integral
+    where 1=1
+    <if test="integralSourceId !=null and integralSourceId !=''">
+		 and integral_source_id = #{integralSourceId},
+	</if>
+	<if test="mobilePhone !=null and mobilePhone !=''">
+		 and mobilePhone = #{mobilePhone},
+	</if>
+    <if test="limit !=null">
+		limit #{offset},#{limit}
+	</if>
+    
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_user_detail_integral
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    insert into byp_user_detail_integral (id, uid, integral_source_id, 
+      user_detail_integral, expiration_time, add_time,task_integral_id,
+      update_time)
+    values (#{id,jdbcType=INTEGER}, #{uid,jdbcType=INTEGER}, #{integralSourceId,jdbcType=INTEGER}, 
+      #{userDetailIntegral,jdbcType=DECIMAL}, #{expirationTime,jdbcType=TIMESTAMP}, #{addTime,jdbcType=TIMESTAMP},#{taskIntegralId,jdbcType=INTEGER},
+      #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    insert into byp_user_detail_integral
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="uid != null">
+        uid,
+      </if>
+      <if test="integralSourceId != null">
+        integral_source_id,
+      </if>
+      <if test="userDetailIntegral != null">
+        user_detail_integral,
+      </if>
+      <if test="expirationTime != null">
+        expiration_time,
+      </if>
+      <if test="addTime != null">
+        add_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="taskIntegralId != null">
+        task_integral_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="uid != null">
+        #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="integralSourceId != null">
+        #{integralSourceId,jdbcType=INTEGER},
+      </if>
+      <if test="userDetailIntegral != null">
+        #{userDetailIntegral,jdbcType=DECIMAL},
+      </if>
+      <if test="expirationTime != null">
+        #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="taskIntegralId != null">
+        #{task_integral_id,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    update byp_user_detail_integral
+    <set>
+      <if test="uid != null">
+        uid = #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="integralSourceId != null">
+        integral_source_id = #{integralSourceId,jdbcType=INTEGER},
+      </if>
+      <if test="userDetailIntegral != null">
+        user_detail_integral = #{userDetailIntegral,jdbcType=DECIMAL},
+      </if>
+      <if test="expirationTime != null">
+        expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addTime != null">
+        add_time = #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="taskIntegralId != null">
+        task_integral_id = #{taskIntegralId,jdbcType=INTEGER},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.integral.UserDetailIntegralBean">
+    update byp_user_detail_integral
+    set uid = #{uid,jdbcType=INTEGER},
+      integral_source_id = #{integralSourceId,jdbcType=INTEGER},
+      user_detail_integral = #{userDetailIntegral,jdbcType=DECIMAL},
+      expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      add_time = #{addTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      task_integral_id = #{taskIntegralId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <!-- 查看用户获得积分 -->
+  <select id="queryEarnPoint" resultMap="BaseResultMap">
+    SELECT budi.user_detail_integral,budi.integral_source_id,budi.add_time,budi.task_integral_id FROM byp_user_detail_integral budi
+    WHERE <![CDATA[budi.user_detail_integral > 0]]>
+    <if test="uid != null">
+      AND budi.uid = #{uid}
+    </if>
+    <if test="order != null">
+      order by ${order}
+    </if>
+  </select>
+  <!-- 查看用户获得积分 -->
+  <select id="queryConsumptionPoint" resultMap="BaseResultMap">
+    SELECT dmbi.realname,dmbi.`sex`,bc.`prizeName`,
+    bcd.`addtime`,
+    bc.`need_points` needPoints
+    FROM
+    byp_commodity_detail bcd
+    JOIN byp_commodity bc
+    ON bcd.`prid` = bc.`prid`
+    JOIN dr_member_base_info dmbi
+    ON bcd.`uid` = dmbi.`uid`
+    WHERE 1=1
+    <if test="uid != null">
+      and bcd.uid = #{uid}
+    </if>
+    <if test="order != null">
+       ORDER BY ${order}
+    </if>
+    <if test="limit != null">
+      limit #{limit}
+    </if>
+  </select>
+  <select id="queryExpirationDate" resultType="com.jsjf.model.integral.UserDetailIntegralBean">
+    SELECT budi.id,budi.uid,budi.integral_source_id,
+    SUM(budi.user_detail_integral) user_detail_integral,
+    budi.expiration_time FROM byp_user_detail_integral budi
+    WHERE <![CDATA[ DATE_FORMAT(budi.`expiration_time`,'%y-%m-%d') < #{expirationDate} ]]> GROUP BY budi.`expiration_time` order by budi.`expiration_time` limit 1;
+  </select>
+  <select id="queryTodayInvestTask" resultType="java.lang.Integer">
+    SELECT count(id) from byp_user_detail_integral budi
+    WHERE <![CDATA[ DATE_FORMAT(budi.`expiration_time`,'%y-%m-%d') >= DATE_FORMAT(now(),'%y-%m-%d')]]> and <![CDATA[ DATE_FORMAT(budi.`expiration_time`,'%y-%m-%d') <= DATE_FORMAT(now(),'%y-%m-%d')]]> and budi.task_integral_id = 3 GROUP BY budi.`expiration_time` order by budi.`expiration_time` limit 1;
+  </select>
+</mapper>

@@ -1,0 +1,38 @@
+package com.jsjf.dao.activity;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.DrCouponsIssuedRules;
+
+public interface DrCouponsIssuedRulesDAO {
+	/**
+	 * 新增规则
+	 * @param drCouponsIssuedRules
+	 */
+	public void insertCouponsIssuedRules(DrCouponsIssuedRules drCouponsIssuedRules);
+	
+	/**
+	 * 修改规则
+	 * @param drCouponsIssuedRules
+	 */
+	public void updateCouponsIssuedRules(DrCouponsIssuedRules drCouponsIssuedRules);
+	
+	/**
+	 * 获取规则列表
+	 * @param map
+	 * @return
+	 */
+	public List<DrCouponsIssuedRules> getCouponsIssuedRulesList(Map<String,Object> map);
+	
+	
+	public DrCouponsIssuedRules getCouponsIssuedRulesById(Integer id);
+
+    List<DrCouponsIssuedRules> selectRedEnvelope(Map<String, Object> map);
+
+    List<DrCouponsIssuedRules> selectUserRedEnvelope(Map<String, Object> map);
+
+    List<DrCouponsIssuedRules> selectRedEnvelopeTop(Map<String, Object> map);
+
+    DrCouponsIssuedRules selectByMapPrimaryKey(Map<String, Object> map);
+}

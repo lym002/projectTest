@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"  
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+			http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+			http://www.springframework.org/schema/mvc
+			http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+			http://www.springframework.org/schema/tx
+            http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+			http://www.springframework.org/schema/context
+			http://www.springframework.org/schema/context/spring-context-4.0.xsd
+			http://www.springframework.org/schema/task  
+			http://www.springframework.org/schema/task/spring-task-3.2.xsd">
+	
+	<!-- task任务扫描注解 -->  
+	<!-- <task:annotation-driven/> --> 		
+	<!-- 自动扫描controller包下的所有类，使其认为spring mvc的控制器 -->
+	<context:component-scan base-package="com.jsjf.controller"></context:component-scan>
+	<context:component-scan base-package="com.jsjf.common"></context:component-scan>	
+	<bean class="com.jzh.FuiouConfig" scope="singleton" lazy-init="false" />
+	<context:annotation-config />  
+	<mvc:annotation-driven >
+	    <!-- 消息转换器 -->
+	    <mvc:message-converters register-defaults="true">
+	      <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+	        <property name="supportedMediaTypes" value="application/json;charset=UTF-8"/>
+	      </bean>
+	    </mvc:message-converters>
+  </mvc:annotation-driven>
+		
+	<!--避免IE执行AJAX时，返回JSON出现下载文件 -->
+	<bean id="mappingJacksonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>application/json;charset=utf-8</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- 启动SpringMVC的注解功能，完成请求和注解POJO的映射 -->
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<ref bean="mappingJacksonHttpMessageConverter" /> <!-- JSON转换器 -->
+			</list>
+		</property>
+	</bean>
+
+
+	<!-- 定义跳转的文件的前后缀 ，视图模式配置 -->
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- 这里的配置我的理解是自动给后面action的方法return的字符串加上前缀和后缀，变成一个 可用的url地址 -->
+		<property name="prefix" value="/WEB-INF/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+	<!-- 配置文件上传，如果没有使用文件上传可以不用配置，当然如果不配，那么配置文件中也不必引入上传组件包 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 默认编码 -->
+		<property name="defaultEncoding" value="utf-8" />
+		<!-- 文件大小最大值 -->
+		<property name="maxUploadSize" value="10485760000" />
+		<!-- 内存中的最大值 -->
+		<property name="maxInMemorySize" value="40960" />
+	</bean>
+	<mvc:interceptors>
+		<!-- 前台拦截器 -->
+ 		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<mvc:exclude-mapping path="/aboutus/**"/>
+			<mvc:exclude-mapping path="/integral/**"/>
+			<mvc:exclude-mapping path="/product/getMyLuckCodes.do"/>
+			<mvc:exclude-mapping path="/product/experienceDetail.do"/>
+
+			<mvc:exclude-mapping path="/index/startAdvertisement.do"/>
+			
+			<mvc:exclude-mapping path="/login/validateCode2.do"/>
+			<mvc:exclude-mapping path="/login/validateCode.do"/>
+
+			<mvc:exclude-mapping path="/activity/getActivityFriendStatistics.do"/>
+			<mvc:exclude-mapping path="/activity/getActivityFriendConfigAll.do"/>
+			<mvc:exclude-mapping path="/activity/getActivityFriendConfig.do"/>
+			<mvc:exclude-mapping path="/activity/isExperience.do"/>
+			<mvc:exclude-mapping path="/activity/doubleAggIndex.do"/>
+			<mvc:exclude-mapping path="/activity/tearOpen.do"/>
+			<mvc:exclude-mapping path="/activity/dobuleEggShare.do"/>
+			<mvc:exclude-mapping path="/activity/accountInvestLogs.do"/>
+			<mvc:exclude-mapping path="/activity/getTopFive.do"/>
+			<mvc:exclude-mapping path="/activity/getEatGlutinousLog.do"/>
+			<mvc:exclude-mapping path="/activity/eatGlutinous.do"/>
+			<mvc:exclude-mapping path="/activity/getNoviceListAndCount.do"/>
+			<mvc:exclude-mapping path="/activity/lastRegMember.do"/>
+			<mvc:exclude-mapping path="/activity/iPhoneSEM.do"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayList.do"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayDetail.do"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayArticleDetail.do"/>
+			<mvc:exclude-mapping path="/activity/getMyAccount.do"/>
+			<mvc:exclude-mapping path="/activity/flop.do"/>
+			<mvc:exclude-mapping path="/activity/luckyMoneyIndex.do"/>
+			<mvc:exclude-mapping path="/activity/wishCommit.do"/>
+			<mvc:exclude-mapping path="/activity/activityMay18d.do"/>
+			
+			<mvc:exclude-mapping path="/jsActivityLuckMoney/getJsActivityLuckyMoney.do"/>
+			<mvc:exclude-mapping path="/jsActivityLuckMoney/getshaerUserName.do"/>
+			<mvc:exclude-mapping path="/activity/activityHitIceIndex.do"/>
+			
+			<mvc:exclude-mapping path="/assetRecord/getTheRewards.do"/>
+			<mvc:exclude-mapping path="/member/getUse.do"/>
+			<mvc:exclude-mapping path="/member/getReceiptAddress.do"/>
+			<mvc:exclude-mapping path="/member/insertReceiptAddress.do"/>
+			
+			<mvc:exclude-mapping path="/product/getNewActivityProduct.do"/>
+			<mvc:exclude-mapping path="/product/activityPrizeBanner.do"/>
+			<mvc:exclude-mapping path="/product/getPorductList.do"/>
+			
+			<mvc:exclude-mapping path="/recharge/fuiouNotice.do"/>
+			<mvc:exclude-mapping path="/index/isFuiou.do"/>
+			
+			
+			<mvc:exclude-mapping path="/member/selectDrmembercount.do"/>
+			<mvc:exclude-mapping path="/product/selectPorductClassifyByDeadline.do"/>
+			
+					
+			<!-- 升级APP2.0用 -->
+			<mvc:exclude-mapping path="/recharge/fuiouNotice.dos"/>
+			
+			<mvc:exclude-mapping path="/product/getMyLuckCodes.dos"/>
+			<mvc:exclude-mapping path="/product/experienceDetail.dos"/>
+            <mvc:exclude-mapping path="/weChat/getToken.dos"/>
+			<mvc:exclude-mapping path="/index/startAdvertisement.dos"/>
+			
+			<mvc:exclude-mapping path="/login/validateCode2.dos"/>
+			<mvc:exclude-mapping path="/login/validateCode.dos"/>
+			
+			<mvc:exclude-mapping path="/activity/getActivityFriendStatistics.dos"/>
+			<mvc:exclude-mapping path="/activity/getActivityFriendConfigAll.dos"/>
+			<mvc:exclude-mapping path="/activity/getActivityFriendConfig.dos"/>
+			<mvc:exclude-mapping path="/activity/isExperience.dos"/>
+			<mvc:exclude-mapping path="/activity/doubleAggIndex.dos"/>
+			<mvc:exclude-mapping path="/activity/tearOpen.dos"/>
+			<mvc:exclude-mapping path="/activity/dobuleEggShare.dos"/>
+			<mvc:exclude-mapping path="/activity/accountInvestLogs.dos"/>
+			<mvc:exclude-mapping path="/activity/getTopFive.dos"/>
+			<mvc:exclude-mapping path="/activity/getEatGlutinousLog.dos"/>
+			<mvc:exclude-mapping path="/activity/eatGlutinous.dos"/>
+			<mvc:exclude-mapping path="/activity/getNoviceListAndCount.dos"/>
+			<mvc:exclude-mapping path="/activity/lastRegMember.dos"/>
+			<mvc:exclude-mapping path="/activity/iPhoneSEM.dos"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayList.dos"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayDetail.dos"/>
+			<mvc:exclude-mapping path="/activity/getOpenDayArticleDetail.dos"/>
+			<mvc:exclude-mapping path="/activity/getMyAccount.dos"/>
+			<mvc:exclude-mapping path="/activity/flop.dos"/>
+			<mvc:exclude-mapping path="/activity/luckyMoneyIndex.dos"/>
+			<mvc:exclude-mapping path="/activity/wishCommit.dos"/>
+
+			<mvc:exclude-mapping path="/activity/activityMay18d.dos"/>
+
+			<mvc:exclude-mapping path="/activity/offlineActivityList.dos"/>
+			<mvc:exclude-mapping path="/activity/offlineActivityDetail.dos"/>
+			<mvc:exclude-mapping path="/activity/getAllActivity.dos"/>
+			<mvc:exclude-mapping path="/activity/dragonBoat.dos"/>
+			<mvc:exclude-mapping path="/activity/getCouponIsActivation.dos"/>
+			<mvc:exclude-mapping path="/activity/pastOrderShareList.dos"/>
+			<mvc:exclude-mapping path="/activity/insertOrderShare.dos"/>
+			
+			<mvc:exclude-mapping path="/activity/jsGratitudeBlessingHome.dos"/>
+			<mvc:exclude-mapping path="/activity/split.dos"/>
+			<mvc:exclude-mapping path="/activity/insertJsGratitudeBlessing.dos"/>
+			<mvc:exclude-mapping path="/activity/chiZhaIndex.dos"/>
+			
+			
+			<mvc:exclude-mapping path="/jsActivityLuckMoney/getJsActivityLuckyMoney.dos"/>
+			<mvc:exclude-mapping path="/jsActivityLuckMoney/getshaerUserName.dos"/>
+			<mvc:exclude-mapping path="/activity/activityHitIceIndex.dos"/>
+			
+			<mvc:exclude-mapping path="/assetRecord/getTheRewards.dos"/>
+			<mvc:exclude-mapping path="/member/getUse.dos"/>
+			<mvc:exclude-mapping path="/member/getReceiptAddress.dos"/>
+			<mvc:exclude-mapping path="/member/insertReceiptAddress.dos"/>
+			
+			<mvc:exclude-mapping path="/product/getNewActivityProduct.dos"/>
+			<mvc:exclude-mapping path="/product/activityPrizeBanner.dos"/>
+			<mvc:exclude-mapping path="/product/getPorductList.dos"/>
+			<mvc:exclude-mapping path="/index/isFuiou.dos"/>
+			
+			<mvc:exclude-mapping path="/member/selectDrmembercount.dos"/>
+			<mvc:exclude-mapping path="/product/index.dos"/>
+			<mvc:exclude-mapping path="/integral/queryList.dos"/>
+			<mvc:exclude-mapping path="/integral/getCommodityInfo.dos"/>
+			<mvc:exclude-mapping path="/integral/queryMyTask.dos"/>
+			<mvc:exclude-mapping path="/integral/queryEarnPoint.dos"/>
+			<mvc:exclude-mapping path="/integral/queryConsumptionPoint.dos"/>
+			<mvc:exclude-mapping path="/integral/integralSignin.dos"/>
+			<mvc:exclude-mapping path="/register/beforeReg.dos"/>
+			<bean class="com.jsjf.interceptor.ParamHandleInterceptor"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+</beans>

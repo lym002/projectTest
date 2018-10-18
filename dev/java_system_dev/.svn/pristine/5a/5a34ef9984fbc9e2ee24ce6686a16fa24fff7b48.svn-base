@@ -1,0 +1,44 @@
+package com.jsjf.controller.cpa;
+
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.service.cpa.DrChannelInfoAndroidInvestTailService;
+
+@RequestMapping("/androidInvestTail")
+@Controller
+public class DrChannelAndroidInvestTailController {
+	private static Logger log = Logger.getLogger(DrChannelAndroidInvestTailController.class);
+	
+	@Autowired
+	private DrChannelInfoAndroidInvestTailService androidInvestTailService;
+	
+	
+	@RequestMapping("/androidInvestTailView")
+	public String toDrChannelInfoList(Map<String,Object> model) {
+		return "system/cpa/drChannelInfoAndroidInvestTailList";
+	}
+	
+	
+	@RequestMapping(value= "/queryAndroidInvestTailList")
+	@ResponseBody
+	public PageInfo drChannelInfoList(@RequestParam Map<String,Object> param,Integer page,Integer rows) {
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = androidInvestTailService.queryAndroidInvestTailList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+}

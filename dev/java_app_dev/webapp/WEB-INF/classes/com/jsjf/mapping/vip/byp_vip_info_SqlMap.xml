@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.VipInfoMapper">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.VipInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="vip_level" jdbcType="INTEGER" property="vipLevel" />
+    <result column="vip_name" jdbcType="VARCHAR" property="vipName" />
+    <result column="level_update_red_packet" jdbcType="VARCHAR" property="levelUpdateRedPacket" />
+    <result column="growth_value_min" jdbcType="DECIMAL" property="growthValueMin" />
+    <result column="growth_value_max" jdbcType="DECIMAL" property="growthValueMax" />
+    <result column="integral_multiply" jdbcType="DOUBLE" property="integralMultiply" />
+    <result column="rights_and_interests_id" jdbcType="VARCHAR" property="rightsAndInterestsId" />
+    <result column="free_withdraw_deposit" jdbcType="INTEGER" property="freeWithdrawDeposit" />
+    <result column="created_time" jdbcType="TIMESTAMP" property="createdTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, vip_level, vip_name, level_update_red_packet, growth_value_min, growth_value_max,
+    integral_multiply, rights_and_interests_id, free_withdraw_deposit, created_time, update_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByVipLevel" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_info
+    where vip_level = #{vipLevel,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.VipInfo">
+    insert into byp_vip_info (id, vip_level, vip_name,
+    level_update_red_packet, growth_value_min, growth_value_max,
+    integral_multiply, rights_and_interests_id,free_withdraw_deposit,
+    created_time, update_time)
+    values (#{id,jdbcType=INTEGER}, #{vipLevel,jdbcType=INTEGER}, #{vipName,jdbcType=VARCHAR},
+    #{levelUpdateRedPacket,jdbcType=VARCHAR}, #{growthValueMin,jdbcType=DECIMAL}, #{growthValueMax,jdbcType=DECIMAL},
+    #{integralMultiply,jdbcType=DOUBLE}, #{rightsAndInterestsId,jdbcType=VARCHAR},#{freeWithdrawDeposit,jdbcType=INTEGER},
+    #{createdTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.vip.VipInfo">
+    insert into byp_vip_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="vipLevel != null">
+        vip_level,
+      </if>
+      <if test="vipName != null">
+        vip_name,
+      </if>
+      <if test="levelUpdateRedPacket != null">
+        level_update_red_packet,
+      </if>
+      <if test="growthValueMin != null">
+        growth_value_min,
+      </if>
+      <if test="growthValueMax != null">
+        growth_value_max,
+      </if>
+      <if test="integralMultiply != null">
+        integral_multiply,
+      </if>
+      <if test="rightsAndInterestsId != null">
+        rights_and_interests_id,
+      </if>
+      <if test="freeWithdrawDeposit != null">
+        free_withdraw_deposit,
+      </if>
+      <if test="createdTime != null">
+        created_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="vipLevel != null">
+        #{vipLevel,jdbcType=INTEGER},
+      </if>
+      <if test="vipName != null">
+        #{vipName,jdbcType=VARCHAR},
+      </if>
+      <if test="levelUpdateRedPacket != null">
+        #{levelUpdateRedPacket,jdbcType=VARCHAR},
+      </if>
+      <if test="growthValueMin != null">
+        #{growthValueMin,jdbcType=DECIMAL},
+      </if>
+      <if test="growthValueMax != null">
+        #{growthValueMax,jdbcType=DECIMAL},
+      </if>
+      <if test="integralMultiply != null">
+        #{integralMultiply,jdbcType=DOUBLE},
+      </if>
+      <if test="rightsAndInterestsId != null">
+        #{rightsAndInterestsId,jdbcType=VARCHAR},
+      </if>
+      <if test="freeWithdrawDeposit != null">
+        #{freeWithdrawDeposit,jdbcType=INTEGER},
+      </if>
+      <if test="createdTime != null">
+        #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.vip.VipInfo">
+    update byp_vip_info
+    <set>
+      <if test="vipLevel != null">
+        vip_level = #{vipLevel,jdbcType=INTEGER},
+      </if>
+      <if test="vipName != null">
+        vip_name = #{vipName,jdbcType=VARCHAR},
+      </if>
+      <if test="levelUpdateRedPacket != null">
+        level_update_red_packet = #{levelUpdateRedPacket,jdbcType=VARCHAR},
+      </if>
+      <if test="growthValueMin != null">
+        growth_value_min = #{growthValueMin,jdbcType=DECIMAL},
+      </if>
+      <if test="growthValueMax != null">
+        growth_value_max = #{growthValueMax,jdbcType=DECIMAL},
+      </if>
+      <if test="integralMultiply != null">
+        integral_multiply = #{integralMultiply,jdbcType=DOUBLE},
+      </if>
+      <if test="rightsAndInterestsId != null">
+        rights_and_interests_id = #{rightsAndInterestsId,jdbcType=VARCHAR},
+      </if>
+      <if test="freeWithdrawDeposit != null">
+        free_withdraw_deposit = #{freeWithdrawDeposit,jdbcType=INTEGER},
+      </if>
+      <if test="createdTime != null">
+        created_time = #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.VipInfo">
+    update byp_vip_info
+    set vip_level = #{vipLevel,jdbcType=INTEGER},
+    vip_name = #{vipName,jdbcType=VARCHAR},
+    level_update_red_packet = #{levelUpdateRedPacket,jdbcType=VARCHAR},
+    growth_value_min = #{growthValueMin,jdbcType=DECIMAL},
+    growth_value_max = #{growthValueMax,jdbcType=DECIMAL},
+    integral_multiply = #{integralMultiply,jdbcType=DOUBLE},
+    rights_and_interests_id = #{rightsAndInterestsId,jdbcType=VARCHAR},
+    free_withdraw_deposit =  #{freeWithdrawDeposit,jdbcType=INTEGER},
+    created_time = #{createdTime,jdbcType=TIMESTAMP},
+    update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <select id="queryNextVipLevel" parameterType="java.util.Map" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_info bvi where 1=1
+    <if test="growthValueMin != null">
+        and #{growthValueMin} <![CDATA[ < ]]> bvi.growth_value_min
+    </if>
+    <if test="growthValueMax != null">
+        and #{growthValueMax} <![CDATA[ >= ]]> bvi.growth_value_min
+    </if>
+    <if test="order">
+        order by ${order}
+    </if>
+    <if test="limit">
+        limit ${limit}
+    </if>
+  </select>
+</mapper>

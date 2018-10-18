@@ -1,0 +1,469 @@
+package com.jsjf.controller.index;
+
+import com.SensorsAnalytics.SensorsAnalytics;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.*;
+import com.jsjf.dao.cpa.DrChannelInfoDAO;
+import com.jsjf.model.cpa.DrChannelInfo;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberBaseInfo;
+import com.jsjf.model.product.DrProductInfo;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.activity.DrActivityParameterService;
+import com.jsjf.service.activity.DrMemberFavourableService;
+import com.jsjf.service.member.DrMemberAppLoginLogService;
+import com.jsjf.service.member.DrMemberBaseInfoService;
+import com.jsjf.service.member.DrMemberCouponService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.product.DrProductInfoService;
+import com.jsjf.service.system.SysMessageLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@RequestMapping( "/register" )
+@Controller
+public class RegisterController {
+	private Logger log = Logger.getLogger(this.getClass());
+	
+	@Autowired
+	public DrMemberBaseInfoService drMemberBaseInfoService;
+	@Autowired
+	public SysMessageLogService sysMessageLogService;
+	@Autowired
+	public DrMemberService drMemberService;
+	@Autowired
+	public DrMemberCouponService drMemberCouponService;
+	@Autowired
+	private DrMemberFavourableService drMemberFavourableService;
+	@Autowired
+	public RedisClientTemplate redisClientTemplate;
+	@Autowired
+	public DrMemberAppLoginLogService drMemberAppLoginLogService;
+	@Autowired
+	public DrActivityParameterService drActivityParameterService;
+	@Autowired
+	public DrProductInfoService drProductInfoService;
+	@Autowired
+	public DrChannelInfoDAO drChannelInfoDAO;
+	
+	
+	@RequestMapping("/existMobilePhone")
+	@ResponseBody
+	public BaseResult vertifyPhoneRep(HttpServletRequest req, String mobilephone,Integer channel){
+		BaseResult br = new BaseResult();
+		Map<String, Object> param = new HashMap<String, Object>();
+		try {
+			boolean flag = drMemberService.isExistsMobilphone(mobilephone);
+			if(!flag && !Utils.isBlank(channel) && (channel ==1 || channel == 2)){
+				String token = drMemberAppLoginLogService.getPhoneToken(mobilephone);
+				param.put("time", token);
+			}
+			param.put("exists", flag);
+			br.setMap(param);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("手机号码【"+mobilephone+"】注册验证失败！", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+
+	/**
+	 * 发送注册验证码短信
+	 * @param req
+	 * @param mobilephone
+	 * @return
+	 */
+	@RequestMapping("/sendAppRegMsg")
+	@ResponseBody
+	public BaseResult sendAppRegMsg(HttpServletRequest req, String mobilephone,Integer type,String time){
+		BaseResult br = new BaseResult();
+		try {
+		
+			String token = drMemberAppLoginLogService.getPhoneToken(mobilephone);
+			if(Utils.strIsNull(time) || Utils.strIsNull(token) || !time.equals(SecurityUtils.MD5AndSHA256(token))){
+				br.setSuccess(false);
+				br.setErrorCode("1003");
+				return br;
+			}
+			
+			Map<String,Object> map = new HashMap<String, Object>();
+			//判断手机发送短信条数
+			map.put("uid", 0);
+			map.put("phone", mobilephone);
+			map.put("type", 1);
+			Pattern p = Pattern.compile("^1(3|4|5|7|8)\\d{9}$");  
+			Matcher m = p.matcher(mobilephone);  
+			if (!m.matches()){
+				br.setSuccess(false);
+				br.setErrorCode("1004");
+				return br;
+			}
+			int sendCount = sysMessageLogService.selectMsgLogSendCount(map);
+			map.clear();
+			if(sendCount > 4){
+				br.setSuccess(false);
+				br.setErrorCode("1002");//每天只能发5条短信
+				return br;
+			}
+			if(Utils.isObjectEmpty(type) || type == 2){
+				type = 1;
+			}
+			String redisCode = redisClientTemplate.get("regMsgCode_"+mobilephone);
+			int flag = 0;
+			int  seconds = 0;
+			if(StringUtils.isNotEmpty(redisCode)){
+				//当前时间和当前手机号码上次发送短信时间的秒数差
+				seconds = Utils.getDateSecondsSub(Utils.getStrDatetime(new Date()), redisClientTemplate.get("regMsgSendTime_"+mobilephone));
+				if(seconds < 59){
+					if(2 == type){
+						String regMsgUse = redisClientTemplate.get("regMsgUse_"+mobilephone);
+						if("1".equals(regMsgUse)){
+							br.setSuccess(false);
+							br.setErrorCode("8888");//语音频繁操作
+							return br;
+						}else{
+							seconds = 60;
+						}
+					}
+				}else{
+					redisCode = Utils.getRandomNumber6();//生成验证码
+					
+					//短信验证码 10分钟有效
+					redisClientTemplate.setex("regMsgCode_"+mobilephone, 600, redisCode);
+					//短信发送时间 10分钟有效
+					redisClientTemplate.setex("regMsgSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			}else if(StringUtils.isBlank(redisCode)){//短信内容是否存在redis中
+				redisCode = Utils.getRandomNumber6();//生成验证码
+				seconds = 60;
+				//短信验证码 5分钟有效
+				redisClientTemplate.setex("regMsgCode_"+mobilephone, 600, redisCode);
+				//短信发送时间 5分钟有效
+				redisClientTemplate.setex("regMsgSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			}
+			if(seconds > 59){//两次时间间隔60秒，重新发送短信
+				String content = redisClientTemplate.getProperties("regSms")
+						.replace("${code}",redisCode);
+				
+				SysMessageLog logs = new SysMessageLog(0, content,1, null, mobilephone);
+				flag = sysMessageLogService.sendMsg(logs,type);
+			}else{
+				flag = 1;
+			}
+			//短信是否发送成功
+			if (flag > 0) {
+				br.setSuccess(true);
+			} else {
+				br.setSuccess(false);
+				br.setErrorCode("1003");//短信发送失败
+			}
+		} catch (Exception e) {
+			log.error("短信发送失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+	/**
+	 * 发送注册验证码短信
+	 * @param req
+	 * @param mobilephone
+	 * @return
+	 */
+	@RequestMapping("/sendRegMsg")
+	@ResponseBody
+	public BaseResult sendRegMsg(HttpServletRequest req, String mobilephone,String picCode,boolean isPic,Integer type){
+		BaseResult br = new BaseResult();
+		try {
+			//H5页面判断图形验证码是否正确
+			String channel = req.getParameter("channel")==null?"":req.getParameter("channel").toString();
+			
+			if(Utils.strIsNull(channel)){
+				br.setSuccess(false);
+				br.setErrorCode("9999");
+				br.setErrorMsg("产数不正确");
+				return br;
+			}
+			
+			if(!"".equals(channel)&&!"1".equals(channel) && !"2".equals(channel)){
+				if(StringUtils.isBlank(picCode)){//图形验证码为空
+					br.setSuccess(false);
+					br.setErrorCode("1005");
+					br.setErrorMsg("图形验证码不能为空");
+					return br;
+				}else if(StringUtils.isBlank(redisClientTemplate.get("rand"+req.getSession().getId())) || !picCode.toLowerCase().equals(redisClientTemplate.get("rand"+req.getSession().getId()).toLowerCase())){
+					br.setSuccess(false);
+					br.setErrorCode("1006");
+					br.setErrorMsg("图形验证码不正确");
+					return br;
+				}
+			}
+
+			Map<String,Object> map = new HashMap<String, Object>();
+			//判断手机发送短信条数
+			map.put("uid", 0);
+			map.put("phone", mobilephone);
+			map.put("type", 1);
+			Pattern p = Pattern.compile("^1(3|4|5|7|8)\\d{9}$");  
+			Matcher m = p.matcher(mobilephone);  
+			if (!m.matches()){
+				br.setSuccess(false);
+				br.setErrorCode("1004");
+				return br;
+			}
+			int sendCount = sysMessageLogService.selectMsgLogSendCount(map);
+			map.clear();
+			if(sendCount > 4){
+				br.setSuccess(false);
+				br.setErrorCode("1002");//每天只能发5条短信
+				return br;
+			}
+			if(Utils.isObjectEmpty(type) || type == 2){
+				type = 1;
+			}
+			String redisCode = redisClientTemplate.get("regMsgCode_"+mobilephone);
+			int flag = 0;
+			int  seconds = 0;
+			if(StringUtils.isNotEmpty(redisCode)){
+				//当前时间和当前手机号码上次发送短信时间的秒数差
+				seconds = Utils.getDateSecondsSub(Utils.getStrDatetime(new Date()), redisClientTemplate.get("regMsgSendTime_"+mobilephone));
+				if(seconds < 59){
+					if(2 == type){
+						String regMsgUse = redisClientTemplate.get("regMsgUse_"+mobilephone);
+						if("1".equals(regMsgUse)){
+							br.setSuccess(false);
+							br.setErrorCode("8888");//语音频繁操作
+							return br;
+						}else{
+							seconds = 60;
+						}
+					}
+				}else{
+					//等宝验证码到6位
+					redisCode = Utils.getRandomNumber6();//生成验证码
+					//短信验证码 10分钟有效
+					redisClientTemplate.setex("regMsgCode_"+mobilephone, 600, redisCode);
+					//短信发送时间 10分钟有效
+					redisClientTemplate.setex("regMsgSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				}
+			}else if(StringUtils.isBlank(redisCode)){//短信内容是否存在redis中
+                //等宝验证码到6位
+				redisCode = Utils.getRandomNumber6();//生成验证码
+				seconds = 60;
+				//短信验证码 5分钟有效
+				redisClientTemplate.setex("regMsgCode_"+mobilephone, 600, redisCode);
+				//短信发送时间 5分钟有效
+				redisClientTemplate.setex("regMsgSendTime_"+mobilephone, 600, Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			}
+			if(seconds > 59){//两次时间间隔60秒，重新发送短信
+				String content = redisClientTemplate.getProperties("regSms")
+						.replace("${code}",redisCode);
+				SysMessageLog logs = new SysMessageLog(0, content,1, null, mobilephone);
+				flag = sysMessageLogService.sendMsg(logs,type);
+			}else{
+				flag = 1;
+			}
+			//短信是否发送成功
+			if (flag > 0) {
+				br.setSuccess(true);
+			} else {
+				br.setSuccess(false);
+				br.setErrorCode("1003");//短信发送失败
+			}
+		} catch (Exception e) {
+			log.error("短信发送失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return br;
+	}
+	
+	/**
+	 *  用户注册
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping(value="/reg", method = RequestMethod.POST)
+	@ResponseBody
+	public String register(HttpServletRequest req, String mobilephone , String passWord , 
+			String smsCode, String recommPhone,String toFrom,String picCode , String deviceJson){
+        SensorsAnalytics instance = SensorsAnalyticsUtil.getInstance();
+        Map<String, Object> properties = new HashMap<String, Object>();
+        SensorsAnalytics instance2 = SensorsAnalyticsUtil.getInstance();//设置用户属性
+        Map<String, Object> properties2 = new HashMap<String, Object>();
+		BaseResult br = new BaseResult();
+		DrMember member = new DrMember();
+		DrMemberBaseInfo baseinfo = new DrMemberBaseInfo();
+        Integer uid =0 ;
+		member.setMobilephone(mobilephone);
+		member.setPassWord(passWord);
+		String regPhoneCode = redisClientTemplate.get("regMsgCode_"+member.getMobilephone());
+		//神策设置用户属性
+        properties2.put("Mobile", mobilephone); // 手机号
+        properties2.put("registSource", toFrom==null?"":toFrom);//注册来源
+        properties2.put("registDate", new Date());//注册时间
+		if(StringUtils.isBlank(smsCode)){//短信验证码为空
+			br.setSuccess(false);
+			br.setErrorCode("1001");
+			return JSON.toJSONString(br);
+		}else if(!smsCode.equals(regPhoneCode) || StringUtils.isBlank(regPhoneCode)){//验证码错误
+			br.setSuccess(false);
+			br.setErrorCode("1002");
+			return JSON.toJSONString(br);
+		}else if(Utils.isObjectEmpty(member.getMobilephone())){//手机号码为空
+			br.setSuccess(false);
+			br.setErrorCode("1003");
+			return JSON.toJSONString(br);
+		}
+		if(Utils.isObjectEmpty(member.getPassWord())){ //密码不合法
+			br.setErrorCode("1005");
+			return JSON.toJSONString(br);
+		}
+		try {
+				//如果注册用户名为空则用户名为手机号码
+				member.setMobileVerify(1);//手机号码已认证
+				member.setRegDate(new Date());
+				member.setLoginVerify(0);
+				member.setEmailVerify(0);
+				member.setRealVerify(0);
+				member.setIsBlack(0);
+				member.setStatus(1);
+				member.setRegIp(Utils.getIpAddr(req));
+				member.setLastLoginTime(new Date());
+				member.setLastLoginIp(Utils.getIpAddr(req));
+				member.setRegFrom(Integer.parseInt(req.getParameter("channel")));
+				if(Integer.parseInt(req.getParameter("channel"))==1){
+					if(toFrom != null && toFrom != ""){
+						member.setToFrom(toFrom);
+					}else{
+						member.setToFrom("appStore");
+					}
+				}else{
+					member.setToFrom(toFrom);
+				}
+				if(req.getParameter("tid") != null){
+					member.setTid(req.getParameter("tid").toString());//渠道用户唯一标识
+				}
+				member.setPassWord(member.getPassWord());
+				Boolean flag = redisClientTemplate.tryLock("reg.mobilephone."+member.getMobilephone(), 3, TimeUnit.SECONDS,true);
+				if(flag){
+					if(drMemberService.isExistsMobilphone(mobilephone)){
+						br.setSuccess(false);
+						br.setErrorCode("1007");
+						return JSON.toJSONString(br);
+					}
+					Integer rid = null;//推荐人ID
+					if(Utils.isObjectNotEmpty(recommPhone)){//推荐用户是否存在
+						DrMember m = drMemberService.selectDrMemberByMobileOrRecomm(recommPhone);//推荐用户是否存在
+						if(Utils.isObjectEmpty(m)){
+							br.setSuccess(false);
+							br.setErrorCode("1008");
+							return JSON.toJSONString(br);
+						}else{
+							rid = m.getUid();
+						}
+					}
+
+                    uid = drMemberService.insertMember(baseinfo, member, rid, deviceJson);
+                    //持久化用户设备信息
+					if(!Utils.strIsNull(deviceJson)){
+						JSONObject json = JSON.parseObject(deviceJson);
+						drMemberService.insertDevice(json,member.getUid());
+					}
+					//神策埋点
+                    properties.put("RegisterChannel",toFrom ==null ? "h5":toFrom);
+                    properties.put("Phone",mobilephone);
+					String token = drMemberAppLoginLogService.insertToken(member);
+					if(Utils.isObjectNotEmpty(rid)&&new Date().before(Utils.parse("2016-08-31 23:59:59", "yyyy-MM-dd HH:mm:ss"))){//注册送加息券
+						drMemberFavourableService.sendFavourable(rid, 544);
+					}
+					
+					//赠送 红包
+//					try {
+//						drActivityParameterService.valentineActivitys(member.getUid(), 0, 1,member.getToFrom());
+//					} catch (Exception e) {
+//						System.out.println("赠送红包异常[uid:"+member.getUid()+",channel:"+member.getRegFrom()+",错误:"+e.getMessage()+"]");
+//					}
+					//送红包以及注册体验金
+					Map<String, Object> map2 = new HashMap<String,Object>();
+					map2.put("type", 0);
+					map2.put("uid", member.getUid());
+					redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(),SerializeUtil.serialize(map2));
+					map2.clear();
+					member.setTpwdSetting(0);
+					member.setPassWord(null);
+					Map<String,Object> map = new HashMap<String,Object>();
+					map2.put("type", 1);
+					map2.put("status", 5);
+					List<DrProductInfo> productInfoList = drProductInfoService.selectProductInfo(map2);
+					map.put("pid", productInfoList.size()>0?productInfoList.get(0).getId():1379);
+					map.put("member", member);
+					map.put("token", token);
+					//获取toFrom对应的渠道
+					Map<String,Object> param =  new HashMap<String,Object>();
+					param.put("code", member.getToFrom());
+					List<DrChannelInfo> channelList = drChannelInfoDAO.getDrChannelInfoListForMap(param);
+					if(!Utils.isEmptyList(channelList)){
+						DrChannelInfo channel1 = channelList.get(0);//获取渠道
+						map.put("isCps", channel1.getType()==null?0:channel1.getType());//渠道类型，如果为null默认为非CPS
+					}else{
+						map.put("isCps", 0);//如果渠道不存在，则默认是非CPS
+					}
+					drMemberAppLoginLogService.deletePhoneToken(mobilephone);//删除手机token
+					br.setMap(map);
+					br.setSuccess(true);
+					redisClientTemplate.del("regMsgCode_"+member.getMobilephone());
+					redisClientTemplate.del("regMsgSendTime_"+member.getMobilephone());
+					map.put("regSendLabel", redisClientTemplate.getProperties("regSendLabel"));
+				}else{
+					br.setErrorCode("9999");
+					br.setSuccess(false);
+					log.info("注册手机号获取锁失败："+member.getMobilephone());
+				}
+
+		} catch (Exception e) {
+			log.error("注册失败："+mobilephone, e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		try {
+            instance.track(uid.toString(), true, "RegisterSuccess" ,properties);
+            instance2.profileSet(String.valueOf(UUID.randomUUID()), false, properties2);
+            instance.shutdown();
+            instance2.shutdown();
+        }catch (Exception e){
+            log.error("神策埋点报错!:"+e.getMessage());
+        }
+        return JSON.toJSONString(br);
+	}
+
+	@RequestMapping(value="/beforeReg", method = RequestMethod.POST)
+	@ResponseBody
+	public String beforeReg(HttpServletRequest req, String androidUuid,String toFrom){
+		BaseResult br = new BaseResult();
+		try{
+			drMemberService.insertMemberAndroidUuio(androidUuid,toFrom);
+		}catch(Exception e){
+			log.error("安卓渠道用户注册之前获取用户uuid失败："+androidUuid, e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		return JSON.toJSONString(br);
+	}
+	
+}

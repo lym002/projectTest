@@ -1,0 +1,57 @@
+<?xml version="1.0" ?>   
+<project name="ROOT" default="war">  
+    	
+ 	<!--创建build/classes和dist目录，用init来负责完成这些工作 -->
+ 		
+    <target name="init">  
+        <mkdir dir="build/classes"/>  
+        <mkdir dir="dist" />  
+    </target>  
+  	
+  	<!-- 编译src目录的类到build/classes目录，编译之前首先要设置好classpath -->
+    <path id="compile.classpath">  
+        <fileset dir="webapp/WEB-INF/lib">  
+            <include name="*.jar"/>  
+        </fileset>  
+    </path>  
+    
+	
+	<!-- 用javac命令进行编译。编译时要保证相关目录已创建好，所以，编译的工作依赖于init -->
+		
+    <target name="compile" depends="init" >  
+        <javac destdir="build/classes" debug="true" srcdir="src"  includeantruntime="on" encoding="UTF-8" >  
+            <classpath refid="compile.classpath"/> 
+        	<compilerarg line="-XDignore.symbol.file"/>
+        	<!--<compilerarg line="-Xlint:deprecation"/>
+        	<compilerarg line="-Xlint:unchecked"/>-->
+        </javac>
+  		 <copy todir="build/classes" >
+			<fileset dir="./src">
+ 				<exclude name="**/*.java" />
+			</fileset>
+		</copy> 
+       <copy todir="build/classes/" overwrite="true">
+    			<fileset dir="./build/">
+    			</fileset>
+    	</copy> 
+    </target>  
+      
+	
+     <!--打war包， -->       	
+    <target name="war" depends="compile">  
+        <war destfile="dist/ROOT.war" webxml="webapp/WEB-INF/web.xml">  
+            <fileset dir="webapp"/>  
+            <lib dir="webapp/WEB-INF/lib"/>  
+            <classes dir="build/classes"/> 
+        </war>
+    </target>  
+	
+
+	
+     <!-- 清理工作 -->       	
+    <target name="clean">  
+        <delete dir="dist" />  
+        <delete dir="build" />  
+    </target>  
+      
+</project>  

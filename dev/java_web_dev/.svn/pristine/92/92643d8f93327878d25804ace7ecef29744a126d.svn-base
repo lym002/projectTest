@@ -1,0 +1,212 @@
+package com.jsjf.service.integral.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.SystemConstant;
+import com.jsjf.dao.integral.TaskIntegralRulesDao;
+import com.jsjf.dao.member.DrMemberFundsRecordDAO;
+import com.jsjf.model.integral.TaskIntegralRules;
+import com.jsjf.service.integral.TaskIntegralRulesService;
+import com.jsjf.service.integral.UserDetailIntegralService;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+
+@Service
+public class TaskIntegralRulesServiceImpl implements TaskIntegralRulesService{
+
+    private transient static Logger log = Logger.getLogger(TaskIntegralRulesServiceImpl.class);
+
+    @Autowired
+    private TaskIntegralRulesDao taskIntegralRulesDao;
+    @Autowired
+    private DrMemberFundsRecordDAO drMemberFundsRecordDAO;
+    @Autowired
+    private UserDetailIntegralService userDetailIntegralService;
+
+    @Override
+    public int deleteByPrimaryKey(Integer id) {
+        return taskIntegralRulesDao.deleteByPrimaryKey(id);
+    }
+
+    @Override
+    public int insert(TaskIntegralRules record) {
+        return taskIntegralRulesDao.insert(record);
+    }
+
+    @Override
+    public int insertSelective(TaskIntegralRules record) {
+        return taskIntegralRulesDao.insertSelective(record);
+    }
+
+    @Override
+    public TaskIntegralRules selectByPrimaryKey(Integer id) {
+        return taskIntegralRulesDao.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public int updateByPrimaryKeySelective(TaskIntegralRules record) {
+        return taskIntegralRulesDao.updateByPrimaryKeySelective(record);
+    }
+
+    @Override
+    public int updateByPrimaryKey(TaskIntegralRules record) {
+        return taskIntegralRulesDao.updateByPrimaryKey(record);
+    }
+
+    /***
+     * 查询任务进度
+     * @param uid
+     * @return
+     */
+    @Override
+    public BaseResult selectMyTask(Integer uid) {
+        BaseResult br = new BaseResult();
+        //查询每日任务完成进度参数
+        Map<String, Object> param = new HashMap<>();
+        Map<String, Object> resultMap = new HashMap<>();
+        JSONObject jsonObject = null;
+        List<Object> maps = new ArrayList<>();
+        boolean flag = false;
+        int taskSize = 0;
+        try {
+            //查询今天用户的数据
+            Date date = new Date();
+            param.put("uid", uid);
+            param.put("startTime", date);
+            param.put("endTime", date);
+            List<TaskIntegralRules> taskIntegralRulesList = taskIntegralRulesDao.selectByType(1);
+            for (TaskIntegralRules rules : taskIntegralRulesList) {
+                if (rules.getTaskType().equals(SystemConstant.RECHARGE_TYPE)) {
+                    //查询今日充值的数据
+                    param.put("tradeType", 1);
+                    taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                    if (taskSize > 0) {//完成任务
+                        flag = true;
+                    }
+                } else if (rules.getTaskType().equals(SystemConstant.INVEST_TYPE)) {
+                    param.put("tradeType", 3);//投资记录
+                    taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                    if (taskSize > 0) {//完成任务
+                        flag = true;
+                    }
+                }
+                jsonObject = new JSONObject();
+                jsonObject.put("taskName", rules.getTaskType());
+                jsonObject.put("picUrl", "");
+                jsonObject.put("taskStatus", flag);
+                jsonObject.put("remark", "");
+                jsonObject.put("taskIntegral",rules.getTaskIntegral());
+                maps.add(jsonObject);
+            }
+            //将日常任务存入map
+            resultMap.put("dailyTask", maps);
+            //清空数据
+            param.clear();
+
+            //查询新手任务完成进度
+            maps = new ArrayList<>();
+            maps = queryNewTask(uid);
+            resultMap.put("newUserTask", maps);
+            br.setMap(resultMap);
+        }catch (Exception e){
+            param.clear();
+            jsonObject.clear();
+            maps.clear();
+            log.error("查询任务错误！",e);
+            br.setErrorCode("9999");
+            br.setErrorMsg("系统错误！");
+        }
+        return br;
+    }
+
+    /**
+     * 查询成长任务
+     * @param uid
+     * @return
+     */
+    public List<Object> queryNewTask(Integer uid){
+        //查询新手任务完成进度
+        List<Object> maps = new ArrayList<>();
+        Map<String, Object> param = new HashMap<>();
+        JSONObject jsonObject = null;
+        boolean flag = false;
+        int taskSize = 0;
+        param.put("uid", uid);
+        List<TaskIntegralRules> taskIntegralRulesList = taskIntegralRulesDao.selectByType(0);
+        for (TaskIntegralRules rules : taskIntegralRulesList) {
+            if (rules.getTaskType().equals(SystemConstant.RECHARGE_TYPE_FIRST)) {
+                //查询今日充值的数据
+                param.put("tradeType", 1);
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                if (taskSize > 0) {//完成任务
+                    flag = true;
+                }
+            } else if (rules.getTaskType().equals(SystemConstant.INVEST_TYPE_FIRST)) {
+                param.put("tradeType", 3);
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                if (taskSize > 0) {//完成任务
+                    flag = true;
+                }
+            }
+            jsonObject = new JSONObject();
+            jsonObject.put("taskName", rules.getTaskType());
+            jsonObject.put("picUrl", "");
+            jsonObject.put("taskStatus", flag);//任务完成状态（true/false）
+            jsonObject.put("remark", "");
+            jsonObject.put("taskIntegral",rules.getTaskIntegral());
+            maps.add(jsonObject);
+        }
+        param.clear();
+        return maps;
+    }
+    /**
+     * 增加任务积分
+     * @param uid
+     * @param taskType
+     */
+    @Override
+    public void addPoints(Integer uid,String taskType){
+        Map<String, Object> param = new HashMap<>();
+        int taskSize = 0;
+        Date date = new Date();
+        Integer source = 3;
+        param.put("uid", uid);
+        TaskIntegralRules bean = new TaskIntegralRules();
+        switch(taskType){
+            case SystemConstant.RECHARGE_TYPE:
+                param.put("tradeType", 1);
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                if (taskSize == 0) {
+                    taskType =  SystemConstant.RECHARGE_TYPE_FIRST;
+                    break;
+                }
+                param.put("startDate", date);
+                param.put("endDate", date);
+                //查看充值和投资任务
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                break;
+            case SystemConstant.INVEST_TYPE:
+                param.put("tradeType", 3);
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                if (taskSize == 0) {
+                    taskType = SystemConstant.INVEST_TYPE_FIRST;
+                    break;
+                }
+                param.put("startDate", date);
+                param.put("endDate", date);
+                //查看充值和投资任务
+                taskSize = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(param);
+                break;
+        }
+        //如果没有完成任务则加第一次任务
+        if (taskSize == 0){
+            bean = taskIntegralRulesDao.selectByTaskName(taskType);
+            userDetailIntegralService.eranPoints(uid,bean.getTaskIntegral(),source,bean.getId());
+        }
+        return;
+    }
+
+}

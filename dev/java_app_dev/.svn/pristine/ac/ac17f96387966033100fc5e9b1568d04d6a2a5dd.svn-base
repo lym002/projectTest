@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.member.BypMemberInviteDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.member.BypMemberInvite">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="invest_id" jdbcType="INTEGER" property="investId" />
+    <result column="referrerId" jdbcType="INTEGER" property="referrerid" />
+    <result column="user_id" jdbcType="INTEGER" property="userId" />
+    <result column="invite_bonus" jdbcType="DECIMAL" property="inviteBonus" />
+    <result column="add_time" jdbcType="TIMESTAMP" property="addTime" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, invest_id, referrerId, user_id, invite_bonus, add_time, status
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_member_invite
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="getRewardByReferrerIdCount" parameterType="java.lang.Integer" resultType="DECIMAL">
+   SELECT SUM(invite_bonus) FROM byp_member_invite  where referrerId = #{referrerId,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_member_invite
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.member.BypMemberInvite">
+    insert into byp_member_invite (id, invest_id, referrerId, 
+      user_id, invite_bonus, add_time, 
+      status)
+    values (#{id,jdbcType=INTEGER}, #{investId,jdbcType=INTEGER}, #{referrerid,jdbcType=INTEGER}, 
+      #{userId,jdbcType=INTEGER}, #{inviteBonus,jdbcType=DECIMAL}, #{addTime,jdbcType=TIMESTAMP}, 
+      #{status,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.member.BypMemberInvite">
+    insert into byp_member_invite
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="investId != null">
+        invest_id,
+      </if>
+      <if test="referrerid != null">
+        referrerId,
+      </if>
+      <if test="userId != null">
+        user_id,
+      </if>
+      <if test="inviteBonus != null">
+        invite_bonus,
+      </if>
+      <if test="addTime != null">
+        add_time,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="investId != null">
+        #{investId,jdbcType=INTEGER},
+      </if>
+      <if test="referrerid != null">
+        #{referrerid,jdbcType=INTEGER},
+      </if>
+      <if test="userId != null">
+        #{userId,jdbcType=INTEGER},
+      </if>
+      <if test="inviteBonus != null">
+        #{inviteBonus,jdbcType=DECIMAL},
+      </if>
+      <if test="addTime != null">
+        #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.member.BypMemberInvite">
+    update byp_member_invite
+    <set>
+      <if test="investId != null">
+        invest_id = #{investId,jdbcType=INTEGER},
+      </if>
+      <if test="referrerid != null">
+        referrerId = #{referrerid,jdbcType=INTEGER},
+      </if>
+      <if test="userId != null">
+        user_id = #{userId,jdbcType=INTEGER},
+      </if>
+      <if test="inviteBonus != null">
+        invite_bonus = #{inviteBonus,jdbcType=DECIMAL},
+      </if>
+      <if test="addTime != null">
+        add_time = #{addTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.member.BypMemberInvite">
+    update byp_member_invite
+    set invest_id = #{investId,jdbcType=INTEGER},
+      referrerId = #{referrerid,jdbcType=INTEGER},
+      user_id = #{userId,jdbcType=INTEGER},
+      invite_bonus = #{inviteBonus,jdbcType=DECIMAL},
+      add_time = #{addTime,jdbcType=TIMESTAMP},
+      status = #{status,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

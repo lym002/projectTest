@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrAuditInfoDAO">
+	<resultMap id="DrAuditInfoResult" type="com.jsjf.model.claims.DrAuditInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="opinion" property="opinion" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />	
+	</resultMap>
+	
+	<!-- 添加债权审核意见 -->
+	<insert id="insertDrAuditInfo" parameterType="com.jsjf.model.claims.DrAuditInfo">
+		insert dr_audit_info(type,fid,addUser,opinion,addTime,status)
+		values (#{type:INTEGER},#{fid:INTEGER},#{addUser:INTEGER},#{opinion:VARCHAR},sysdate(),#{status:INTEGER})
+	</insert>
+	
+	<!-- 获取债权审核意见  -->
+	<select id="getDrAuditInfo" parameterType="java.util.HashMap" resultType="com.jsjf.model.claims.DrAuditInfo">
+		select dca.*,su.name as name from dr_audit_info dca
+		LEFT JOIN sys_users su on dca.addUser = su.user_ky
+		<where>
+			fid = #{fid:INTEGER}
+			and type = #{type:INTEGER}
+		</where>
+		<if test="sort == 'ASC'">
+			<![CDATA[ order by addTime ASC]]>
+		</if>
+		<if test="sort == 'DESC'">
+			<![CDATA[ order by addTime DESC]]>
+		</if>
+	</select>
+</mapper>

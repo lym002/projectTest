@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityAggregationPageDAO">
+	<resultMap id="JsActivityAggregationPageResult" type="com.jsjf.model.activity.JsActivityAggregationPage">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="activityDate" property="activityDate" jdbcType="VARCHAR" />
+		<result column="pcUrl" property="pcUrl" jdbcType="VARCHAR" />
+		<result column="pcPic" property="pcPic" jdbcType="VARCHAR" />
+		<result column="appUrl" property="appUrl" jdbcType="VARCHAR" />
+		<result column="appPic" property="appPic" jdbcType="VARCHAR" />
+		<result column="isTop" property="isTop" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="VARCHAR" />
+		<result column="updateUser" property="updateUser" jdbcType="VARCHAR" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	<select id="selectJsActivityAggregationPageList" resultMap="JsActivityAggregationPageResult">
+		select * from js_activity_aggregation_page
+		where terminalTypePC = 1 and status != 3
+		 <if test="status !=null">
+			 and status = #{status}
+		</if>
+		 ORDER BY `status` asc,isTop desc ,`addTime` DESC
+		 <if test="offset != null">
+			 limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<select id="selectJsActivityAggregationPageCount" resultType="int">
+		select ifnull(count(1),0) from js_activity_aggregation_page 
+		where terminalTypePC = 1 and status != 3
+		<if test="status !=null">
+			 and status = #{status}
+		</if>
+	</select>
+	
+</mapper>

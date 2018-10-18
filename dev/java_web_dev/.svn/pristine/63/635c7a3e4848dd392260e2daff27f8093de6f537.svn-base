@@ -1,0 +1,26 @@
+package com.jsjf.service.activity.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.dao.activity.JsProductReservationLogDAO;
+import com.jsjf.model.activity.JsProductReservationLog;
+import com.jsjf.service.activity.JsProductReservationLogService;
+@Service
+@Transactional
+public class JsProductReservationLogServiceImpl implements
+		JsProductReservationLogService {
+	
+	@Autowired
+	JsProductReservationLogDAO jsProductReservationLogDAO;
+	
+	
+	@Override
+	public void insert(JsProductReservationLog jsProductReservationLog) throws Exception {		
+		jsProductReservationLogDAO.insert(jsProductReservationLog);
+	}
+	
+	
+
+}

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsCustomerDAO">
+	<resultMap id="DrClaimsCustomerResult" type="com.jsjf.model.claims.DrClaimsCustomer">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="companyName" property="companyName" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />	
+		<result column="certificateType" property="certificateType" jdbcType="INTEGER" />
+		<result column="certificateNo" property="certificateNo" jdbcType="VARCHAR" />
+		<result column="mechanismNo" property="mechanismNo" jdbcType="VARCHAR" />
+		<result column="industryType" property="industryType" jdbcType="VARCHAR" />
+		<result column="businessNo" property="businessNo" jdbcType="VARCHAR" />	
+		<result column="companyPhone" property="companyPhone" jdbcType="VARCHAR" />
+		<result column="companyMail" property="companyMail" jdbcType="VARCHAR" />		
+		<result column="companyNameProtocolShow" property="companyNameProtocolShow" jdbcType="VARCHAR" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		
+		<result column="isFuiou" property="isFuiou" jdbcType="INTEGER" />
+		<result column="user_id" property="user_id" jdbcType="INTEGER" />
+		<result column="fuiou_acnt" property="fuiou_acnt" jdbcType="VARCHAR" />
+		<result column="auth_st" property="auth_st" jdbcType="VARCHAR" />
+	</resultMap>
+	
+	<!-- 获取企业客户基本信息 -->
+	<select id="getDrClaimsCustomerByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsCustomer">
+		select * from dr_claims_customer
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	<!-- 根据id获取企业客户基本信息 -->
+	<select id="getDrClaimsCustomerById" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsCustomer">
+		select a.*,b.loanUse,b.bankNo from dr_claims_customer a
+		left join dr_claims_loan b on a.lid = b.id
+		<where>
+			a.id = #{id}
+		</where>
+	</select>
+	
+	<!-- 添加企业客户基本信息 -->
+	<insert id="insertDrClaimsCustomer" parameterType="com.jsjf.model.claims.DrClaimsCustomer">
+		insert into dr_claims_customer (lid,companyName,name,sex,phone,certificateType,certificateNo,mechanismNo,industryType,companyNameProtocolShow,
+		businessNo,companyPhone,companyMail,address,user_id,fuiou_acnt,mchnt_txn_ssn)
+		values (#{lid:INTEGER},#{companyName:VARCHAR},#{name:VARCHAR},#{sex:INTEGER},#{phone:VARCHAR},
+		#{certificateType:INTEGER},#{certificateNo:VARCHAR},#{mechanismNo:VARCHAR},#{industryType:VARCHAR},#{companyNameProtocolShow:VARCHAR},
+		#{businessNo:VARCHAR},#{companyPhone:VARCHAR},#{companyMail:VARCHAR},#{address:VARCHAR},#{user_id:VARCHAR},#{fuiou_acnt:VARCHAR},#{mchnt_txn_ssn:VARCHAR})
+	</insert>
+	
+	<!-- 修改企业客户基本信息 -->
+	<update id="updateDrClaimsCustomer" parameterType="com.jsjf.model.claims.DrClaimsCustomer">
+		update dr_claims_customer
+		<set>
+			<if test="companyName != null"> companyName = #{companyName:VARCHAR},</if>
+			<if test="companyNameProtocolShow != null"> companyNameProtocolShow = #{companyNameProtocolShow:VARCHAR},</if>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="sex != null"> sex = #{sex:INTEGER},</if>
+			<if test="phone != null"> phone = #{phone:VARCHAR},</if>
+			<if test="certificateType != null"> certificateType = #{certificateType:INTEGER},</if>
+			<if test="certificateNo != null"> certificateNo = #{certificateNo:VARCHAR},</if>
+			<if test="mechanismNo != null"> mechanismNo = #{mechanismNo:VARCHAR},</if>
+			<if test="industryType != null"> industryType = #{industryType:VARCHAR},</if>
+			<if test="businessNo != null"> businessNo = #{businessNo:VARCHAR},</if>
+			<if test="companyPhone != null"> companyPhone = #{companyPhone:VARCHAR},</if>
+			<if test="companyMail != null"> companyMail = #{companyMail:VARCHAR},</if>
+			<if test="address != null"> address = #{address:VARCHAR},</if>
+			<if test="mchnt_txn_ssn != null and mchnt_txn_ssn != ''"> mchnt_txn_ssn = #{mchnt_txn_ssn:VARCHAR},</if>
+			
+			<if test="user_id != null and user_id !=''"> user_id = #{user_id:VARCHAR},</if>
+			<if test="fuiou_acnt != null and user_id !='' "> fuiou_acnt = #{fuiou_acnt:VARCHAR},</if>
+		</set>
+		<where>
+			<if test ="lid != null" > and lid = #{lid:INTEGER}</if>
+			<if test = "id != null"> and id = #{id:INTEGER}</if> 
+			<if test = "updataIdAndAcnt == 1 "> and mchnt_txn_ssn = #{mchnt_txn_ssn:VARCHAR}</if>
+		</where>
+	</update>
+	
+	<!-- 删除企业客户基本信息  -->
+	<delete id="deleteDrClaimsCustomer" parameterType="java.lang.Integer" >
+	    delete from dr_claims_customer where lid = #{lid:INTEGER} 
+	</delete>
+	
+	<select id="selectCustomerFuiou" resultType="java.util.Map" parameterType="java.util.Map">
+		select dcc.id as id,dcc.phone as userId,dcc.fuiou_acnt as fuiouAcnt,dcc.companyName as companyName
+		from dr_claims_customer dcc where dcc.user_id is not null and dcc.user_id!=''
+		<if test="name!=null and name!=''">
+			and dcc.companyName like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+		</if>
+		<if test="phone and phone!=''">
+			and dcc.phone =#{phone} 
+		</if>
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selectCustomerByMchnt_txn_ssn" resultType="com.jsjf.model.claims.DrClaimsCustomer" parameterType="java.lang.String">
+		SELECT * FROM `dr_claims_customer` WHERE mchnt_txn_ssn = #{mchnt_txn_ssn}
+	</select>
+	
+	<select id="selectCustomerFuiouCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*)
+		from dr_claims_customer dcc where dcc.user_id is not null and dcc.user_id!=''
+		<if test="name!=null and name!=''">
+			and dcc.companyName like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+		</if>
+		<if test="phone and phone!=''">
+			and dcc.phone =#{phone} 
+		</if>
+	</select>
+	
+	<select id="selectGenerateAndupload" resultType="java.util.Map" >
+		SELECT cust.id as mid, cust.companyName AS companyName,cust.name AS name,cust.certificateNo AS certificateNo,cust.phone AS phone,cust.businessNo AS businessNo,
+       	fi.taxNo AS taxNo,fi.mechanismNo AS mechanismNo,DATE_FORMAT(loan.addDate,'%Y%m%d %H:%i:%S') AS addDate,cust.mchnt_txn_ssn as mchntTxnSsn
+		FROM (select phone, min(id) as cus_id from dr_claims_customer where mchnt_txn_ssn group by phone) only_cus
+		left join dr_claims_customer cust on only_cus.cus_id = cust.id
+		LEFT JOIN dr_claims_loan loan ON loan.id = cust.lid
+		LEFT JOIN dr_claims_financ fi ON loan.id = fi.lid
+		where cust.user_id is not NULL and (cust.fileStatus is NULL
+		 <!-- or cust.fileStatus = 3 -->
+		 ) and (cust.mchnt_txn_ssn IS NOT NULL)
+		 <!-- 法人报备，报前一天企业开户的信息 -->
+		 AND <![CDATA[LEFT(cust.mchnt_txn_ssn,8) >=DATE_SUB(CURDATE(),INTERVAL 1 DAY)]]>
+		 AND <![CDATA[LEFT(cust.mchnt_txn_ssn,8) < CURDATE()]]>
+	</select>
+	<update id="updateFileStatus" parameterType="java.util.List">
+		<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update dr_claims_customer
+		<set>
+			 fileStatus = #{item.fileStatus},
+		 	 fuiouMessageNo = #{item.fuiouMessageNo}
+		</set>
+		where id = #{item.id:INTEGER}
+		</foreach>
+	</update>
+	
+	<select id="selectCustomerByPhone" resultType="com.jsjf.model.claims.DrClaimsCustomer" parameterType="int">
+		SELECT dcc.`name` as 'name',dcc.companyName as 'companyName',dcc.phone as 'phone'
+			from dr_product_info dpi1 
+			left join dr_subject_info dsi on dsi.id = dpi1.sid
+			left join dr_claims_loan dcl on dcl.id = dsi.lid
+			left join dr_claims_customer dcc on dcc.lid = dcl.id 
+			where dpi1.id =#{id} 
+	</select>
+	<select id="selectCustmoerByUserId" resultType="com.jsjf.model.claims.DrClaimsCustomer" parameterType="java.lang.String">
+		select * from dr_claims_customer where user_id = #{userId} and mchnt_txn_ssn is not NULL LIMIT 1
+	</select>
+	<update id="updateCompanyStatus">
+		update dr_claims_customer c,(select DISTINCT user_id from dr_claims_customer where filestatus=2)b set c.fileStatus =2 
+		where c.user_id = b.user_id and c.fileStatus is NULL
+	</update>
+</mapper>

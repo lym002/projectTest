@@ -1,0 +1,247 @@
+package com.jsjf.service.integral.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.PageInfo;
+import com.jsjf.dao.integral.UserDetailIntegralDao;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.service.integral.UserDetailIntegralService;
+
+@Service
+@Transactional
+public class UserDetailIntegralServiceImpl implements UserDetailIntegralService {
+
+	private static transient Logger log = Logger.getLogger(UserDetailIntegralServiceImpl.class);
+	
+	@Autowired
+	private UserDetailIntegralDao userDetailIntegralDao;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrMemberService drMemberService;
+
+	@Override
+	public PageInfo queryDetailintegralList(PageInfo info,
+			UserDetailIntegralBean userDetailIntegralBean) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		
+		map.put("orders", "id desc");
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryDetailintegralList(map);
+		int total = userDetailIntegralDao.queryDetailintegralListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+
+	}
+
+	/**
+	 * 查看获取积分
+	 * @param uid
+	 * @return
+	 */
+	@Override
+	public BaseResult queryEarnPoint(int uid) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		map.put("order"," add_time desc");
+		map.put("uid", uid);
+		try {
+			List<UserDetailIntegralBean> resultList = userDetailIntegralDao.queryEarnPoint(map);
+			String name = "";
+			map.clear();
+			List<JSONObject> list = new ArrayList<>();
+			for (UserDetailIntegralBean bean : resultList) {
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("addTime", DateUtil.formatDate(bean.getAddTime(),"yyyy-MM-dd"));
+				jsonObject.put("integral", bean.getUserDetailIntegral());
+				if (bean.getIntegralSourceId() == 1) {
+					name = "投资";
+				} else if (bean.getIntegralSourceId() == 3) {
+					name = "签到";
+				} else if (bean.getIntegralSourceId() == 3) {
+					name = "任务";
+				}
+				jsonObject.put("integralName", name);
+				list.add(jsonObject);
+			}
+			map.put("earnPoints", list);
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			log.error("获取积分列表失败！",e);
+		}
+		return br;
+	}
+
+	/**
+	 * 查询使用积分列表
+	 * @param uid
+	 * @return
+	 */
+	@Override
+	public BaseResult queryConsumptionPoint(Integer uid) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		map.put("order"," bcd.addTime desc");
+		map.put("uid", uid);
+		try {
+			List<UserDetailIntegralBean> resultList = userDetailIntegralDao.queryConsumptionPoint(map);
+			map.clear();
+			List<JSONObject> list = new ArrayList<>();
+			for (UserDetailIntegralBean bean : resultList) {
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("addTime", DateUtil.formatDate(bean.getAddTime(),"yyyy-MM-dd"));
+				jsonObject.put("integral", bean.getNeedPoints());
+				jsonObject.put("prizeName", bean.getPrizeName());
+				list.add(jsonObject);
+			}
+			map.put("consumptionPoint", list);
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			log.error("用户积分使用查询错误！",e);
+		}
+		return br;
+	}
+
+	@Override
+	public UserDetailIntegralBean queryExpirationDate(String expirationDate) {
+		return userDetailIntegralDao.queryExpirationDate(expirationDate);
+	}
+
+	/**
+	 * 查询top10商品兑换
+	 * @return
+	 */
+	@Override
+	public BaseResult queryTopTenCommodity() {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		List<JSONObject> objects = new ArrayList<>();
+		map.put("order", " bcd.addTime DESC");
+		map.put("limit",10);
+		String sex = "XX";
+		try {
+			List<UserDetailIntegralBean> list = userDetailIntegralDao.queryConsumptionPoint(map);
+			map.clear();
+			if (list == null) list = new ArrayList<>();
+			for (UserDetailIntegralBean bean : list) {
+				JSONObject jsonObject = new JSONObject();
+				if (bean.getSex() == 1) {
+					sex = "先生";
+				} else if (bean.getSex() == 2) {
+					sex = "女士";
+				}
+				jsonObject.put("name", bean.getRealname().substring(0, 1) + sex);
+				jsonObject.put("commodity", bean.getPrizeName());
+				objects.add(jsonObject);
+			}
+			map.put("topTen", objects);
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			log.error("兑换top10查询错误!" , e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			br.setErrorMsg("系统查询错误！");
+		}
+		return br;
+	}
+
+	//用户id，积分，日志，获取积分路径类型
+
+	/**
+	 *
+	 * @param uid 用户id
+	 * @param points 获得的积分数
+	 * @param source 积分来源（1：投资，3：任务）
+	 * @param taskId 任务id
+	 */
+	@Override
+	public void eranPoints(Integer uid, BigDecimal points, Integer source, Integer taskId){
+		boolean lockFlag = false;
+		String value=null;
+		BaseResult br = new BaseResult();
+		try {
+			value = String.valueOf(System.currentTimeMillis());
+			//获取用户可用的总积分
+			DrMember dm = drMemberService.selectByPrimaryKey(uid);
+			lockFlag = redisClientTemplate.tryLock(ConfigUtil.getRedisKeyConvert() + uid, 30, TimeUnit.SECONDS, false, value);
+			if (lockFlag) {
+				//添加用户积分
+				dm.setUserIntegralUse(dm.getUserIntegralUse().add(points));
+				drMemberService.update(dm);
+				//添加积分日志
+				UserDetailIntegralBean bmi = new UserDetailIntegralBean(
+						null,uid,source,points,new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(getExpirationTime()),new Date(),null,taskId);
+				userDetailIntegralDao.insert(bmi);
+			} else {
+				br.setErrorCode("1002");
+				br.setErrorMsg("系统繁忙稍后重试");
+				log.error("用户" + uid + "：积分获取，存在强制提交，马上禁用此用户");
+			}
+		}catch (Exception e){
+			log.error("用户积分数据添加失败！" + e);
+		} finally {
+			if (lockFlag) {
+				redisClientTemplate.releaseLock(ConfigUtil.getRedisKeyConvert()+uid,value);//解锁
+			}
+		}
+	}
+
+	/**
+	 * 计算累计投资额积分数
+	 */
+	public BigDecimal getInvestIntegral(Integer uid, Integer invest){
+		try {
+			//配置时间
+			String investIntegralDateStart = redisClientTemplate.getProperties("investIntegralDateStart");
+
+		}catch (Exception e){
+			log.error("获取开始投资计算时间错误！",e);
+		}
+		return new BigDecimal(0);
+	}
+
+	/**
+	 * 获取过期时间
+	 * @return
+	 */
+	public String getExpirationTime() {
+		Calendar calendar = Calendar.getInstance();
+		try {
+			//让日期
+			if (calendar.get(Calendar.MONTH + 1) < 7) {
+				calendar.set(Calendar.MONTH, 5);
+			} else {
+				calendar.set(Calendar.MONTH, 11);
+			}
+			calendar.set(Calendar.DATE, calendar.getActualMaximum(Calendar.DATE));
+		}catch (Exception e){
+			log.error("过期时间获取错误！",e);
+		}
+		String date = DateUtil.formatDate(calendar.getTime(),"yyyy-MM-dd 23:59:59");
+		return date;
+	}
+
+}

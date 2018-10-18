@@ -1,0 +1,19 @@
+package com.jsjf.service.activity.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.service.activity.BypCommodityService;
+@Service
+public class BypCommodityServiceImpl implements BypCommodityService {
+	@Autowired
+	private BypCommodityDAO bypCommodityDAO;
+
+	@Override
+	public BypCommodity selectIntegralByPid(String pid) {
+		return bypCommodityDAO.selectIntegralByPid(pid);
+	}
+
+}

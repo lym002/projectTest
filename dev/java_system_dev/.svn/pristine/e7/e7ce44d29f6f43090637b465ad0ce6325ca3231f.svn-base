@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.ActivityFriendDAO">
+	<resultMap id="ActivityFriendResult" type="com.jsjf.model.activity.ActivityFriend">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="conditionType" property="conditionType"
+			jdbcType="INTEGER" />
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="periods" property="periods" jdbcType="INTEGER" />
+		<result column="isPut" property="isPut" jdbcType="INTEGER" />
+		<result column="pcPutImg" property="pcPutImg" jdbcType="VARCHAR" />
+		<result column="pcPutUrl" property="pcPutUrl" jdbcType="VARCHAR" />
+		<result column="appPutImg" property="appPutImg" jdbcType="VARCHAR" />
+		<result column="appPutUrl" property="appPutUrl" jdbcType="VARCHAR" />
+		<result column="putContent" property="putContent" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<!-- 添加活动 -->
+	<insert id="insert" parameterType="com.jsjf.model.activity.ActivityFriend"
+		keyProperty="id" useGeneratedKeys="true">
+		insert into
+		js_activity_friend(name,conditionType,startDate,endDate,addDate,status,periods,isPut,pcPutImg,pcPutUrl,appPutImg,appPutUrl,putContent)
+		values(#{name},#{conditionType},#{startDate},#{endDate},#{addDate},#{status},#{periods},#{isPut},#{pcPutImg},#{pcPutUrl},#{appPutImg},#{appPutUrl},#{putContent})
+	</insert>
+
+	<select id="findInviteCashback" parameterType="java.util.HashMap"
+		resultType="java.util.HashMap">
+		select id as id,name as name,date_format(addDate,'%Y-%m-%d
+		%H:%i:%s') as addDate,
+		conditionType as
+		conditionType,date_format(startDate,'%Y-%m-%d %H:%i:%s') as startDate,
+		date_format(endDate,'%Y-%m-%d %H:%i:%s') as endDate,status as
+		status,periods as periods,
+		isPut,pcPutImg,pcPutUrl,appPutImg,appPutUrl,putContent
+		from
+		js_activity_friend where 1=1
+		order by addDate desc
+		limit
+		#{offset},#{limit}
+	</select>
+
+	<select id="findInviteCashbackCount" parameterType="java.util.HashMap"
+		resultType="int">
+		select count(*) from js_activity_friend where 1=1
+	</select>
+
+	<select id="findExistsInPeriod" parameterType="java.util.HashMap"
+		resultType="int">
+		select count(*) from js_activity_friend where
+		endDate>=#{startDate:VARCHAR}
+	</select>
+
+	<select id="findExistsByNow" parameterType="java.util.HashMap"
+		resultType="int">
+		select count(*) from js_activity_friend where now() between
+		startDate and endDate
+	</select>
+
+	<select id="selectObjectByMap" parameterType="java.util.HashMap"
+		resultType="com.jsjf.model.activity.ActivityFriend">
+		SELECT * from js_activity_friend
+		where NOW() BETWEEN startDate and
+		endDate
+		<if test="type !=null ">
+			AND type = #{type}
+		</if>
+	</select>
+	<select id="selectActivityFriendByMap" parameterType="java.util.HashMap"
+		resultType="com.jsjf.model.activity.ActivityFriend">
+		SELECT * from js_activity_friend
+		where 1=1
+		<if test="type !=null ">
+			AND type = #{type}
+		</if>
+	</select>
+	<select id="selectIsSend" parameterType="Integer" resultType="Integer">
+		SELECT uid from js_activity_member_account where afid = #{afid} and
+		status = 0 and uid GROUP BY uid
+	</select>
+
+	<select id="getUidS" resultType="java.util.HashMap">
+		select
+		a.uid,c.referrerId
+		from
+		dr_product_invest a
+		left join dr_member_recommended c on c.uid = a.uid
+		LEFT JOIN js_activity_Inviter_Award ia on ia.user_id = c.uid
+		left join
+		dr_member mer on a.uid = mer.uid
+		left join (select
+		concat_ws('',ch.code,cpa.activityCode) as acode from
+		dr_cpa_info cpa
+		LEFT JOIN dr_channel_info ch on cpa.cid = ch.id where
+		ch.type = 1) cha
+		on mer.toFrom = cha.acode
+		WHERE
+		a.amount >=1000
+		and c.referrerId is not
+		null
+		and ia.id is NULL
+		and cha.acode is null
+		and a.id = (SELECT MIN(d.id)
+		from dr_product_invest d left join
+		dr_product_info b on d.pid = b.id
+		where a.uid = d.uid and b.type = 2)
+		GROUP BY a.uid
+	</select>
+	<select id="getEnvelopeLevel" resultType="java.util.HashMap">
+		select
+		a.uid,c.referrerId
+		from
+		dr_product_invest a
+		left join
+		dr_member_recommended c on c.uid = a.uid
+		LEFT JOIN
+		js_activity_Inviter_Award ia on ia.user_id = c.uid
+		left join dr_member
+		mer on a.uid = mer.uid
+		left join (select
+		concat_ws('',ch.code,cpa.activityCode) as acode from
+		dr_cpa_info cpa
+		LEFT JOIN dr_channel_info ch on cpa.cid = ch.id where
+		ch.type = 1) cha
+		on mer.toFrom = cha.acode
+		WHERE
+			a.amount >=#{min}
+			<![CDATA[and a.amount<#{max}]]>
+		and c.referrerId is not null
+		and ia.id is NULL
+		and cha.acode is null
+		and
+		a.id = (SELECT MIN(d.id) from dr_product_invest d left join
+		dr_product_info b on d.pid = b.id where a.uid = d.uid and b.type = 2)
+		GROUP BY a.uid
+	</select>
+
+	<!-- 落地页：定时查询好友邀请返现总额的排名 -->
+	<select id="selectReversal" resultType="java.util.HashMap">
+		SELECT
+		CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.uid,a.amount,
+		CONCAT(LEFT(a.mobilePhone,3),'****',RIGHT(a.mobilePhone,4)) AS
+		mobilePhone
+		from(select y_user_id uid , sum(amont) amount
+		,dm.mobilePhone from
+		js_activity_Inviter_Award jsa
+		LEFT JOIN dr_member
+		dm ON dm.uid = jsa.y_user_id
+		GROUP BY jsa.y_user_id) a , (SELECT
+		@rownum:=0) r ORDER BY a.amount DESC;
+	</select>
+
+
+	<insert id="addActivityUser" parameterType="java.util.HashMap">
+		insert into
+		js_activity_Inviter_Award
+		(user_id,y_user_id,status,amont,time,remark)
+		values
+		(#{user_id},#{y_user_id},1,#{amont},now(),#{remark})
+	</insert>
+</mapper>

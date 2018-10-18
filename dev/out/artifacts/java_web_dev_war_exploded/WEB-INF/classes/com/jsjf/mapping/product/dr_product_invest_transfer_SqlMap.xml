@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInvestTransferDAO">
+	<resultMap id="DrProductInvestResult" type="com.jsjf.model.product.DrProductInvestTransfer">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="transferorUid" property="transferorUid" jdbcType="INTEGER" />
+		<result column="assigneeUid" property="assigneeUid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="transferorInvestId" property="transferorInvestId" jdbcType="INTEGER" />
+		<result column="assigneeInvestId" property="assigneeInvestId" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		
+	</resultMap>
+	<select id="selectTransferInfoByAssingneeUid" resultType="java.util.HashMap">
+		select convert(pit.amount USING utf8) amount,mbi.realName, mbi.idCards from dr_product_invest_transfer pit
+		left join dr_member_base_info mbi on pit.transferorUid = mbi.uid
+		where pit.assigneeUid = #{assigneeUid} and pit.pid = #{pid} and pit.assigneeInvestId = #{investId}
+	</select>
+</mapper>

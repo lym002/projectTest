@@ -1,0 +1,433 @@
+package com.jsjf.controller.activity;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.FileUtil;
+import com.jsjf.common.JXLExcelView;
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.Utils;
+import com.jsjf.model.activity.BypCommodityDetailBean;
+import com.jsjf.service.activity.FestivaiActivityService;
+
+/**
+ * 节日活动
+ * @author cece
+ *
+ */
+@Controller
+@RequestMapping("/festivaIactivity")
+public class FestivaIActivityController {
+	
+	private Logger log = Logger.getLogger(FestivaIActivityController.class);
+	
+	@Autowired
+	private FestivaiActivityService festivaiActivityService;
+
+	@RequestMapping("/queryFestivaIActivityList")
+	@ResponseBody
+	public PageInfo queryFestivaIActivityList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = festivaiActivityService.queryFestivaIActivityList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	@RequestMapping("/updateFestivaIActivity")
+	@ResponseBody
+	public BaseResult updateFestivaIActivity(BypCommodityDetailBean bypCommodityBean){
+		BaseResult br = new BaseResult();
+		br = festivaiActivityService.updateFestivaIActivity(bypCommodityBean);
+		return br;
+	}
+	
+	@RequestMapping("/sendPrizeSms")
+	@ResponseBody
+	/**
+	 * 发送京东卡和虚拟货物状态为可用的奖品短信
+	 * @return
+	 */
+	public BaseResult sendPrizeSms(){
+		BaseResult br = new BaseResult();
+		br = festivaiActivityService.updateSendPrizeSms();
+		return br;
+	}
+	
+	@RequestMapping("/prizeStatistics")
+	@ResponseBody
+	public BaseResult prizeStatistics(@RequestParam Map<String,Object> param){
+		BaseResult br = new BaseResult();
+		br = festivaiActivityService.prizeStatistics(param);
+		return br;
+	}
+	
+	/**
+	 * 明细下载
+	 * @return
+	 */
+	@RequestMapping("/downloadDetail")
+	@ResponseBody
+	public ModelAndView downloadDetail(){
+		PageInfo pi = new PageInfo(1,1000000);
+		Map<String,Object> bypBean = new HashMap<String,Object>();
+		festivaiActivityService.queryDownloadDetail(bypBean,pi);
+		List<BypCommodityDetailBean> list = (List<BypCommodityDetailBean>) pi.getRows();
+		String[] title = new String[]{"用户手机号","兑换码","状态","奖品类型","奖品金额","发放时间","收件地址"};
+		Integer[] columnWidth = new Integer[]{30,20,20,20,20,20,40};
+		List<List<Object>> tableList = new ArrayList<List<Object>>();
+		List<Object> lc = null;
+		for(BypCommodityDetailBean bean : list){
+			lc = new ArrayList<Object>();
+			if(bean.getMobilePhone()!=null){
+				lc.add(bean.getMobilePhone());
+			}else{
+				lc.add("");
+			}
+			if(bean.getCode()!=null){
+				lc.add(bean.getCode());
+			}else{
+				lc.add("");
+			}
+			if(bean.getStatus()!=null){
+				lc.add("可用");
+			}else{
+				lc.add("");
+			}
+			if(bean.getType()!=null){
+				if(1 == bean.getType()){
+					lc.add("京东卡");
+				}else if(2 == bean.getType()){
+					lc.add("电子产品");
+				}else if(3 == bean.getType()){
+					lc.add("虚拟货物");
+				}
+			}else{
+				lc.add("");
+			}
+			if(bean.getPrice()!=null){
+				lc.add(bean.getPrice());
+			}else{
+				lc.add("");
+			}
+			if(bean.getProvide()!=null){
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+				lc.add(sdf.format(bean.getProvide()));
+			}else{
+				lc.add("");
+			}
+			if(bean.getAddress()!=null){
+				lc.add(bean.getAddress());
+			}else{
+				lc.add("");
+			}
+			tableList.add(lc);
+		}
+		Map<String,Object> map=new HashMap<String,Object>();
+		map.put("excelName", "bypCommodityDetail_"+System.currentTimeMillis()+".xls");
+		map.put("titles", title);
+		map.put("columnWidth", columnWidth);
+		map.put("list", tableList);
+		return new ModelAndView(new JXLExcelView(), map);
+	}
+	
+	@RequestMapping("/downloadModel")
+	@ResponseBody
+	public void downloadModel(HttpServletResponse response,HttpServletRequest request){
+		try {
+			String filePath = this.getClass().getResource("/").getPath();
+			String filename = "/resources/template/jrhdsjdrmb.xlsx";
+			File file = new File(filePath +"/"+ filename);
+			
+			File fileTemp = new File(filePath + "/" + "/resources/template/jrhdsjdrmb_temp.xlsx");
+			FileUtils.copyFile(file, fileTemp);
+			//添加部分用户数据
+			PageInfo pi = new PageInfo(1,1000000);
+			Map<String,Object> bypBean = new HashMap<String,Object>();
+			bypBean.put("status", 1);
+			festivaiActivityService.queryFestivaIActivityList(bypBean, pi);
+			List<BypCommodityDetailBean> list = (List<BypCommodityDetailBean>) pi.getRows();
+			FileOutputStream fos = new FileOutputStream(fileTemp);
+			generateLoanRecordExcel(fos,list);
+			FileUtil.download(fileTemp,response);
+			if(fileTemp.exists()){
+				fileTemp.delete();
+			}
+		}catch (Exception e) {
+			log.error("模板下载失败",e);
+		}
+	}
+	
+	@RequestMapping(value="/importBatchCode",produces = "text/html; charset=utf-8")
+	@ResponseBody
+	public String importBatchCode(@RequestParam(value="filename") MultipartFile bannerAddPicFile){
+		BaseResult br = new BaseResult();
+		String reg = ".+(.xlsx)$";
+        Pattern pattern = Pattern.compile(reg);
+        if(Utils.isObjectNotEmpty(bannerAddPicFile)){
+        	Matcher matcher = pattern.matcher(bannerAddPicFile.getOriginalFilename().toLowerCase());
+        	if(!matcher.find()){
+        		br.setSuccess(false);
+        		br.setErrorCode("9999");
+        		br.setMsg("请上传正确的07版及以上的excel文件!");
+        		JSONObject jsonObject = (JSONObject) JSONObject.toJSON(br);
+        		return jsonObject.toString();
+        	}
+            String name=bannerAddPicFile.getOriginalFilename();
+            //批量导入
+            try {
+				festivaiActivityService.addBatchCode(name,bannerAddPicFile);
+				br.setSuccess(true);
+		    	br.setMsg("上传成功");
+			} catch (Exception e) {
+				br.setSuccess(false);
+				br.setMsg("请选择上传文件");
+				br.setErrorCode("9999");
+				log.error("上传失败", e);
+			}
+        }else{
+        	br.setSuccess(false);
+			br.setMsg("请选择上传文件");
+			br.setErrorCode("9999");
+        }
+		JSONObject jsonObject = (JSONObject) JSONObject.toJSON(br);
+		return jsonObject.toString();
+	}
+	
+	@RequestMapping("/festivaIActivityList")
+	public String festivaIActivityList(){
+		return "system/activity/bypFestivaIActivityList";
+	}
+	
+	
+	
+	/**
+	 * 给模板添加部分用户数据
+	 * @throws ParseException 
+	 * @throws IOException 
+	 * @throws InvalidFormatException 
+	 */
+	private void generateLoanRecordExcel(FileOutputStream fos,List<BypCommodityDetailBean> list) 
+			throws ParseException, IOException, InvalidFormatException{
+		InputStream is = null;
+		try{
+			String filePath = this.getClass().getResource("/").getPath();
+			
+			File fileTemp = new File(filePath + "/" + "/resources/template/jrhdsjdrmb.xlsx");
+			is = new FileInputStream(fileTemp);
+			Workbook workeBook = WorkbookFactory.create(is);//in表示在内存中多少行，超过in这个参数值的显示到磁盘中，-->创建了一个excel文件
+			Sheet sheet = workeBook.getSheetAt(0);//创建一个工作
+			Row row = null;
+			int start = 1;
+			for(int i = 0; i < list.size(); i ++){
+					row = sheet.createRow(start + i);
+					setRowValues(list.get(i), row);
+			}
+			sheet.setForceFormulaRecalculation(true);
+			workeBook.write(fos);
+		}finally{
+			FileUtil.closeQuietly(fos);
+			FileUtil.closeQuietly(is);
+		}
+	}
+	
+	/**
+	 * 对单元格赋值
+	 * @param drproductLoanRecord
+	 * @param row
+	 * @throws ParseException
+	 */
+	private void setRowValues(BypCommodityDetailBean bypBean, Row row) throws ParseException{
+		String type = bypBean.getType().toString();
+		if("1".equals(type)){
+			type = "京东卡";
+		}else if("2".equals(type)){
+			type = "电子产品";
+		}else if("3".equals(type)){
+			type = "虚拟货物";
+		}
+		getCell(row, 0).setCellValue(new XSSFRichTextString(bypBean.getId().toString()));//奖品记录id
+		getCell(row, 1).setCellValue(new XSSFRichTextString(bypBean.getUid().toString()));//用户id
+		getCell(row, 2).setCellValue(new XSSFRichTextString(bypBean.getMobilePhone().toString()));//手机号
+		getCell(row, 3).setCellValue(new XSSFRichTextString(bypBean.getType().toString()));//产品类型
+		getCell(row, 4).setCellValue(new XSSFRichTextString(bypBean.getPrice().toString()));//金额
+		getCell(row, 7).setCellValue(new XSSFRichTextString(bypBean.getRealName().toString()));//姓名
+	}
+	
+	/**
+	 * 获取单元格
+	 * @param row
+	 * @param index
+	 * @return
+	 */
+	private Cell getCell(Row row, int index){
+		Cell cell = row.getCell(index);
+		if(cell == null){
+			cell = row.createCell(index);
+		}
+		return cell;
+	}
+	
+	/**
+	 * 5880年化奖励页面
+	 * @return
+	 */
+	@RequestMapping("/yearInvestView")
+	public String yearInvestView(){
+		return "system/activity/bypYearInvestList";
+	}
+	
+	@RequestMapping("/yearInvestList")
+	@ResponseBody
+	public PageInfo queryYearInvestList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = festivaiActivityService.queryYearInvestList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	/**
+	 * 5880每日排行页面
+	 * @return
+	 */
+	@RequestMapping("/todayRankingView")
+	public String todayRankingList(){
+		return "system/activity/bypTodayRankingList";
+	}
+	
+	@RequestMapping("/todayRankingList")
+	@ResponseBody
+	public PageInfo todayRankingList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = festivaiActivityService.queryTodayRankingList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	/**
+	 * 5880用户总榜
+	 * @return
+	 */
+	@RequestMapping("/usertotalListView")
+	public String usertotalListView(){
+		return "system/activity/bypUserTotalList";
+	}
+	
+	@RequestMapping("/queryUserTotalList")
+	@ResponseBody
+	public PageInfo queryUserTotalList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = festivaiActivityService.queryUserTotalList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	/**
+	 * 5880总榜下载
+	 * @return
+	 */
+	@RequestMapping("/downloadUserTotal")
+	@ResponseBody
+	public ModelAndView downloadUserTotal(){
+		PageInfo pi = new PageInfo(1,1000000);
+		Map<String,Object> bypBean = new HashMap<String,Object>();
+		festivaiActivityService.queryUserTotalList(bypBean,pi);
+		List<BypCommodityDetailBean> list = (List<BypCommodityDetailBean>) pi.getRows();
+		String[] title = new String[]{"用户手机号","总投资额","总京东卡奖励","其余奖励"};
+		Integer[] columnWidth = new Integer[]{30,30,20,20};
+		List<List<Object>> tableList = new ArrayList<List<Object>>();
+		List<Object> lc = null;
+		for(BypCommodityDetailBean bean : list){
+			lc = new ArrayList<Object>();
+			if(bean.getMobilePhone()!=null){
+				lc.add(bean.getMobilePhone());
+			}else{
+				lc.add("");
+			}
+			if(bean.getAmount()!=null){
+				lc.add(bean.getAmount());
+			}else{
+				lc.add("");
+			}
+			if(bean.getPrice()!=null){
+				lc.add(bean.getPrice());
+			}else{
+				lc.add("");
+			}
+			if(bean.getOtherAward()!=null){
+				lc.add(bean.getOtherAward());
+			}else{
+				lc.add("");
+			}
+			
+			tableList.add(lc);
+		}
+		Map<String,Object> map=new HashMap<String,Object>();
+		map.put("excelName", "UserTotal_"+System.currentTimeMillis()+".xls");
+		map.put("titles", title);
+		map.put("columnWidth", columnWidth);
+		map.put("list", tableList);
+		return new ModelAndView(new JXLExcelView(), map);
+	}
+	
+	@RequestMapping("/updateUserCommodityDetail")
+	@ResponseBody
+	public BaseResult updateUserCommodityDetail(HttpServletRequest request,BypCommodityDetailBean bean){
+		BaseResult br = new BaseResult();
+		br = festivaiActivityService.updateUserCommodityDetail();
+		return br;
+	}
+	
+}

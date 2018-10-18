@@ -1,0 +1,141 @@
+package com.jsjf.controller.task;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.service.member.DrMemberFundsRecordService;
+import com.jsjf.service.member.DrMemberFundsService;
+import com.jzh.FuiouConfig;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+@Component
+public class CheckforFYJTask {
+
+    private static Logger log = Logger.getLogger(CheckforFYJTask.class);
+
+    @Autowired
+    private DrMemberFundsRecordService drMemberFundsRecordService;
+    @Autowired
+    private DrMemberFundsService drMemberFundsService;
+
+    /**
+     * 平台账户和富友金账户的每日对账任务
+     */
+    @Scheduled(cron="0 0 2 * * ? ")
+    public void insertFriendMemberActivityAmount() {
+        //获取昨天时间
+        Map<String, Object> map = getDateTime();
+        // 昨天开始时间
+        String startDate = map.get("startDate").toString();
+        // 昨天截止时间
+        String endDate = map.get("endDate").toString();
+        BaseResult br = null;
+        // 统计昨天状态为成功的资金记录列表
+        map.clear();
+        map.put("startDate", startDate);
+        map.put("endDate", endDate);
+        map.put("status", 3);
+        //用户id
+        List<Integer> uidList = drMemberFundsRecordService.selectUidByCondition(map);
+        if (uidList == null || uidList.isEmpty()) {
+            return;
+        }
+        // 将uidList拆分为1人一组
+        Integer[] uidArry = new Integer[uidList.size()];
+        uidArry = uidList.toArray(uidArry);
+        // 用户id数量
+        int arryLength = uidArry.length;
+        // 拆分成1人一组,可拆分组数
+        int loopNum = arryLength % 1 == 0 ? (arryLength / 1) : (arryLength / 1 + 1);
+        //定义
+        Integer[] subUidArry = null;
+        JSONObject jsonObject = null;
+        Map<String, BigDecimal> balanceMap =  new HashMap<>();
+        Map<String, String> requestMap =  new HashMap<>();
+        List<String> phones = new ArrayList<>();
+        List<DrMemberFunds> reconciliationList = new ArrayList<>();
+
+        //转换,富有接口返回以分为单位
+        BigDecimal b2 = new BigDecimal(Double.valueOf(100));
+        for (int i = 0; i < loopNum; i++) {
+            int to = (i + 1) * 1;
+            if (to > arryLength) {
+                to = arryLength;
+            }
+            subUidArry = Arrays.copyOfRange(uidArry, i * 1, to);
+            String uids = assembleStr(subUidArry, ",");
+            //查询用户数据库账户信息
+            reconciliationList = drMemberFundsService.selectListByUids(uids);
+            for (DrMemberFunds dto : reconciliationList) {
+                //手机号码
+                phones.add(dto.getMobilePhone());
+                balanceMap.put(dto.getMobilePhone(), dto.getFuiou_balance().add(dto.getFuiou_freeze()));
+            }
+            String custNos = assembleStr(phones.toArray(), "|");
+            //调用富友查询余额
+            requestMap.put("cust_no",custNos);
+            br = FuiouConfig.balanceAction(requestMap);
+            map.clear();
+            if (!br.isSuccess()) {
+                log.error("账户查询错误！");
+                return;
+            }
+            jsonObject = JSONObject.parseObject(br.getMap().get("results").toString());
+            jsonObject = JSONObject.parseObject(jsonObject.get("result").toString());
+            String mobilePhone = jsonObject.getString("user_id");
+            BigDecimal fuiouBalance = jsonObject.getBigDecimal("ct_balance");
+            if (fuiouBalance == null) fuiouBalance = new BigDecimal(0.00);
+            fuiouBalance = fuiouBalance.divide(b2);
+            //对比数据库用户余额，金账户余额，请求金账户获取余额
+            if (balanceMap.get(mobilePhone).compareTo(fuiouBalance) != 0){
+                log.error("账户余额错误：>>>>>>>>> 手机号：" + mobilePhone + ">>>>>>>>> 富有返回余额：" + fuiouBalance + " >>>>>>>>> 本地数据余额：" + balanceMap.get(mobilePhone));
+            }
+            balanceMap.clear();
+            requestMap.clear();
+            jsonObject.clear();
+            reconciliationList.clear();
+            phones.clear();
+        }
+    }
+
+    /**
+     * 将数组转换成String类型
+     * @param subUidArry
+     * @param s
+     * @return
+     */
+    private String assembleStr(Object[] subUidArry, String s) {
+        StringBuffer stringBuffer = new StringBuffer();
+        Integer arrayLength = subUidArry.length;
+        for (int i = 0; i < arrayLength; i++) {
+            stringBuffer.append(subUidArry[i]);
+            if (i >= arrayLength-1) continue;
+            stringBuffer.append(s);
+        }
+        return stringBuffer.toString();
+    }
+
+    /**
+     * 获取昨天的始终时间
+     * @return
+     */
+    private Map<String, Object> getDateTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DATE, -1);
+        String yesterday = new SimpleDateFormat("yyyy/MM/dd").format(calendar.getTime());
+        String yesterdayBegin = yesterday + " 00:00:00";
+        String yesterdayEnd = yesterday + " 23:59:59";
+        Map<String, Object> map = new HashMap<>();
+        map.put("startDate", yesterdayBegin);
+        map.put("endDate", yesterdayEnd);
+        return map;
+    }
+
+}

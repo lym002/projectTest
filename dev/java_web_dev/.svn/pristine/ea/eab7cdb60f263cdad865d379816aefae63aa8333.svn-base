@@ -1,0 +1,242 @@
+package com.jsjf.model.activity;
+
+import java.util.Date;
+
+public class BypCommodityDetail {
+    private Integer id;
+    private String code;
+    private Integer prid;
+    private Integer uid;
+    private Integer status;
+    private Date addtime;
+    private Date starttime;
+    private Date endtime;
+    private Date provide;
+    private String address;
+
+    private String prizeName;// 奖品名称
+    private Integer price;// 金额
+    private String details;// 奖品详情
+
+    private String mobilePhone;
+    private String NAME;
+    private Integer type;//奖品类型
+
+    private String product_url;//图片路径
+    private Integer need_points;//需要积分
+    private Integer commodityCount; //数量
+
+    public Integer getNeed_points() {
+        return need_points;
+    }
+
+    public void setNeed_points(Integer need_points) {
+        this.need_points = need_points;
+    }
+
+    public BypCommodityDetail() {
+        super();
+    }
+
+    public BypCommodityDetail(Integer id, String code, Integer prid,
+                              Integer uid, Integer status, Date addtime, Date starttime,
+                              Date endtime, Date provide, String address) {
+        super();
+        this.id = id;
+        this.code = code;
+        this.prid = prid;
+        this.uid = uid;
+        this.status = status;
+        this.addtime = addtime;
+        this.starttime = starttime;
+        this.endtime = endtime;
+        this.provide = provide;
+        this.address = address;
+    }
+public BypCommodityDetail(Integer id, String code, Integer prid,
+                              Integer uid, Integer status, Date addtime, Date starttime,
+                              Date endtime, Date provide, String address, Integer commodityCount) {
+        super();
+        this.id = id;
+        this.code = code;
+        this.prid = prid;
+        this.uid = uid;
+        this.status = status;
+        this.addtime = addtime;
+        this.starttime = starttime;
+        this.endtime = endtime;
+        this.provide = provide;
+        this.address = address;
+        this.commodityCount = commodityCount;
+    }
+
+    public Integer getId() {
+
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getProduct_url() {
+        return product_url;
+    }
+
+    public void setProduct_url(String product_url) {
+        this.product_url = product_url;
+    }
+
+    public Integer getPrid() {
+        return prid;
+    }
+
+    public void setPrid(Integer prid) {
+        this.prid = prid;
+    }
+
+    public Integer getUid() {
+        return uid;
+    }
+
+    public void setUid(Integer uid) {
+        this.uid = uid;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
+    public Date getAddtime() {
+        return addtime;
+    }
+
+    public void setAddtime(Date addtime) {
+        this.addtime = addtime;
+    }
+
+    public Date getStarttime() {
+        return starttime;
+    }
+
+    public void setStarttime(Date starttime) {
+        this.starttime = starttime;
+    }
+
+    public Date getEndtime() {
+        return endtime;
+    }
+
+    public void setEndtime(Date endtime) {
+        this.endtime = endtime;
+    }
+
+    public Date getProvide() {
+        return provide;
+    }
+
+    public void setProvide(Date provide) {
+        this.provide = provide;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getPrizeName() {
+        return prizeName;
+    }
+
+    public void setPrizeName(String prizeName) {
+        this.prizeName = prizeName;
+    }
+
+    public Integer getPrice() {
+        return price;
+    }
+
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
+
+    public String getMobilePhone() {
+        return mobilePhone;
+    }
+
+    public void setMobilePhone(String mobilePhone) {
+        this.mobilePhone = mobilePhone;
+    }
+
+    public String getNAME() {
+        return NAME;
+    }
+
+    public void setNAME(String NAME) {
+        this.NAME = NAME;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
+    }
+
+    public Integer getCommodityCount() {
+        return commodityCount;
+    }
+
+    public void setCommodityCount(Integer commodityCount) {
+        this.commodityCount = commodityCount;
+    }
+
+    @Override
+    public String toString() {
+        return "BypCommodityDetail{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", prid=" + prid +
+                ", uid=" + uid +
+                ", status=" + status +
+                ", addtime=" + addtime +
+                ", starttime=" + starttime +
+                ", endtime=" + endtime +
+                ", provide=" + provide +
+                ", address='" + address + '\'' +
+                ", prizeName='" + prizeName + '\'' +
+                ", price=" + price +
+                ", details='" + details + '\'' +
+                ", mobilePhone='" + mobilePhone + '\'' +
+                ", NAME='" + NAME + '\'' +
+                ", type=" + type +
+                ", product_url='" + product_url + '\'' +
+                '}';
+
+    }
+
+}

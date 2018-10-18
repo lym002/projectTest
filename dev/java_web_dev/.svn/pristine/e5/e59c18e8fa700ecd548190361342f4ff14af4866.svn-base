@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFundsRecordDAO" >
+	<resultMap id="DrMemberFundsRecordResult" type="com.jsjf.model.member.DrMemberFundsRecord" >
+	<result column="id" property="id" jdbcType="INTEGER" />
+	<result column="pid" property="pid" jdbcType="INTEGER" />
+	<result column="investId" property="investId" jdbcType="INTEGER" />
+	<result column="tradeType" property="tradeType" jdbcType="INTEGER" />
+	<result column="uid" property="uid" jdbcType="INTEGER" />
+	<result column="type" property="type" jdbcType="INTEGER" />
+	<result column="amount" property="amount" jdbcType="DECIMAL" />
+	<result column="balance" property="balance" jdbcType="DECIMAL" />
+	<result column="status" property="status" jdbcType="INTEGER" />
+	<result column="remark" property="remark" jdbcType="VARCHAR" />
+	<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+	<result column="orderNo" property="orderNo" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMemberFundsRecord" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_member_funds_record (pid, investId, tradeType, uid, type, amount, balance, status, remark, addtime, orderNo)
+		values (#{pid}, #{investId}, #{tradeType}, #{uid}, #{type}, #{amount}, #{balance}, #{status}, #{remark}, SYSDATE(),#{orderNo})
+	</insert>
+	<select id="selectMemberFundsRecordListByParam" parameterType="java.util.HashMap" resultMap="DrMemberFundsRecordResult">
+		select pid, investId, tradeType, uid, type, amount, balance, status, remark, addtime, orderNo
+		from dr_member_funds_record 
+		<trim prefix=" where " prefixOverrides="and">
+			amount > 0
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="startDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+			<if test="endDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+			<if test="tradeType != null "> and tradeType = #{tradeType} </if>
+		</trim>
+		order by addTime desc,id desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selectMemberFundsRecordListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(id)
+		from dr_member_funds_record
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="startDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ >= ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d') </if>
+			<if test="endDate != null"> and DATE_FORMAT(addTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d') </if>
+			<if test="tradeType != null "> and tradeType = #{tradeType} </if>
+		</trim>
+	</select>
+	
+	<update id="updateStatusByNo" parameterType="com.jsjf.model.member.DrMemberFundsRecord" >
+    	update dr_member_funds_record
+	    <set>
+	    	<if test="status != null">
+			status = #{status:INTEGER},
+			</if>
+	    	<if test="balance != null">
+	      	balance = #{balance:DECIMAL},
+	      	</if>
+	      	<if test="remark !=null">
+	      		remark = #{remark:VARCHAR}
+	      	</if>
+		</set> 
+   		where orderNo = #{orderNo:VARCHAR}
+  	</update>
+  	
+  	<select id="selectMemberFundsRecordByOrderNo" parameterType="java.lang.String" resultType="com.jsjf.model.member.DrMemberFundsRecord">
+  		select * from dr_member_funds_record where orderNo =#{orderNo:VARCHAR}
+  	</select>
+	<select id="selectInvestSumByOnlineTime" resultType="java.lang.Integer">
+		SELECT SUM(amount) FROM dr_member_funds_record WHERE uid = #{uid} AND tradeType = #{tradeType} AND `status` = 3 and `addTime` <![CDATA[ > ]]> '#{addTime}' GROUP BY uid
+  	</select>
+</mapper>

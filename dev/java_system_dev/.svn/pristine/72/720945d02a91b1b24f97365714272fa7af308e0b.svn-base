@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsProductPrizeDAO">
+	<resultMap id="JsProductPrize" type="com.jsjf.model.product.JsProductPrize">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR"/>
+		<result column="simpleName" property="simpleName" jdbcType="VARCHAR"/>
+		<result column="price" property="price" jdbcType="DECIMAL"/>
+		<result column="amount" property="amount" jdbcType="DECIMAL"/>
+		<result column="sort" property="sort" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="pcImgUrlV" property="pcImgUrlV" jdbcType="VARCHAR"/>
+		<result column="pcImgUrlH" property="pcImgUrlH" jdbcType="VARCHAR"/>
+		<result column="h5ImgUrlV" property="h5ImgUrlV" jdbcType="VARCHAR"/>
+		<result column="h5ImgUrlH" property="h5ImgUrlH" jdbcType="VARCHAR"/>
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="category" property="category" jdbcType="INTEGER" />
+	</resultMap>
+	
+		<!-- 添加 -->
+	<insert id="insertJsProductPrize" parameterType="com.jsjf.model.product.JsProductPrize" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+	insert into
+	js_product_prize(name,simpleName,price,amount,sort,status,pcImgUrlV,pcImgUrlH,pcDetailImgUrl,h5ImgUrlV,h5ImgUrlH,h5DetailImgUrl,addTime,addUser,updateTime,updateUser,remark,type,category)
+	values
+	(#{name:VARCHAR},#{simpleName:VARCHAR},#{price:DECIMAL},#{amount:DECIMAL},#{sort:INTEGER},#{status:INTEGER},#{pcImgUrlV:VARCHAR},#{pcImgUrlH:VARCHAR},#{pcDetailImgUrl:VARCHAR},#{h5ImgUrlV:VARCHAR},
+	#{h5ImgUrlH:VARCHAR},#{h5DetailImgUrl:VARCHAR},#{addTime:TIMESTAMP},#{addUser:INTEGER},#{updateTime:TIMESTAMP},#{updateUser:INTEGER},#{remark:VARCHAR},#{type:INTEGER},#{category:INTEGER})
+	</insert>
+	
+	<!-- 修改  -->
+	<update id="updateJsProductPrize" parameterType="com.jsjf.model.product.JsProductPrize">
+		update js_product_prize
+		<set>
+			<if test="name != null"> name = #{name:VARCHAR},</if>
+			<if test="simpleName != null and simpleName!='' "> simpleName = #{simpleName:VARCHAR},</if>
+			<if test="price != null"> price = #{price:DECIMAL},</if>
+			<if test="amount != null"> amount = #{amount:DECIMAL},</if>
+			<if test="sort != null"> sort = #{sort:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="pcImgUrlV != null and pcImgUrlV != '' "> pcImgUrlV = #{pcImgUrlV:VARCHAR},</if>
+			<if test="pcImgUrlH != null and pcImgUrlH !='' "> pcImgUrlH = #{pcImgUrlH:VARCHAR},</if>
+			<if test="pcDetailImgUrl != null and pcDetailImgUrl !='' "> pcDetailImgUrl = #{pcDetailImgUrl:VARCHAR},</if>
+			<if test="h5ImgUrlV != null and h5ImgUrlV !='' "> h5ImgUrlV = #{h5ImgUrlV:VARCHAR},</if>
+			<if test="h5ImgUrlH != null and h5ImgUrlH !='' "> h5ImgUrlH = #{h5ImgUrlH:VARCHAR},</if>
+			<if test="h5DetailImgUrl != null and h5DetailImgUrl !='' "> h5DetailImgUrl = #{h5DetailImgUrl:VARCHAR},</if>
+			<if test="addTime != null"> addTime = #{addTime:TIMESTAMP},</if>
+			<if test="addUser != null"> addUser = #{addUser:INTEGER},</if>
+			<if test="updateTime != null"> updateTime = #{updateTime:TIMESTAMP},</if>			
+			<if test="updateUser != null"> updateUser = #{updateUser:INTEGER},</if>
+			<if test="remark != null and remark !='' "> remark = #{remark:VARCHAR},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="category != null"> category = #{category:INTEGER}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<!-- 根据MAP得到List -->
+	<select id="getJsProductPrizeList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.JsProductPrize">
+		select jp.*
+				from `js_product_prize` jp 	
+				<!-- left join `dr_product_info` dpi on dpi.`prizeId` = jp.`id` -->
+				where 1=1
+			<if test="name != null and name !='' ">  
+				and jp.name like CONCAT('%',#{name,jdbcType=VARCHAR},'%')
+			</if>
+			<if test="status != null and status != '' "> and jp.status = #{status}</if>
+			<if test="category != null and category != '' and category !=0 "> and jp.category = #{category}</if>
+		<if test="limit != null">
+		<![CDATA[ order by jp.status ASC,jp.addTime DESC  ]]>
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 根据MAP得到产品信息List -->
+	<select id="getJsProductPrizeListCount" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from js_product_prize jp
+				<!-- left join `dr_product_info` dpi on dpi.`prizeId` = jp.`id`
+				left join `dr_subject_info` dsi on dsi.`id` = dpi.`sid` -->
+				where 1=1
+			<if test="name != null and name !='' ">  
+				and jp.name like CONCAT('%',#{name,jdbcType=VARCHAR},'%')
+			</if>
+			<if test="status != null and status != '' "> and jp.status = #{status}</if>
+			<if test="category != null and category != '' and category !=0 "> and jp.category = #{category}</if>
+	</select>
+	
+	
+	<!-- 根据id查询 -->
+	<select id="getJsProductPrizeById" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.JsProductPrize">
+		select * from js_product_prize where 1=1
+			<if test="id != null ">  
+				and id = #{id,jdbcType=INTEGER}
+			</if>
+	</select>
+	
+	<!-- 查找未和产品关联的奖品也就是status == 1 -->
+	<select id="getJsProductPrizeforProduct" parameterType="java.lang.Integer" resultType="java.util.HashMap">
+		select * from `js_product_prize` jpp 
+			 where 1 = 1
+		<if test="status != null ">
+			and jpp.status = #{status}
+		</if>
+	</select>
+	
+	<!-- 查找未和产品关联的奖品 更新产品的时候-->
+	<select id="getJsProductPrizeforProductUpdate" parameterType="java.lang.Integer" resultType="java.util.HashMap">
+		select * from `js_product_prize` jpp 
+				left join `dr_product_info` dpi on dpi.`prizeId` = jpp.`id` 
+				where   (jpp.`status`= 1 AND dpi.`prizeId` = #{prizeId}) or (jpp.`status` =2 and dpi.`prizeId` = #{prizeId})
+	</select>
+	<select id="selectJsPorudctPrize" resultMap="JsProductPrize" parameterType="java.util.HashMap">
+		SELECT jpp.*,dp.id pid,
+				 if(dp.status=5, if(1>(dp.surplusAmount/jpp.amount),1,0),1) isNot,dp.rate,dp.activityRate,dp.deadline
+			from js_product_prize jpp 
+			LEFT JOIN dr_product_info dp ON jpp.id = dp.prizeId
+		<where>
+			<if test="id  != null ">
+				and jpp.id = #{id}
+			</if>
+			<if test="pid"> 
+				and dp.id = #{pid}
+			</if>
+		</where>
+		ORDER BY jpp.id limit 1	
+	</select>
+</mapper>

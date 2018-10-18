@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.JsMerchantMarketingDAO" >
+
+	<resultMap id="JsMerchantMarketingResult" type="com.jsjf.model.system.JsMerchantMarketing">
+	
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="investId" property="investId" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="mchnt_txn_ssn" property="mchnt_txn_ssn" jdbcType="VARCHAR" />
+		<result column="fuiouMessageNo" property="fuiouMessageNo" jdbcType="VARCHAR" />
+		<result column="fileStatus" property="fileStatus" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+	</resultMap>	
+
+
+	<sql id="baseSql">
+		id,amount,investId,pid,fid,uid,type,addtime,mchnt_txn_ssn,fuiouMessageNo,fileStatus,remark
+	</sql>
+	<!-- 查询 -->
+	<select id="selectObjectByMap" parameterType="java.util.Map" resultMap="JsMerchantMarketingResult">
+		select <include refid="baseSql"/> from js_merchant_marketing
+			<trim prefix="where" prefixOverrides="and">
+				<if test="amount !=null "> and amount =#{amount} </if>
+				<if test="investId !=null "> and investId =#{investId} </if>
+				<if test="fid !=null "> and fid =#{fid} </if>
+				<if test="pid !=null "> and pid =#{pid} </if>
+				<if test="uid !=null "> and uid =#{uid} </if>
+				<if test="type !=null "> and type =#{type} </if>
+				<if test="mchnt_txn_ssn !=null and  mchnt_txn_ssn != ''"> and mchnt_txn_ssn =#{mchnt_txn_ssn} </if>
+				<if test="fuiouMessageNo !=null and  fuiouMessageNo != ''"> and fuiouMessageNo =#{fuiouMessageNo} </if>
+				<if test="fileStatus !=null "> and fileStatus =#{fileStatus} </if>
+			</trim>
+	</select>
+	
+	<!--添加 -->
+	<insert id="insert" parameterType="com.jsjf.model.system.JsMerchantMarketing">
+		INSERT INTO js_merchant_marketing ( amount, investId, pid, fid, uid, addtime, mchnt_txn_ssn, remark)
+ 		VALUES ( #{amount}, #{investId}, #{pid}, #{fid}, #{uid}, #{addtime}, #{mchnt_txn_ssn},#{remark});
+	</insert>
+	<!--批量添加 -->
+	<insert id="insertBatch" parameterType="java.util.List">
+		INSERT INTO js_merchant_marketing ( amount, investId, pid, fid, uid, addtime, mchnt_txn_ssn, remark)
+		values 		
+		<foreach collection="list" item="item" separator=",">
+ 		 ( #{item.amount}, #{item.investId}, #{item.pid}, #{item.fid}, #{item.uid}, #{item.addtime}, #{item.mchnt_txn_ssn},#{item.remark})
+		</foreach>
+	</insert>
+	
+	
+	<update id="update" parameterType="com.jsjf.model.system.JsMerchantMarketing">
+		update js_merchant_marketing
+		<trim prefix="set" suffixOverrides=",">
+				<if test="amount !=null ">  amount =#{amount}, </if>
+				<if test="investId !=null ">  investId =#{investId}, </if>
+				<if test="fid !=null ">  fid =#{fid}, </if>
+				<if test="pid !=null ">  pid =#{pid}, </if>
+				<if test="uid !=null ">  uid =#{uid}, </if>
+				<if test="type !=null ">  type =#{type}, </if>
+				<if test="mchnt_txn_ssn !=null and  mchnt_txn_ssn != ''">  mchnt_txn_ssn =#{mchnt_txn_ssn}, </if>
+				<if test="fuiouMessageNo !=null and  fuiouMessageNo != ''">  fuiouMessageNo =#{fuiouMessageNo}, </if>
+				<if test="fileStatus !=null ">  fileStatus =#{fileStatus}, </if>
+			</trim>
+		where  = #{id}
+	</update>
+	
+	
+</mapper>

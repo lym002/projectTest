@@ -1,0 +1,9 @@
+package com.jsjf.common;
+
+public class SystemConstant {
+
+    public static final String INVEST_TYPE = "投资";
+
+    public static final String RECHARGE_TYPE = "充值";
+
+}

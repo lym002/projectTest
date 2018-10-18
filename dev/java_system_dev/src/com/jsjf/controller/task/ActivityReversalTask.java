@@ -1,0 +1,160 @@
+package com.jsjf.controller.task;
+
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.service.activity.ActivityReversalService;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.member.DrMemberFundsService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 邀请好友红包返现 定时任务
+ *
+ * @author xxq
+ */
+@Component
+public class ActivityReversalTask {
+    private static Logger log = Logger.getLogger(ActivityReversalTask.class);
+    @Autowired
+    DrMemberService drMemberService;
+    @Autowired
+    DrMemberCarryService drMemberCarryService;
+    @Autowired
+    public ActivityReversalService activityReversalService;
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    private DrMemberFundsService drMemberFundsService;
+
+    /**
+     * 定义每半小时执行一次好友邀请返现任务
+     */
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void insertFriendMemberActivityAmount() {
+        try {
+            log.info("=============================开始邀请好友红包返现");
+            //activityReversalService.reversal();
+            activityReversalService.reversals();
+            //落地页：定时查询好友邀请返现总额的排名
+            activityReversalService.selectReversal();
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+        log.info("=============================邀请好友红包返现完成");
+    }
+
+    /**
+     * 复投返现定时任务
+     */
+    @Scheduled(cron = "0 45 16 12 4 ?")
+    public void transferToClient() {
+        String msg = "复投返现活动";
+        String msgs="抢标补发";
+        String value = String.valueOf(System.currentTimeMillis());
+        try {
+            tryLockUserCash(msg, 1807, new BigDecimal("28"), value);
+            tryLockUserCash(msg, 4435, new BigDecimal("360"), value);
+            tryLockUserCash(msg, 3889, new BigDecimal("40"), value);
+            tryLockUserCash(msg, 3354, new BigDecimal("176.8"), value);
+            tryLockUserCash(msg, 2212, new BigDecimal("80"), value);
+            tryLockUserCash(msg, 9017, new BigDecimal("20"), value);
+            tryLockUserCash(msg, 2212, new BigDecimal("32"), value);
+            //修复满万嘉奖
+            Map<String, Object> map1 = new HashMap<String, Object>();
+            Map<String, Object> map2 = new HashMap<String, Object>();
+            map1.put("type", 8);
+            map1.put("uid", 1003);
+            map1.put("bidAmt", new BigDecimal("8"));
+            map1.put("investId", 6501);
+            redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(), SerializeUtil.serialize(map1));
+            map2.put("type", 9);
+            map2.put("uid", 1003);
+            map2.put("bidAmt", new BigDecimal("6"));
+            map2.put("investId", 6501);
+            redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(), SerializeUtil.serialize(map2));
+        } catch (Exception e) {
+            log.error("复投返现失败" + e.getMessage());
+            //log.error("补发红包" + e.getMessage());
+        }
+      /*  try {//修复红包失败插入redis
+            insetRedis(52, 2198, 6373, "CP-20180326113217523084");
+        } catch (Exception e) {
+            log.error("抢标活动返现" + e.getMessage());
+        }*/
+    }
+
+    private void insetRedis(int tpye, int uid, int investId, String projectOn) {
+        Map<String, Object> backMap = new HashMap<String, Object>(); // 返回参数的map
+        // 放到 redis 缓存
+        Map<String, Object> crushBackMap = new HashMap<String, Object>();
+        crushBackMap.put("type", tpye);
+        crushBackMap.put("uid", uid);
+        crushBackMap.put("investId", investId);
+        crushBackMap.put("project_no", projectOn);
+        backMap.put("crushBackMap", crushBackMap);
+        redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(),
+                SerializeUtil.serialize(backMap.get("crushBackMap")));
+    }
+
+    private void tryLockUserCash(String msg, Integer uid, BigDecimal bigDecimal, String value) {
+        try {
+            boolean relockFlag;
+            relockFlag = redisClientTemplate.tryLock(ConfigUtil.AboutTheCash + uid, 30, TimeUnit.SECONDS, false, value);// 枷锁
+            if (relockFlag) {
+                activityReversalService.transferToClient(uid, bigDecimal, msg);
+            }
+        } catch (Exception e) {
+            log.error("复投返现错误,用户id为" + uid + ":" + e.getMessage());
+        } finally {
+            redisClientTemplate.releaseLock(ConfigUtil.AboutTheCash + uid, value);//解锁
+        }
+
+    }
+
+    /**
+     * 定时任务批量修复提现失败
+     *
+     * @param
+     */
+    @Scheduled(cron = "0 50 16 9 2 ?")
+    public void repairWithdrawal() {                //流水号                   提现金额
+        drMemberFundsService.updateRepairWithdrawal("201802091016252939096683", new BigDecimal("5035.88"));
+        drMemberFundsService.updateRepairWithdrawal("201802091127462775532175", new BigDecimal("10071.32"));
+        drMemberFundsService.updateRepairWithdrawal("201802090722087437393453", new BigDecimal("5034.66"));
+    }
+
+    /**
+     * 修复失败冻结到冻结
+     */
+    @Scheduled(cron = "0 55 11 09 4 ?")
+    public void repairFreeze() {
+        insetRepairRedis(53, "552");
+        insetRepairRedis(53, "554");
+    }
+
+    private void insetRepairRedis(int type, String pid) {
+        try {
+            Map<String, Object> mapFreeze = new HashMap<String, Object>();
+            mapFreeze.put("type", type);
+            mapFreeze.put("pid", pid);
+            redisClientTemplate.lpush(
+                    "regAndVerifySendRedUidList".getBytes(),
+                    SerializeUtil.serialize(mapFreeze));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+}

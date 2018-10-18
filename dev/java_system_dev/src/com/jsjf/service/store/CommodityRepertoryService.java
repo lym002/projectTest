@@ -1,0 +1,26 @@
+package com.jsjf.service.store;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.model.store.CommodityRepertory;
+
+public interface CommodityRepertoryService {
+
+	BaseResult queryCommodityRepertoryList(Map<String, Object> param,
+			PageInfo pi);
+
+	BaseResult addCommodityRepertory(CommodityRepertory bean, MultipartFile appPicFile);
+
+	BaseResult updateCommodityRepertory(CommodityRepertory bean,MultipartFile appPicFile);
+
+	BaseResult deleteCommodityClass(int id);
+
+	List<CommodityRepertory> queryRep();
+
+
+}

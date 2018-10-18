@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysRoleMenuVoDAO" >
+  <resultMap id="SysRoleMenuResult" type="com.jsjf.model.system.SysRoleMenuVo" >
+    <result column="grant_id" property="grantId" jdbcType="BIGINT" />
+    <result column="role_ky" property="roleId" jdbcType="BIGINT" />
+    <result column="menu_ky" property="menuId" jdbcType="BIGINT" />
+    <result column="status" property="status" jdbcType="DECIMAL" />
+  </resultMap>
+    <!-- 添加角色菜单关系 -->
+	<insert id="addRoleMenu" parameterType="com.jsjf.model.system.SysRoleMenuVo" >
+	  insert into 
+	  sys_role_menu 
+	  values (null, #{roleKy:BIGINT}, #{menuKy:BIGINT}, #{status:DECIMAL})
+	</insert>
+	
+    <!-- 删除角色菜单关系 -->
+	<delete id="deleteRoleMenu" parameterType="com.jsjf.model.system.SysRoleMenuVo" >
+		delete from sys_role_menu where role_ky = #{roleKy}
+	</delete>
+	
+	<!-- 根据角色id -->
+	<select id="queryRoleMenuByRoleKy" parameterType="java.lang.Long" resultType="String">
+		select menu_ky from sys_role_menu where role_ky = #{roleKy}
+	</select>
+</mapper>

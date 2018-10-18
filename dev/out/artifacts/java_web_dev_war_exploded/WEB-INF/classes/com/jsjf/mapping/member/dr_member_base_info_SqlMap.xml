@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberBaseInfoDAO">
+	<resultMap id="DrMemberBaseInfoResult" type="com.jsjf.model.member.DrMemberBaseInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="realname" property="realName" jdbcType="VARCHAR" />
+		<result column="username" property="userName" jdbcType="CHAR" />
+		<result column="sex" property="sex" jdbcType="INTEGER" />
+		<result column="birthdate" property="birthDate" jdbcType="DATE" />
+		<result column="email" property="email" jdbcType="VARCHAR" />
+		<result column="idcards" property="idCards" jdbcType="VARCHAR" />
+		<result column="idaddress" property="idAddress" jdbcType="VARCHAR" />
+		<result column="nowaddress" property="nowAddress" jdbcType="VARCHAR" />
+		<result column="marry" property="marry" jdbcType="INTEGER" />
+		<result column="industrytype" property="industryType" jdbcType="SMALLINT" />
+		<result column="job" property="job" jdbcType="VARCHAR" />
+		<result column="salary" property="salary" jdbcType="SMALLINT" />
+		<result column="companySize" property="companySize" jdbcType="SMALLINT" />
+		<result column="degree" property="degree" jdbcType="SMALLINT" />
+		<result column="gschool" property="gschool" jdbcType="SMALLINT" />		
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updtime" property="updTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	<!--通过 客户主键 获取客户信息 -->
+	<select id="queryMemberBaseInfoByUid" parameterType="java.lang.Integer"
+		resultType="com.jsjf.model.member.DrMemberBaseInfo">
+		select c.* from
+		dr_member_base_info c
+		left join dr_member as ym on ym.uid = c.uid
+		where c.uid = #{uid}
+	</select>
+
+	<!--通过 获取信息 -->
+	<select id="queryMemberBaseInfoByMap" parameterType="java.util.HashMap"
+		resultMap="DrMemberBaseInfoResult">
+		select c.* from dr_member_base_info c
+		<where>
+			<if test="uid != null and uid !=''"> and c.uid= #{uid} </if>
+			<if test="email != null and email !=''"> and c.email= #{email} </if>
+			<if test="realName != null and realName !=''"> and c.realname= #{realName} </if>
+			<if test="idCards != null and idCards !=''"> and c.idcards= #{idCards} </if>
+			<if test="status != null and status !=''"> and c.status =#{status} </if>
+		</where>
+	</select>
+	<!--通过 获取信息 -->
+	<select id="queryMemberBaseInfoCountByMap" parameterType="java.util.HashMap"
+		resultType="Integer">
+		select count(1) from dr_member_base_info c
+		<where>
+			<if test="uid != null and uid !=''"> and c.uid= #{uid} </if>
+			<if test="email != null and email !=''"> and c.email= #{email} </if>
+			<if test="realName != null and realName !=''"> and c.realname= #{realName} </if>
+			<if test="idCards != null and idCards !=''"> and c.idcards= #{idCards} </if>
+			<if test="status != null and status !=''"> and c.status =#{status} </if>
+		</where>
+	</select>
+
+	<update id="updateDrMemberBaseInfoById" parameterType="com.jsjf.model.member.DrMemberBaseInfo">
+		update dr_member_base_info
+		set
+		<if test="realName != null">realname = #{realName:VARCHAR},</if>
+		<if test="idCards != null and idCards !=''">idcards = #{idCards:VARCHAR},</if>
+		<if test="sex != null and sex !=''">sex = #{sex:INTEGER},</if>
+		<if test="birthDate != null and birthDate !=''">birthdate = #{birthDate:DATE},</if>
+		<if test="idAddress != null and idAddress !=''">idaddress = #{idAddress:VARCHAR},</if>
+		<if test="nowAddress != null and nowAddress !=''">nowaddress = #{nowAddress:VARCHAR},</if>
+		<if test="email != null and email !=''">email = #{email:VARCHAR},</if>
+		<if test="marry != null">marry = #{marry:INTEGER},</if>
+		<if test="job != null and job !=''">job = #{job:VARCHAR},</if>
+		<if test="industryType != null">industrytype = #{industryType:SMALLINT},</if>
+		<if test="salary != null">salary = #{salary:SMALLINT},</if>
+		<if test="companySize != null">companySize = #{companySize:SMALLINT},</if>
+		<if test="degree != null">degree = #{degree:SMALLINT},</if>
+		<if test="gschool != null">gschool = #{gschool:VARCHAR},</if>
+		updtime = SYSDATE()
+		<where>
+			<if test="id != null and id !=''">id = #{id:INTEGER}</if>
+			<if test="uid != null and uid !=''">and uid = #{uid:INTEGER}</if>
+		</where>
+	</update>
+	<!-- 添加会员基本(住址)资料表 -->
+	<insert id="insertDrMemberBaseInfo" parameterType="com.jsjf.model.member.DrMemberBaseInfo">
+		insert into dr_member_base_info (uid, realname, sex, birthdate,
+		email,idcards, idaddress, nowaddress, marry, industrytype,
+		job, degree,gschool,salary,companySize,addtime)
+		values (#{uid:INTEGER},#{realName:CHAR}, #{sex:CHAR},
+		#{birthDate:DATE}, #{email:VARCHAR},
+		#{idCards:VARCHAR}, #{idAddress:VARCHAR},#{nowAddress:VARCHAR},
+		#{marry:INTEGER}, #{industryType:SMALLINT}, #{job:VARCHAR}, 
+		#{degree:SMALLINT},#{gschool:VARCHAR},#{salary:SMALLINT},#{companySize:SMALLINT},SYSDATE())
+	</insert>
+</mapper>

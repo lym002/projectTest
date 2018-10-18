@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberRecommendedDAO">
+	<resultMap id="DrMemberRecommendedResult" type="com.jsjf.model.member.DrMemberRecommended">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="referrerId" property="referrerId" jdbcType="INTEGER" />
+		<result column="investTime" property="investTime" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="referrerReward" property="referrerReward" jdbcType="DECIMAL" />
+		<result column="addTime" property="type" jdbcType="TIMESTAMP" />
+	</resultMap>
+    <!--根据uid查询-->
+    <select id="selectByUid" parameterType="Integer" resultType="com.jsjf.model.member.DrMemberRecommended">
+        select * from dr_member_recommended where uid = #{uid}
+    </select>
+	<!-- 插入推荐关系 -->
+	<insert id="insertMemberRecommended" parameterType="com.jsjf.model.member.DrMemberRecommended" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO dr_member_recommended (uid,referrerId,investTime,amount,referrerReward,addTime)
+		VALUES(#{uid},#{referrerId},#{investTime},#{amount},#{referrerReward},sysdate())
+	</insert>
+	
+	<!-- 获取好友列表 -->
+	<select id="getDrMemberRecommended" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberRecommended">
+		select dmr.id,dmr.uid,dm.mobilePhone,dmbi.realname,dmr.referrerId,dmr.investTime,dmr.amount,dmr.referrerReward,dmr.addTime
+		FROM dr_member_recommended dmr
+		LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dm.uid = dmbi.uid
+		<where>
+			<if test="uid != null"> and dmr.uid = #{uid}</if>
+			<if test="mobilephone != null"> and dm.mobilePhone=#{mobilephone}</if>
+			<if test="referrerId != null"> and dmr.referrerId=#{referrerId}</if>
+			
+		</where>
+		<if test="order != null"> ${order}</if>
+		<if test="limit != null">
+			LIMIT #{offset},#{limit}		
+		</if>
+	</select>
+	
+	<!-- 获取好友汇总 -->
+	<select id="getDrMemberRecommendedCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(1)
+		FROM dr_member_recommended dmr
+		LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+		LEFT JOIN dr_member_base_info dmbi ON dm.uid = dmbi.uid
+		where 1=1
+		<if test="invest != null and invest !=''">${invest} </if>
+		<if test="uid != null"> and dm.uid = #{uid}</if>
+		<if test="mobilephone !=null and mobilephone!=''"> and dm.mobilePhone=#{mobilephone}</if>
+		<if test="referrerId != null"> and dmr.referrerId=#{referrerId}</if>
+	</select>
+	<select id="getRewardByReferrerId" resultType="java.math.BigDecimal">
+		select sum(ifnull(referrerReward,0)) as referrerReward
+		FROM dr_member_recommended 
+		<where>
+			<if test="referrerId != null"> and referrerId=#{referrerId}</if>
+		</where>
+	</select>
+	
+	<!-- 更新好友首投记录和推荐奖励 -->
+	<update id="updateDrMemberRecommendedByUid" parameterType="com.jsjf.model.member.DrMemberRecommended">
+		update dr_member_recommended
+		<set>
+			<if test="investTime != null"> investTime = #{investTime},</if>
+			<if test="amount != null"> amount = #{amount},</if>
+			<if test="referrerReward != null"> referrerReward = #{referrerReward},</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+
+	<!-- 更新好友红利奖金和邀请奖励 -->
+	<update id="updateByUid" parameterType="com.jsjf.model.member.DrMemberRecommended">
+		update dr_member_recommended
+		<set>
+			<if test="inviteAward != null"> invite_award = #{inviteAward},</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+	
+	<update id="batchUpdate" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			update dr_member_recommended 
+			<trim prefix=" set " suffixOverrides=",">
+				<if test="item.investTime != null "> investTime = #{item.investTime},  </if>
+				<if test="item.amount != null "> amount = #{item.amount},  </if>
+				<if test="item.referrerReward != null "> referrerReward = #{item.referrerReward}, </if>
+			</trim>
+			<where>
+				uid = #{item.uid}
+			</where>
+		</foreach>
+	</update>
+	
+<!-- 累计好友统计 -->
+	<select id="selectDrMemberRecommendedInvest" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT dm.mobilePhone mobilePhone,ifnull(dmbi.realname,'-') realName,DATE_FORMAT(dm.regdate,'%Y.%m.%d') regTime,jai.amont amount,
+				if(dp.uid is not null,'是','否') isInvest
+			from dr_member_recommended dmr 
+				LEFT JOIN dr_member dm ON dmr.uid = dm.uid
+				LEFT JOIN dr_member_base_info dmbi ON dmbi.uid = dmr.uid
+        left join js_activity_Inviter_Award jai on dmr.uid = jai.user_id
+				LEFT JOIN (
+						SELECT dpi.uid from dr_product_invest dpi 
+							left JOIN dr_product_info dp ON dp.id = dpi.pid 
+						where  dp.type = 2 GROUP BY dpi.uid
+				)dp ON dp.uid = dmr.uid 
+			WHERE dmr.referrerId = #{referrerId} ORDER BY dmr.uid DESC
+		<if test="offset != null and limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<select id="selectRecommendedInvestCount" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT IFNULL(COUNT(1),0) from (
+		SELECT  dpi.uid
+			from dr_member_recommended dmr 		
+					LEFT JOIN dr_product_invest dpi ON dpi.uid = dmr.uid 
+					LEFT JOIN dr_product_info dp ON dp.id = dpi.pid
+				WHERE (dp.type = 2 or dp.type is null) and dmr.referrerId = #{referrerId} and dpi.uid IS not NULL
+		GROUP BY  dpi.uid)a
+	</select>
+		
+
+	<select id="selectReInvestCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(distinct(b.uid)) from `js_activity_member_account` a 
+			left join dr_product_invest b on a.piid = b.id
+		 where a.uid = #{referrerId} and a.afid = #{afid}
+		 <if test = "investOrder == 1">and a.investOrder = 1</if>
+		<if test = "investOrder == 2">and a.investOrder > 1</if>
+	</select>
+	
+	<select id="selectRecommendedCount" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM dr_member dm
+		LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+		LEFT JOIN js_activity_friend jaf ON  jaf.type = 1 
+		WHERE jaf.id= #{afid} AND  dm.regdate BETWEEN jaf.startDate AND jaf.endDate AND dmr.referrerId = #{uid}
+	</select>
+	
+	<select id="selectFirstInvestList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select c.realname,a.investOrder,a.status,b.amount investAmount,a.amount rebateAmount,e.regdate,d.deadline,d.rate
+		 from `js_activity_member_account` a
+			left join dr_product_invest b on a.piid = b.id
+			left join `dr_member_base_info` c on b.uid = c.uid
+			left join dr_product_info d on b.pid = d.id
+			left join `dr_member` e on b.uid = e.uid
+		where a.uid = #{referrerId} and a.afid = #{afid} 
+		<if test = "investOrder == 1">and a.investOrder = 1</if>
+		<if test = "investOrder == 2">and a.investOrder > 1</if>
+	</select>
+	
+	<select id = "selectChiZhaIndex" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.uid,a.mobilePhone,a.recommNu as count from (
+			SELECT dm.uid,CONCAT(LEFT(dm.mobilePhone,3),'****',RIGHT(dm.mobilePhone,4)) as mobilePhone,COUNT(1) as recommNu,tdp.investId  
+			from dr_member_recommended dmr
+			LEFT JOIN dr_member dm on dm.uid = dmr.referrerId
+			LEFT JOIN 
+			(	SELECT dpi.uid,MAX(dpi.id) as investId from dr_product_invest dpi  
+					LEFT JOIN dr_product_info dp ON dp.id = dpi.pid  AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and dp.deadline in (30,35,60,180)
+					where  dp.id AND DATE_FORMAT(dpi.investTime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') and dpi.status > 0 and dpi.status !=2 GROUP BY dpi.uid
+			)tdp ON tdp.uid = dmr.uid
+			where dmr.referrerId and tdp.uid and DATE_FORMAT(dmr.addtime,'%Y%m') = DATE_FORMAT(NOW(),'%Y%m') GROUP BY dm.uid
+		)a,(SELECT @rownum:=0) r ORDER BY a.recommNu desc,a.investId
+	</select>
+	<select id = "getDrMemberTopTen" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT REPLACE(dm.mobilePhone,SUBSTR(dm.mobilePhone,4,4),'xxxx') mobilePhone,
+		COUNT(1) inviteCount ,
+		CASE WHEN bmi.`invite_bonus` IS NULL THEN 0 ELSE bmi.invite_bonus END + CASE WHEN jai.`amont` IS NULL THEN 0 ELSE jai.`amont` END inviteAward
+		FROM dr_member_recommended dmr
+		LEFT JOIN (SELECT y_user_id, SUM(amont) amont FROM js_activity_Inviter_Award GROUP BY y_user_id) jai ON dmr.`referrerId` = jai.`y_user_id`
+		LEFT JOIN (SELECT referrerId, SUM(invite_bonus) invite_bonus FROM byp_member_invite GROUP BY referrerId) bmi ON jai.`y_user_id` = bmi.`referrerId`
+		LEFT JOIN dr_member dm ON dmr.referrerId = dm.uid
+		WHERE dmr.referrerId IS NOT NULL
+		GROUP BY dmr.`referrerId`
+		ORDER BY inviteCount DESC,
+		inviteAward DESC
+		LIMIT 10
+	</select>
+	<select id = "getMyRecommended" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		SELECT
+		dm.`mobilePhone`,jaia.`amont` inviteAward,invite_bonus inviteBonus
+		FROM
+		dr_member_recommended dmr
+		LEFT JOIN dr_member dm
+		ON dmr.`uid` = dm.`uid`
+		LEFT JOIN js_activity_Inviter_Award jaia
+		ON dm.`uid` = jaia.`user_id`
+		LEFT JOIN
+		(SELECT bmi.`referrerId`,bmi.`user_id`,
+		SUM(bmi.`invite_bonus`) invite_bonus
+		FROM
+		byp_member_invite bmi
+		WHERE bmi.`referrerId` = #{uid}  GROUP BY bmi.`user_id`) bmi ON dmr.`uid` = bmi.user_id
+		WHERE dmr.`referrerId` = #{uid}
+		ORDER BY dm.`regdate` DESC;
+	</select>
+	<select id = "getDrMemberInvestAll" resultType="java.math.BigDecimal">
+		SELECT
+		SUM(dpi.amount)
+		FROM
+		dr_member_recommended dmr
+		LEFT JOIN dr_product_invest dpi ON dmr.`uid` = dpi.uid
+		WHERE dmr.`referrerId` = #{referrerId}
+		AND dpi.`status` != 2
+	</select>
+	<select id = "getRewardByReferrerFirstInvest" resultType="java.math.BigDecimal">
+		SELECT
+		SUM(jaia.amont)
+		FROM
+		js_activity_Inviter_Award jaia
+		WHERE jaia.`y_user_id` = #{uid}
+	</select>
+
+</mapper>

@@ -1,0 +1,119 @@
+package com.jsjf.service.integral.impl;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.common.BaseResult;
+import net.sf.json.JSONObject;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.PageInfo;
+import com.jsjf.dao.integral.UserDetailIntegralDao;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.service.integral.UserDetailIntegralService;
+
+@Service
+@Transactional
+public class UserDetailIntegralServiceImpl implements UserDetailIntegralService {
+
+	private static transient Logger log = Logger.getLogger(UserDetailIntegralServiceImpl.class);
+	
+	@Autowired
+	private UserDetailIntegralDao userDetailIntegralDao;
+
+	@Override
+	public PageInfo queryDetailintegralList(PageInfo info,
+			UserDetailIntegralBean userDetailIntegralBean) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		
+		map.put("orders", "id desc");
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryDetailintegralList(map);
+		int total = userDetailIntegralDao.queryDetailintegralListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+
+	}
+
+	/**
+	 * 查看获取积分
+	 * @param uid
+	 * @return
+	 */
+	@Override
+	public BaseResult queryEarnPoint(int uid) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		map.put("order"," add_time desc");
+		map.put("uid", uid);
+		try {
+			List<UserDetailIntegralBean> resultList = userDetailIntegralDao.queryEarnPoint(map);
+			String name = "";
+			map.clear();
+			List<JSONObject> list = new ArrayList<>();
+			for (UserDetailIntegralBean bean : resultList) {
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("addTime", DateUtil.formatDate(bean.getAddTime(),"yyyy-MM-dd"));
+				jsonObject.put("integral", bean.getUserDetailIntegral());
+				if (bean.getIntegralSourceId() == 1) {
+					name = "投资";
+				} else if (bean.getIntegralSourceId() == 3) {
+					name = "签到";
+				} else if (bean.getIntegralSourceId() == 3) {
+					name = "任务";
+				}
+				jsonObject.put("integralName", name);
+				list.add(jsonObject);
+			}
+			map.put("earnPoints", list);
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			log.error("获取积分列表失败！",e);
+		}
+		return br;
+	}
+
+	/**
+	 * 查询使用积分列表
+	 * @param uid
+	 * @return
+	 */
+	@Override
+	public BaseResult queryConsumptionPoint(Integer uid) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		map.put("order"," bcd.addTime desc");
+		map.put("uid", uid);
+		try {
+			List<UserDetailIntegralBean> resultList = userDetailIntegralDao.queryConsumptionPoint(map);
+			map.clear();
+			List<JSONObject> list = new ArrayList<>();
+			for (UserDetailIntegralBean bean : resultList) {
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("addTime", DateUtil.formatDate(bean.getAddTime(),"yyyy-MM-dd"));
+				jsonObject.put("integral", bean.getUserDetailIntegral());
+				jsonObject.put("prizeName", bean.getPrizeName());
+				list.add(jsonObject);
+			}
+			map.put("earnPoints", list);
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			log.error("用户积分使用查询错误！",e);
+		}
+		return br;
+	}
+
+}

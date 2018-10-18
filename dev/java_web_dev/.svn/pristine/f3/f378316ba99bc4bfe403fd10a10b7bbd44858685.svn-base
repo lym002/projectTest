@@ -1,0 +1,20 @@
+package com.jsjf.service.integral;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.model.integral.TaskIntegralRules;
+
+public interface TaskIntegralRulesService {
+    int deleteByPrimaryKey(Integer id);
+
+    int insert(TaskIntegralRules record);
+
+    int insertSelective(TaskIntegralRules record);
+
+    TaskIntegralRules selectByPrimaryKey(Integer id);
+
+    int updateByPrimaryKeySelective(TaskIntegralRules record);
+
+    int updateByPrimaryKey(TaskIntegralRules record);
+
+    BaseResult selectMyTask(Integer uid);
+}

@@ -1,0 +1,121 @@
+package com.jsjf.model.cpa;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+public class DrChannelInfoAndroidTailBean {
+	private String mobilephone;
+	private String toFrom;
+	private String isReg;
+	private String isBuildCard;
+	private BigDecimal sumAmount;
+	private Date regDate;
+	private String isInvest;
+	private String searchDrChannelInfoOrderStartDate;
+	private String searchDrChannelInfoOrderEndDate;
+	private BigDecimal startInvestMoney;
+	private BigDecimal endInvestMoney;
+	private String startInvestMoneyDate;
+	private String endInvestMoneyDate;
+	private Date investTime;
+	private String code;//渠道编号
+	
+	
+	public String getMobilephone() {
+		return mobilephone;
+	}
+	public void setMobilephone(String mobilephone) {
+		this.mobilephone = mobilephone;
+	}
+	public String getToFrom() {
+		return toFrom;
+	}
+	public void setToFrom(String toFrom) {
+		this.toFrom = toFrom;
+	}
+	public String getIsReg() {
+		return isReg;
+	}
+	public void setIsReg(String isReg) {
+		this.isReg = isReg;
+	}
+	public String getIsBuildCard() {
+		return isBuildCard;
+	}
+	public void setIsBuildCard(String isBuildCard) {
+		this.isBuildCard = isBuildCard;
+	}
+	public BigDecimal getSumAmount() {
+		return sumAmount;
+	}
+	public void setSumAmount(BigDecimal sumAmount) {
+		this.sumAmount = sumAmount;
+	}
+	public Date getRegDate() {
+		return regDate;
+	}
+	public void setRegDate(Date regDate) {
+		this.regDate = regDate;
+	}
+	public String getIsInvest() {
+		return isInvest;
+	}
+	public void setIsInvest(String isInvest) {
+		this.isInvest = isInvest;
+	}
+	
+	public BigDecimal getStartInvestMoney() {
+		return startInvestMoney;
+	}
+	public void setStartInvestMoney(BigDecimal startInvestMoney) {
+		this.startInvestMoney = startInvestMoney;
+	}
+	public BigDecimal getEndInvestMoney() {
+		return endInvestMoney;
+	}
+	public void setEndInvestMoney(BigDecimal endInvestMoney) {
+		this.endInvestMoney = endInvestMoney;
+	}
+	
+	
+	public Date getInvestTime() {
+		return investTime;
+	}
+	public void setInvestTime(Date investTime) {
+		this.investTime = investTime;
+	}
+	public String getCode() {
+		return code;
+	}
+	public void setCode(String code) {
+		this.code = code;
+	}
+	public String getSearchDrChannelInfoOrderStartDate() {
+		return searchDrChannelInfoOrderStartDate;
+	}
+	public void setSearchDrChannelInfoOrderStartDate(
+			String searchDrChannelInfoOrderStartDate) {
+		this.searchDrChannelInfoOrderStartDate = searchDrChannelInfoOrderStartDate;
+	}
+	public String getSearchDrChannelInfoOrderEndDate() {
+		return searchDrChannelInfoOrderEndDate;
+	}
+	public void setSearchDrChannelInfoOrderEndDate(
+			String searchDrChannelInfoOrderEndDate) {
+		this.searchDrChannelInfoOrderEndDate = searchDrChannelInfoOrderEndDate;
+	}
+	public String getStartInvestMoneyDate() {
+		return startInvestMoneyDate;
+	}
+	public void setStartInvestMoneyDate(String startInvestMoneyDate) {
+		this.startInvestMoneyDate = startInvestMoneyDate;
+	}
+	public String getEndInvestMoneyDate() {
+		return endInvestMoneyDate;
+	}
+	public void setEndInvestMoneyDate(String endInvestMoneyDate) {
+		this.endInvestMoneyDate = endInvestMoneyDate;
+	}
+	
+	
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsProductPrizeOrderShareDAO">
+	<resultMap id="JsProductPrizeOrderShareResult" type="com.jsjf.model.activity.JsProductPrizeOrderShare">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="pcImgUrl" property="pcImgUrl" jdbcType="VARCHAR" />
+		<result column="h5ImgUrl" property="h5ImgUrl" jdbcType="VARCHAR" />
+		<result column="sort" property="sort" jdbcType="INTEGER" />
+		<result column="isShow" property="isShow" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="selectByMap" resultType="com.jsjf.model.activity.JsProductPrizeOrderShare" parameterType="java.util.HashMap">
+		SELECT a.*,concat(substring(b.mobilePhone,1,3),"****",substring(b.mobilePhone,8)) as mobilePhone
+		 FROM `js_product_prize_orderShare` a
+		 left join dr_member b on a.uid = b.uid
+		<where>
+			<if test = "isShow != null"> and isShow = #{isShow} </if>
+		</where>
+		${order}
+		<if test = "offset != null">
+			limit #{offset},#{limit}
+		</if>
+		<if test = "top5 != null">
+			limit #{top5}
+		</if>
+	</select>
+	<select id="selectOrderShareCount" resultType="java.lang.Integer" parameterType="java.util.HashMap">
+		SELECT count(1) FROM `js_product_prize_orderShare` a
+		 left join dr_member b on a.uid = b.uid
+		<where>
+			<if test = "isShow != null"> and a.isShow = #{isShow} </if>
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.JsProductPrizeOrderShare" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO js_product_prize_orderShare 
+			( pcImgUrl, h5ImgUrl, sort, isShow, addtime,url,describes,uid)
+			 VALUES ( #{pcImgUrl}, #{h5ImgUrl}, #{sort}, #{isShow},now(),#{url},#{describes},#{uid});
+	</insert>
+	
+	<select id="selectOrderShareCountByUid" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+		SELECT count(1) from js_product_prize_orderShare where uid = #{uid}
+	</select>
+</mapper>

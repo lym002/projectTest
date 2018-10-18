@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.DrCompanyFundsLogDAO" >
+	<resultMap id="DrCompanyFundsLogResult" type="com.jsjf.model.system.DrCompanyFundsLog" >
+		<result column="logid" property="logId" jdbcType="INTEGER" />
+		<result column="funds_type_id" property="fundsTypeId" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="adduser" property="addUser" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 插入公司收支记录 -->
+	<insert id="insertDrCompanyFundsLog" parameterType="com.jsjf.model.system.DrCompanyFundsLog">
+		insert into dr_company_funds_log (funds_type_id, uid,pid,
+		amount, type,remark, addtime, adduser)
+		values (#{fundsTypeId:INTEGER}, #{uid:INTEGER},
+		 #{pid:INTEGER},#{amount:DECIMAL}, #{type:INTEGER}, #{remark:VARCHAR},
+		SYSDATE(),#{addUser:INTEGER})
+	</insert>
+	
+</mapper>

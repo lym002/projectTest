@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityFriendDetailDAO">
+	<resultMap id="JsActivityFriendDetailResult" type="com.jsjf.model.activity.JsActivityFriendDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />
+		<result column="days" property="days" jdbcType="INTEGER" />
+		<result column="awardType" property="awardType" jdbcType="INTEGER" />
+		<result column="investLimit" property="investLimit" jdbcType="INTEGER" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="appReward" property="appReward" jdbcType="DECIMAL" />
+	</resultMap>
+	<select id="selectByPrimaryKey" resultMap="JsActivityFriendDetailResult">
+		select * from js_activity_friend_detail where id = #{id}
+	</select>
+	
+	<select id="selectJsActivityFriendDetail" resultMap="JsActivityFriendDetailResult" parameterType="Integer">
+		select * from js_activity_friend_detail where fid = #{fid} ORDER BY days 
+	</select>
+</mapper>

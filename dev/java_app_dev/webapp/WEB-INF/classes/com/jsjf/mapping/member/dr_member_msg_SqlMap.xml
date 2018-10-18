@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberMsgDAO" >
+	<resultMap id="DrMemberMsgResult" type="com.jsjf.model.member.DrMemberMsg" >
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="ruid" property="ruId" jdbcType="INTEGER" />
+		<result column="puid" property="puId" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="BIT" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="isread" property="isRead" jdbcType="BIT" />
+		<result column="status" property="status" jdbcType="BIT" />
+	</resultMap>
+	<update id="updateMsgToReadByIds">
+		update dr_member_msg set isread = 1 
+		where ruid = #{uid}
+		<if test="ids != null">
+			and id in 
+			<foreach collection="ids" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</update>
+	<update id="updateMsgToRead">
+		update dr_member_msg set isread = 1 
+		where ruid = #{uid} and type = #{type} and isread = 0
+	</update>
+	<update id="updateMsgToDelByIds">
+		update dr_member_msg set status = 1 
+		where ruid = #{uid}
+		<if test="ids != null">
+			and id in 
+			<foreach collection="ids" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+	</update>
+  	<insert id="insertDrMemberMsg" useGeneratedKeys="true" keyProperty="id" parameterType="com.jsjf.model.member.DrMemberMsg">
+		insert into dr_member_msg (ruid,puid,type,title,content,addtime,isread,status)
+		values (#{ruId:INTEGER},#{puId:INTEGER},#{type:INTEGER},#{title:VARCHAR},#{content:VARCHAR},
+		#{addTime:TIMESTAMP},#{isRead:INTEGER},#{status:INTEGER})
+	</insert>
+	
+	<select id="getDrMemberListByParam" parameterType="java.util.HashMap" resultMap="DrMemberMsgResult">
+		select id, type, title, content, addtime, isread from dr_member_msg
+		<trim prefix=" where " prefixOverrides="and">
+			and status = 0
+			<if test="uid != null">  and ruid = #{uid} </if>
+			<if test="type != null">  and type = #{type} </if>
+		</trim>
+		order by addtime desc
+		limit #{offset}, #{limit}
+	</select>
+	<select id="getDrMemberListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(id) from dr_member_msg
+		<trim prefix=" where " prefixOverrides="and">
+			and status = 0
+			<if test="uid != null">  and ruid = #{uid} </if>
+			<if test="type != null">  and type = #{type} </if>
+			<if test="isRead != null"> and isread = #{isRead}</if>
+		</trim>
+	</select>
+	<!-- 查询是否重复发送查询语句 -->
+	<select id="selectMsg" parameterType="java.io.Serializable" resultType="java.lang.Integer">
+		SELECT ruid,title
+		from dr_member_msg 
+		where ruid = #{uid} 
+		and title = #{title} 
+		LIMIT 1
+	</select>
+</mapper>

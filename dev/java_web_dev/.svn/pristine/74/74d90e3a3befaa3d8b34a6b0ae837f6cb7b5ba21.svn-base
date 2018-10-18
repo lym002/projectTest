@@ -1,0 +1,392 @@
+package com.jsjf.service.product.impl;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.dao.activity.DrActivityParameterDAO;
+import com.jsjf.dao.activity.DrMemberFavourableDAO;
+import com.jsjf.model.activity.DrActivityParameter;
+import com.jsjf.model.activity.DrMemberFavourable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.DrGiftCardSetUpDAO;
+import com.jsjf.dao.activity.DrGiftCardSetUpDetailDAO;
+import com.jsjf.dao.member.DrMemberLotteryLogDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.dao.product.DrProductInvestDAO;
+import com.jsjf.model.activity.DrGiftCardSetUp;
+import com.jsjf.model.activity.DrGiftCardSetUpDetail;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberLotteryLog;
+import com.jsjf.model.member.DrMemberMsg;
+import com.jsjf.model.product.DrProductInfo;
+import com.jsjf.model.product.DrProductInvest;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+
+@Service
+@Transactional
+public class DrProductInvestServiceImpl implements DrProductInvestService {
+	@Autowired
+	private DrProductInvestDAO drProductInvestDAO;
+	@Autowired
+	private DrMemberMsgDAO drMemberMsgDAO;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrGiftCardSetUpDAO drGiftCardSetUpDAO;
+	@Autowired
+	private DrGiftCardSetUpDetailDAO drGiftCardSetUpDetailDAO;
+	@Autowired
+	private DrMemberLotteryLogDAO drMemberLotteryLogDAO;
+    @Autowired
+    private DrMemberFavourableDAO drMemberFavourableDAO;
+    @Autowired
+    public DrActivityParameterDAO drActivityParameterDAO;
+
+
+    @Override
+	public BaseResult selectInvestLogByParam(Map<String, Object> map,PageInfo pi) {
+		map.put("offset", pi.getPageInfo().getOffset());
+		map.put("limit", pi.getPageInfo().getLimit());
+		List<DrProductInvest> list = drProductInvestDAO.selectInvestLogByParam(map);
+		for (DrProductInvest dr : list) {
+			dr.setMobilephone(Utils.PhoneNuberHide(dr.getMobilephone()));
+		}
+		Integer total = drProductInvestDAO.selectInvestLogCountByParam(map);
+		map.clear();
+		pi.setTotal(total);
+		pi.setRows(list);
+		map.put("page", pi);
+		BaseResult br = new BaseResult();
+		br.setMap(map);
+		return br;
+	}
+
+	@Override
+	public BigDecimal selectInvestSumByParam(Map<String, Object> map) {
+		return drProductInvestDAO.selectInvestSumByParam(map);
+	}
+
+	@Override
+	public DrProductInvest selectByPrimaryKey(Integer id) {
+		return drProductInvestDAO.selectByPrimaryKey(id);
+	}
+
+	@Override
+	public Integer selectInvestCountByMap(Map<String, Object> map) {
+		return drProductInvestDAO.selectInvestCountByMap(map);
+	}
+
+	@Override
+	public List<Map<String, Object>> selectInvestTopGroupByUid(Map<String, Object> map) {
+		return drProductInvestDAO.selectInvestTopGroupByUid(map);
+	}
+
+	@Override
+	public Map<String, Object> selectUserLastInvestmentInfo(Integer uid) {
+		return drProductInvestDAO.selectUserLastInvestmentInfo(uid);
+	}
+
+	@Override
+	public void sendTicket(DrMember member, BigDecimal amount) throws Exception {
+		if (amount.compareTo(new BigDecimal(2000)) >= 0) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.clear();
+			map.put("uid", member.getUid());
+			map.put("deadline", 15);
+			map.put("amount", 2000);
+			List<DrProductInvest> investList = drProductInvestDAO.selectInvestList(map);
+			if (investList.size() == 1) {
+				map.clear();
+				map.put("toFrom", member.getToFrom());
+				map.put("now", investList.get(0).getInvestTime());
+				List<DrGiftCardSetUp> setUplist = drGiftCardSetUpDAO.getEfficaciousDrGiftCardSetUpList(map);
+				if (!Utils.isEmptyList(setUplist)) {
+					for (DrGiftCardSetUp setup : setUplist) {
+						map.clear();
+						map.put("parentId", setup.getId());
+						map.put("limit", setup.getOnceQty());
+						DrGiftCardSetUpDetail giftCardDetail = drGiftCardSetUpDetailDAO.getDrGiftCardSetUpDetailBySetUpId(map);
+						if (Utils.isObjectNotEmpty(giftCardDetail)) {
+							String code = giftCardDetail.getGiftCard();
+							map.clear();
+							map.put("ids", giftCardDetail.getIds());
+							map.put("uid", member.getUid());
+							map.put("investId", investList.get(0).getId());
+							drGiftCardSetUpDetailDAO.updateGiftCardSetUpDetailMap(map);
+							DrMemberMsg msg = new DrMemberMsg(member.getUid(),0, 2, "0元看电影", new Date(), 0, 0,
+									redisClientTemplate.getProperties("ticketMsg").replace("${1}", code));
+							drMemberMsgDAO.insertDrMemberMsg(msg);
+						}
+					}
+
+				}
+			}
+		}
+	}
+
+
+	@Override
+	public List<Map<String, Object>> rrlQueryInvestList(Map<String, Object> param) throws Exception {
+		List<Map<String, Object>> list = drProductInvestDAO.rrlQueryInvestList(param);
+		Map<String, Object> resultMap;
+		List<Map<String, Object>> resultList = new ArrayList<Map<String,Object>>();
+		for (Iterator iterator = list.iterator(); iterator.hasNext();) {
+			Map<String, Object> map = (Map<String, Object>) iterator.next();
+			resultMap = new HashMap<String, Object>();
+			resultMap.put("User_name", Utils.getHanyuToPinyin(map.get("realName").toString()));
+			resultMap.put("Order_no", map.get("id"));
+			resultMap.put("Pro_name", map.get("fullName"));
+			resultMap.put("Pro_id", map.get("pid"));
+			resultMap.put("Invest_money", map.get("amount"));
+			resultMap.put("Actual_invest_money", map.get("factAmount"));
+			resultMap.put("Rate", map.get("rate"));
+			resultMap.put("Invest_start_date", map.get("investTime"));
+			resultMap.put("Invest_end_date",  Utils.parse(Utils.format(Utils.getDayNumOfAppointDate(Utils.format(map.get("expireDate").toString(), "yyyy-MM-dd"),1),"yyyy-MM-dd 23:59:59"),"yyyy-MM-dd HH:mm:ss"));
+			resultMap.put("Invest_full_scale_date", map.get("fullDate"));
+			resultMap.put("Commission_date", Utils.parse(Utils.format(Utils.getDayNumOfAppointDate(Utils.format(map.get("expireDate").toString(), "yyyy-MM-dd"),1),"yyyy-MM-dd 23:59:59"),"yyyy-MM-dd HH:mm:ss"));
+			resultMap.put("Cust_key", map.get("uid"));
+			resultList.add(resultMap);
+		}
+		return resultList;
+	}
+
+	@Override
+	public List<DrProductInfo> selectInvest() {
+		return drProductInvestDAO.selectInvest();
+	}
+
+	@Override
+	public Integer selectInvestLogCountByParam(Map<String,Object> param) {
+		Integer rows = drProductInvestDAO.selectInvestLogCountByParam(param);
+		if(rows == null){
+			rows = 0;
+		}
+		return rows;
+	}
+
+	@Override
+	public List<DrProductInvest> selectInvestByMap(Map<String, Object> param) {
+		
+		return drProductInvestDAO.selectInvestByMap(param);
+	}
+
+	@Override
+	public int selectIsOldUserById(Integer uid) {
+		return drProductInvestDAO.selectIsOldUserById(uid);
+	}
+	
+	@Override
+	public boolean checkProductType(Map<String, Object> param) {
+		List<DrProductInvest> list = drProductInvestDAO.checkProductType(param);
+		if(list.size()>0){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	
+	@Override
+	public void insertLogtteryLog(DrMemberLotteryLog drMemberLotteryLog) {
+		drMemberLotteryLogDAO.insert(drMemberLotteryLog);
+	}
+
+	@Override
+	public Integer selectExperienceInvestCount(Integer pid) {
+		return drProductInvestDAO.selectExperienceInvestCount(pid);
+	}
+
+	@Override
+	public List<DrProductInvest> getProductInvestListByType(Map<String, Object> param) {
+		return drProductInvestDAO.getProductInvestListByType(param);
+	}
+
+	@Override
+	public int getProductInvestCountByType(Map<String, Object> param) {
+		 return drProductInvestDAO.getProductInvestCountByType(param);
+	}
+
+	@Override
+	public DrProductInvest selectByParam(Map<String, Object> map) {
+		return drProductInvestDAO.selectByParam(map);
+	}
+
+	@Override
+	public BaseResult getActivityMay18d(DrMember member) throws Exception {
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		
+		String startDate  = redisClientTemplate.getProperties("activityMay18d_start");
+		String endDate  = redisClientTemplate.getProperties("activityMay18d_end");
+		
+		map.put("startDate", startDate);
+		map.put("endDate", endDate);
+		
+		List<Map<String,Object>> activList = drProductInvestDAO.selectActivityMay18d(map);
+		
+		int count = drProductInvestDAO.selectActivityMay18dCount(map);
+		
+		int amount = 0;
+		if(Utils.isObjectNotEmpty(member)){
+			map.put("uid", member.getUid());
+			amount = drProductInvestDAO.selectActivityMay18dInvestAmountByUid(map);
+		}
+		
+		map.clear();
+		map.put("activList", activList);
+		map.put("count", count);
+		map.put("amount", amount);
+		br.setMap(map);
+		br.setSuccess(true);
+		return br;
+	}
+
+	@Override
+	public DrProductInvest getEvidByInvestId(String string) {
+		return drProductInvestDAO.getEvidByInvestId(string);
+	}
+
+	@Override
+	public List<Map<String, Object>> getCount(Integer productId, Date bidStart, Date bidEnd) {
+		if (null == productId || null == bidEnd || null == bidEnd){
+			return null;
+		}
+		Map<String,Object> map =  new HashMap<>();
+		map.put("productId",productId);
+		map.put("bidStart",bidStart);
+		map.put("bidEnd",bidEnd);
+		List<Map<String, Object>> list = drProductInvestDAO.getCount(map);
+		return list;
+	}
+    @Override
+    public BaseResult getEveryoneJdCard(Map<String, Object> param) throws IOException {
+        BaseResult br = new BaseResult();
+        Map<String,Object> map = new HashMap<String, Object>();
+        map=drProductInvestDAO.selectEveryoneJdCard(param);
+        if (Utils.isObjectNotEmpty(map)) {
+            BigDecimal sumAmount=(BigDecimal) map.get("sumAmount");
+            String keyNumber = redisClientTemplate.getProperties("keyNumber");
+            String[] splitNumber = keyNumber.split(",");
+            int[] jdCardNumber={30,50,100,200,100,100,200,300,500,300,2000,2000};
+            Integer sumJdCard=0;
+            for (int i=0;i<splitNumber.length;i++) {
+                if(1==sumAmount.compareTo(new BigDecimal(splitNumber[i]))){
+                    sumJdCard+=jdCardNumber[i];
+                    map.put("key",i);
+                }
+                if (0==sumAmount.compareTo(new BigDecimal(splitNumber[i]))){
+                    sumJdCard+=jdCardNumber[i];
+                    map.put("key",i);
+                }
+                if (-1==sumAmount.compareTo(new BigDecimal(splitNumber[i]))){
+                    map.put("key",i-1);
+                    break;
+                }
+            }
+            map.put("sumJdCard",sumJdCard);
+            //给前端提示客户宝箱领取了哪些
+            List<Map<String, Object>> list = drMemberFavourableDAO.selectByParam(param);
+            for (int i =0;i<list.size();i++) {
+                String id = list.get(i).get("id").toString();
+                param.put("activityId",id);
+                Map<String,Object> res=drMemberFavourableDAO.selectUserByAid(param);
+                if(Utils.isObjectNotEmpty(res)){
+                    map.put("userKey"+(i+1),1);//用户开启的红包宝箱到第1个了
+                    res.clear();
+                }else {
+                    map.put("userKey"+(i+1),0);//用户开启的红包宝箱到第1个了
+                }
+            }
+
+        }else {
+            Map<String,Object> map1 = new HashMap<String, Object>();
+            map1.put("key","");
+            map1.put("sumJdCard",0);
+            map1.put("sumAmount",0);
+            map1.put("userKey1",0);//用户开启的红包宝箱到第1个了
+            map1.put("userKey2",0);//用户开启的红包宝箱到第2个了
+            map1.put("userKey3",0);//用户开启的红包宝箱到第3个了
+            br.setSuccess(true);
+            br.setMap(map1);
+            return br;
+        }
+        br.setSuccess(true);
+        br.setMap(map);
+        return br;
+    }
+
+    @Override
+    public BaseResult getEveryoneTopFive(Map<String, Object> param) {
+        BaseResult br = new BaseResult();
+        List<Map<String,Object>> list = new ArrayList<>();
+        Map<String,Object> map=new HashMap<>();
+        list=drProductInvestDAO.selectEveryoneTopFive(param);
+        map.put("list",list);
+        br.setSuccess(true);
+        br.setMap(map);
+        return br;
+    }
+
+    @Override
+    public BaseResult getEveryoneForVIP(Map<String, Object> param) {
+        BaseResult br = new BaseResult();
+        List<Map<String,Object>> list = new ArrayList<>();
+        Map<String,Object> map=new HashMap<>();
+        list=drProductInvestDAO.selectEveryoneForVIP(param);
+        map.put("list",list);
+        br.setSuccess(true);
+        br.setMap(map);
+        return br;
+    }
+
+    @Override
+    public BaseResult getEveryoneTopTen() {
+        BaseResult br = new BaseResult();
+        List<Map<String,Object>> list = new ArrayList<>();
+        Map<String,Object> map=new HashMap<>();
+        list=drProductInvestDAO.getEveryoneTopTen();
+        map.put("list",list);
+        br.setSuccess(true);
+        br.setMap(map);
+        return br;
+    }
+
+
+    /**
+     * map:("uid",uid),("index",index);
+     * @param param
+     * @return
+     */
+    @Override
+    public BaseResult getTreasure(Map<String, Object> param) throws SQLException {
+        BaseResult br = new BaseResult();
+        List<Map<String,Object>> list = new ArrayList<>();
+        Map<String,Object> map=new HashMap<>();
+        Integer index = (Integer) param.get("index");
+        Integer uid = (Integer) param.get("uid");
+        //查询红包id
+        list=drMemberFavourableDAO.selectByParam(param);
+        map.put("fid",list.get(index).get("id"));
+        DrActivityParameter dap = drActivityParameterDAO.selectParameterPrimaryKey(map);
+        DrMemberFavourable dmf = new DrMemberFavourable(Integer.parseInt(list.get(index).get("id").toString()), uid, dap.getType(), dap.getCode(), dap.getName(), dap.getAmount(),
+                dap.getRaisedRates(), dap.getEnableAmount(), 0, Utils.getDayNumOfAppointDate(new Date(), -dap.getDeadline()), "5880活动奖品", 0, 0, dap.getProductDeadline(), dap.getMultiple(), null);
+        drMemberFavourableDAO.insertIntoInfo(dmf);//添加
+        br.setSuccess(true);
+        br.setMap(map);
+        return br;
+    }
+
+}

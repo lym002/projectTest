@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrActivityDAO">
+	<resultMap id="DrActivityResult" type="com.jsjf.model.activity.DrActivity">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="activityName" property="activityName" jdbcType="VARCHAR" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="VARCHAR" />
+		<result column="updateUser" property="updateUser" jdbcType="VARCHAR" />
+		<result column="lastUpdateTime" property="lastUpdateTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		id,activityName,startTime,endTime,status,updateUser,addUser,addTime,lastUpdateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="DrActivityResult">
+		select <include refid="Base_Column_List"/> from dr_activity where id = #{id}
+	</select>
+	
+	<select id="selectByTime" resultMap="DrActivityResult" parameterType="java.util.HashMap">
+		 SELECT (CASE 
+			WHEN (DATE_FORMAT(#{nowTime},'%y-%m-%d %h:%i:%s') >= startTime AND endTime > DATE_FORMAT(#{nowTime},'%y-%m-%d %h:%i:%s')) THEN 1
+			WHEN startTime >DATE_FORMAT(#{nowTime},'%y-%m-%d %h:%i:%s')  THEN 0
+			WHEN DATE_FORMAT(#{nowTime},'%y-%m-%d %h:%i:%s') > endTime THEN 2 END) AS STATUS FROM `dr_activity`
+	</select>
+	
+	<select id="selectDrActivityList" resultMap="DrActivityResult" parameterType="java.util.HashMap">
+		select <include refid="Base_Column_List"/> from dr_activity 
+		<where>
+			<if test="activityName != null and activityName != '' ">
+		   		activityName like CONCAT(CONCAT('%',#{activityName:VARCHAR}),'%')
+			</if>
+		</where>
+	</select>
+	
+	<select id="selectObjectByName" resultMap="DrActivityResult" parameterType="String">
+		select <include refid="Base_Column_List"/> from dr_activity 
+		where activityName = #{name} ORDER BY status,endTime desc LIMIT 1
+	</select>
+	
+</mapper>

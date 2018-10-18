@@ -1,0 +1,83 @@
+/*
+Navicat MySQL Data Transfer
+
+Source Server         : byp
+Source Server Version : 50505
+Source Host           : 192.168.1.11:3306
+Source Database       : byp
+
+Target Server Type    : MYSQL
+Target Server Version : 50505
+File Encoding         : 65001
+
+Date: 2017-12-08 12:49:37
+*/
+
+SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for `byp_activity_integral`
+-- ----------------------------
+DROP TABLE IF EXISTS `byp_activity_integral`;
+CREATE TABLE `byp_activity_integral` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `activityId` mediumint(11) DEFAULT NULL COMMENT '获取积分的活动Id',
+  `type` mediumint(11) DEFAULT NULL COMMENT '积分类型(1.投资获取,2.签到获取,3活动获取)',
+  `status` tinyint(2) DEFAULT 1 COMMENT '1可用,2不可用',
+  `details` varchar(255) DEFAULT NULL COMMENT '积分详情',
+  `addtime` datetime DEFAULT NULL COMMENT '添加时间',
+  `updatetime` datetime DEFAULT NULL COMMENT '修改时间',
+  PRIMARY KEY (`ID`),
+  KEY `activityIdsy` (`activityId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of byp_activity_integral
+-- ----------------------------
+
+/*
+Navicat MySQL Data Transfer
+
+Source Server         : byp
+Source Server Version : 50505
+Source Host           : 192.168.1.11:3306
+Source Database       : byp
+
+Target Server Type    : MYSQL
+Target Server Version : 50505
+File Encoding         : 65001
+
+Date: 2017-12-08 12:49:30
+*/
+
+SET FOREIGN_KEY_CHECKS=0;
+
+-- ----------------------------
+-- Table structure for `byp_member_integral`
+-- ----------------------------
+DROP TABLE IF EXISTS `byp_member_integral`;
+CREATE TABLE `byp_member_integral` (
+  `id` mediumint(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `integral_type_id` mediumint(11) DEFAULT NULL,
+  `uid` mediumint(11) DEFAULT NULL COMMENT '用户ID',
+  `amount` int(11) DEFAULT NULL COMMENT '数量/金额',
+  `addtime` datetime DEFAULT NULL COMMENT '添加时间',
+  `isDouble` mediumint(11) DEFAULT 1 COMMENT '积分获取倍数(默认值1)',
+  PRIMARY KEY (`id`),
+  KEY `integral_type_id` (`integral_type_id`),
+  KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- ----------------------------
+-- Records of byp_member_integral
+-- ----------------------------
+
+
+CREATE table byp_device_message(
+	id  int(11) NOT NULL AUTO_INCREMENT,
+	uid mediumint(8) NOT NULL COMMENT '用户id',
+	phoneId varchar(25) COMMENT '设备id',
+	other varchar(25) COMMENT '其他',
+    PRIMARY KEY (`id`),
+	KEY `device_key` (`id`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;;

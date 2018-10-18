@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.member.JsCompanyAccountLogDAO">
+	<resultMap id="BaseResultMap" type="com.jsjf.model.member.JsCompanyAccountLog">
+		<id column="id" jdbcType="INTEGER" property="id" />
+		<result column="companyfunds" jdbcType="INTEGER" property="companyfunds" />
+		<result column="type" jdbcType="INTEGER" property="type" />
+		<result column="amount" jdbcType="DECIMAL" property="amount" />
+		<result column="balance" jdbcType="DECIMAL" property="balance" />
+		<result column="status" jdbcType="INTEGER" property="status" />
+		<result column="remark" jdbcType="VARCHAR" property="remark" />
+		<result column="addTime" jdbcType="TIMESTAMP" property="addtime" />
+		<result column="channelType" jdbcType="INTEGER" property="channelType" />
+		<result column="uid" jdbcType="INTEGER" property="uid" />
+		<result column="pid" jdbcType="INTEGER" property="pid" />
+	</resultMap>
+	<sql id="Base_Column_List">
+		id, companyfunds, type, amount, balance, status, remark, addTime, channelType, uid,
+		pid
+	</sql>
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+		select
+		<include refid="Base_Column_List" />
+		from js_company_account_log
+		where id = #{id,jdbcType=INTEGER}
+	</select>
+	<delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+		delete from js_company_account_log
+		where id = #{id,jdbcType=INTEGER}
+	</delete>
+	<insert id="insert" parameterType="com.jsjf.model.member.JsCompanyAccountLog">
+		insert into js_company_account_log (id, companyfunds, type,
+		amount, balance, status,
+		remark, addTime, channelType,
+		uid, pid)
+		values (#{id,jdbcType=INTEGER}, #{companyfunds,jdbcType=INTEGER}, #{type,jdbcType=INTEGER},
+		#{amount,jdbcType=DECIMAL}, #{balance,jdbcType=DECIMAL}, #{status,jdbcType=INTEGER},
+		#{remark,jdbcType=VARCHAR}, #{addtime,jdbcType=TIMESTAMP}, #{channeltype,jdbcType=INTEGER},
+		#{uid,jdbcType=INTEGER}, #{pid,jdbcType=INTEGER})
+	</insert>
+	<insert id="insertSelective" parameterType="com.jsjf.model.member.JsCompanyAccountLog">
+		insert into js_company_account_log
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="companyfunds != null">
+				companyfunds,
+			</if>
+			<if test="type != null">
+				type,
+			</if>
+			<if test="amount != null">
+				amount,
+			</if>
+			<if test="balance != null">
+				balance,
+			</if>
+			<if test="status != null">
+				status,
+			</if>
+			<if test="remark != null">
+				remark,
+			</if>
+			<if test="addtime != null">
+				addTime,
+			</if>
+			<if test="channeltype != null">
+				channelType,
+			</if>
+			<if test="uid != null">
+				uid,
+			</if>
+			<if test="pid != null">
+				pid,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="companyfunds != null">
+				#{companyfunds,jdbcType=INTEGER},
+			</if>
+			<if test="type != null">
+				#{type,jdbcType=INTEGER},
+			</if>
+			<if test="amount != null">
+				#{amount,jdbcType=DECIMAL},
+			</if>
+			<if test="balance != null">
+				#{balance,jdbcType=DECIMAL},
+			</if>
+			<if test="status != null">
+				#{status,jdbcType=INTEGER},
+			</if>
+			<if test="remark != null">
+				#{remark,jdbcType=VARCHAR},
+			</if>
+			<if test="addtime != null">
+				#{addtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="channeltype != null">
+				#{channeltype,jdbcType=INTEGER},
+			</if>
+			<if test="uid != null">
+				#{uid,jdbcType=INTEGER},
+			</if>
+			<if test="pid != null">
+				#{pid,jdbcType=INTEGER},
+			</if>
+		</trim>
+	</insert>
+	<update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.member.JsCompanyAccountLog">
+		update js_company_account_log
+		<set>
+			<if test="companyfunds != null">
+				companyfunds = #{companyfunds,jdbcType=INTEGER},
+			</if>
+			<if test="type != null">
+				type = #{type,jdbcType=INTEGER},
+			</if>
+			<if test="amount != null">
+				amount = #{amount,jdbcType=DECIMAL},
+			</if>
+			<if test="balance != null">
+				balance = #{balance,jdbcType=DECIMAL},
+			</if>
+			<if test="status != null">
+				status = #{status,jdbcType=INTEGER},
+			</if>
+			<if test="remark != null">
+				remark = #{remark,jdbcType=VARCHAR},
+			</if>
+			<if test="addtime != null">
+				addTime = #{addtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="channeltype != null">
+				channelType = #{channeltype,jdbcType=INTEGER},
+			</if>
+			<if test="uid != null">
+				uid = #{uid,jdbcType=INTEGER},
+			</if>
+			<if test="pid != null">
+				pid = #{pid,jdbcType=INTEGER},
+			</if>
+		</set>
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<update id="updateByPrimaryKey" parameterType="com.jsjf.model.member.JsCompanyAccountLog">
+		update js_company_account_log
+		set companyfunds = #{companyfunds,jdbcType=INTEGER},
+		type = #{type,jdbcType=INTEGER},
+		amount = #{amount,jdbcType=DECIMAL},
+		balance = #{balance,jdbcType=DECIMAL},
+		status = #{status,jdbcType=INTEGER},
+		remark = #{remark,jdbcType=VARCHAR},
+		addTime = #{addtime,jdbcType=TIMESTAMP},
+		channelType = #{channeltype,jdbcType=INTEGER},
+		uid = #{uid,jdbcType=INTEGER},
+		pid = #{pid,jdbcType=INTEGER}
+		where id = #{id,jdbcType=INTEGER}
+	</update>
+	<insert id="insertCompanyAccountLog" parameterType="com.jsjf.model.member.JsCompanyAccountLog" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+		insert into js_company_account_log(id, companyfunds, type,amount,
+		balance,status,remark, addtime, channelType,uid,pid)
+		values (#{id},#{companyfunds},#{type},#{amount},
+		#{balance},#{status},#{remark},#{addtime},#{channelType},#{uid},#{pid})
+	</insert>
+
+	<select id="selectBidPrize" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+		select
+		jl.id, jl.companyfunds, jl.type, jl.amount, jl.balance, jl.status, jl.remark, jl.addTime, jl.channelType, jl.uid,
+		jl.pid,CONCAT(substring(dm.mobilePhone,1,3),'****',substring(dm.mobilePhone,8,11)) mobilePhone
+		from js_company_account_log jl
+        LEFT JOIN dr_member dm
+        on dm.uid=jl.uid
+        where  jl.remark LIKE  "%抢标返现"
+		LIMIT 0,20
+	</select>
+	<select id="selectBidPrizeByUid" parameterType="java.util.Map" resultMap="BaseResultMap">
+		select
+        jl.id, jl.companyfunds, jl.type, jl.amount, jl.balance, jl.status, jl.remark, jl.addTime, jl.channelType, jl.uid,
+        jl.pid,dpi.fullName,CONCAT(substring(dm.mobilePhone,1,3),'****',substring(dm.mobilePhone,8,11)) mobilePhone
+        from js_company_account_log jl
+        LEFT JOIN dr_product_info dpi
+        on dpi.id=jl.pid
+        LEFT JOIN dr_member dm
+        on dm.uid=jl.uid
+        where  jl.remark LIKE  "%抢标返现"
+        <if test="uid != null">
+            and jl.uid = #{uid,jdbcType=INTEGER}
+        </if>
+        <if test="pid != null">
+            and jl.pid = #{pid,jdbcType=INTEGER}
+        </if>
+	</select>
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberBrokerDAO" >
+  <resultMap id="DrMemberBrokerResult" type="com.jsjf.model.member.DrMemberBroker" >
+    <result column="id" property="id" jdbcType="INTEGER" />
+    <result column="uid" property="uid" jdbcType="INTEGER" />
+    <result column="merchantCode" property="merchantcode" jdbcType="VARCHAR" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="applyTime" property="applyTime" jdbcType="TIMESTAMP" />
+    <result column="auditTime" property="auditTime" jdbcType="TIMESTAMP" />
+    <result column="level" property="level" jdbcType="INTEGER" />
+    <result column="auditUser" property="auditUser" jdbcType="INTEGER" />
+    <result column="total" property="total" jdbcType="DECIMAL" />
+  </resultMap>
+  
+  <!-- 理财代理（待审/已审）列表（理财代理管理） -->
+	<resultMap id="licaiPagesResult" type="com.jsjf.model.member.DrMemberBroker">
+	    <result property="id" column="id"/>
+		<result property="uid" column="uid"/>
+		<result column="applyTime"  property="applyTime" /><!-- 申请时间 -->
+		<result column="auditTime" property="auditTime"/><!-- 审批时间 -->
+		<result property="status" column="status"/><!-- 状态 -->
+		<result property="phone" column="phone"/><!-- 手机号码 -->
+		<result property="merchantCode" column="merchantCode"/><!--  加盟商编码 -->
+		<result property="regTime" column="regTime"/><!-- 注册时间 -->
+		<result property="code" column="code"/><!-- 推荐代码 -->
+		<result property="touziAmount" column="touziAmount"/><!--投资总额  -->
+		<result property="level" column="level"/>
+		<result property="levelName" column="levelName"/>
+		<result property="realname" column="realname"/>
+		<result property="username" column="username"/>
+		<result property="levelOld" column="levelOld"/>
+		<result property="levelNameOld" column="levelNameOld"/>
+		<result column="erpname" property="erpname" />
+		
+	</resultMap>
+	<select id="getDrMemberBrokerList" parameterType="java.util.HashMap"  resultMap="licaiPagesResult">
+		select mb.id,mb.uid,mb.applyTime,mb.auditTime,mb.status,mb.level,mb.merchantCode,
+		       mbi.realname, m.username, u.name as erpname,  
+               (select ARTI_ID from dr_member_broker_level where id=mb.level) as levelName, 
+			   if(mb.total is null,0,mb.total) as touziAmount,
+			   m.level as levelOld, 
+			   (select ARTI_ID from dr_member_broker_level where id=m.level) as levelNameOld 
+	    from dr_member_broker mb 
+	        left join dr_member m on mb.uid = m.uid 
+			left join dr_member_base_info mbi on m.uid = mbi.uid 
+   			left join sys_users u on u.USER_KY=mb.auditUser
+   		<where>
+   			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[ and DATE_FORMAT(mb.applyTime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[ and DATE_FORMAT(mb.applyTime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="uid != null and uid !='' ">
+				 and mb.uid = #{uid}
+			</if>
+			<if test="username != null and username !='' ">
+				 and m.username like CONCAT('%','${username}','%')
+			</if>
+			<if test="realname != null and realname !='' "> 
+				 and mbi.realname like CONCAT('%','${realname}','%' )
+			</if>
+			<if test="level != null and level != '' ">
+				 and mb.level = #{level}
+			</if>
+			<if test="(status != null and status != '') or status==0">
+				 and	mb.status =#{status}
+			</if>
+   		</where>
+		<!-- <![CDATA[  ]]>   -->  
+			order by mb.applyTime desc
+			limit #{offset},#{limit} 		  
+	</select>
+	
+	
+  <select id="getDrMemberBrokerCounts" parameterType="java.util.HashMap" resultType="int">
+  	select count(1) 
+	    from dr_member_broker mb 
+	        left join dr_member m on mb.uid = m.uid 
+			left join dr_member_base_info mbi on m.uid = mbi.uid 
+   			left join sys_users u on u.USER_KY=mb.auditUser
+   		<where>
+   			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(mb.applytime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(mb.applytime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="uid != null and uid !='' ">
+				and mb.uid = #{uid}
+			</if>
+			<if test="username != null and username !='' ">
+				and m.username like CONCAT('%','${username}','%')
+			</if>
+			<if test="realname != null and realname !='' "> 
+				and mbi.realname like CONCAT('%','${realname}','%' )
+			</if>
+			<if test="level != null and level != '' ">
+				and mb.level = #{level}
+			</if>
+			<if test="(status != null and status != '') or status==0">
+				and	mb.status =#{status}
+			</if>
+   		</where>
+  </select>
+  
+  <select id="selectByPrimaryKey" resultMap="licaiPagesResult" parameterType="int" >
+    select mb.id,mb.uid,mb.applytime,mb.auditTime,mb.status,mb.level,mb.merchantCode,
+		       mbi.realname, m.username, u.name as erpname,  
+               (select ARTI_ID from dr_member_broker_level where id=mb.level) as levelName, 
+			   if(mb.total is null,0,mb.total) as touziAmount,
+			   m.level as levelOld, 
+			   (select ARTI_ID from dr_member_broker_level where id=m.level) as levelNameOld 
+	    from dr_member_broker mb 
+	        left join dr_member m on mb.uid = m.uid 
+			left join dr_member_base_info mbi on m.uid = mbi.uid 
+   			left join sys_users u on u.USER_KY=mb.auditUser
+    where mb.id = #{id:INTEGER}
+  </select>
+  
+  <delete id="deleteByPrimaryKey" parameterType="com.jsjf.model.member.DrMemberBroker" >
+    delete from dr_member_broker
+    where id = #id:INTEGER#
+  </delete>
+  
+  <insert id="insert" parameterType="com.jsjf.model.member.DrMemberBroker" >
+    insert into dr_member_broker (id, uid, merchantCode, status, applytime, auditTime, level,
+      auditUser, total)
+    values (#{id:INTEGER}, #{uid:INTEGER}, #{merchantcode:VARCHAR}, #{status:INTEGER},
+      #{applytime:TIMESTAMP}, #{audittime:TIMESTAMP}, #{level:INTEGER}, #{audituser:INTEGER},
+      #{total:DECIMAL})
+  </insert>
+  
+  <update id="updateDrMemberBrokerStatus" parameterType="com.jsjf.model.member.DrMemberBroker" >
+    update dr_member_broker 
+    <set>
+      status = #{status:INTEGER},
+      auditUser = #{auditUser:VARCHAR},
+      auditTime = #{auditTime:TIMESTAMP},
+      level=#{level:INTEGER}
+    </set> 
+    <where>
+    	id = #{id:INTEGER}
+    </where>
+  </update>
+  
+</mapper>

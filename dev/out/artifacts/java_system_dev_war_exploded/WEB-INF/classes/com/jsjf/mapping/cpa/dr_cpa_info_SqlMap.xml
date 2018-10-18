@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.cpa.DrCpaInfoDAO">
+	<resultMap id="DrCpaInfoResult" type="com.jsjf.model.cpa.DrCpaInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="cid" property="cid" jdbcType="VARCHAR" />
+		<result column="activityCode" property="activityCode" jdbcType="VARCHAR" />
+		<result column="activityName" property="activityName" jdbcType="VARCHAR" />
+		<result column="url" property="url" jdbcType="VARCHAR" />
+		<result column="parameters" property="parameters" jdbcType="VARCHAR" />
+		<result column="pageUrl" property="pageUrl" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />		
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+	</resultMap>
+	<!-- 获取CPA地址信息列表 -->
+	<select id="getDrCpaInfoList" parameterType="java.util.HashMap" resultType="com.jsjf.model.cpa.DrCpaInfo">
+		select dcpi.*,dci.name,dci.code,su.name as userName,dci.status from dr_cpa_info dcpi
+		LEFT JOIN dr_channel_info dci on dcpi.cid = dci.id
+		LEFT JOIN sys_users su on su.user_ky = dcpi.addUser
+		<where>
+			<if test="code != null and code != ''"> 
+				and instr(dci.code,#{code})>0 
+			</if>
+			<if test="activityCode != null and activityCode != ''">
+				and instr(dcpi.activityCode,#{activityCode})>0
+			</if>
+			<if test="url != null and url != ''">
+				and instr(dcpi.url,#{url})>0
+			</if>								
+			<if test="status != null">
+				and dci.status = ${status}
+			</if>								
+		</where>
+		<![CDATA[ order by dci.status desc ,dcpi.addDate desc]]>
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取CPA地址信息总数 -->
+	<select id="getDrCpaInfoCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_cpa_info dcpi
+		LEFT JOIN dr_channel_info dci on dcpi.cid = dci.id
+		LEFT JOIN sys_users su on su.user_ky = dcpi.addUser
+		<where>
+			<if test="code != null and code != ''"> 
+				and instr(dci.code,#{code})>0 
+			</if>
+			<if test="activityCode != null and activityCode != ''">
+				and instr(dcpi.activityCode,#{activityCode})>0
+			</if>
+			<if test="url != null and url != ''">
+				and instr(dcpi.url,#{url})>0
+			</if>	
+			<if test="status != null">
+				and dci.status = ${status}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 添加CPA地址信息 -->
+	<insert id="insertDrCpaInfo" parameterType="com.jsjf.model.cpa.DrCpaInfo">
+		insert into dr_cpa_info(cid,activityCode,activityName,url,pageUrl,remark,addDate,addUser,parameters)
+		values (#{cid:VARCHAR},#{activityCode:VARCHAR},#{activityName:VARCHAR},#{url:VARCHAR},#{pageUrl:VARCHAR},
+		#{remark:VARCHAR},sysdate(),#{addUser:INTEGER},#{parameters:VARCHAR})
+	</insert>
+	
+	<!-- 根据Map得到CPA地址信息 -->
+	<select id="getDrCpaInfoListForMap" resultType="com.jsjf.model.cpa.DrCpaInfo" parameterType="java.util.HashMap">
+		select dcpi.*,dci.name,dci.code,dci.status from dr_cpa_info dcpi
+		LEFT JOIN dr_channel_info dci on dcpi.cid = dci.id
+		<where>
+			<if test="code != null"> 
+				dci.code = #{code:VARCHAR}
+			</if>
+			<if test="activityCode != null">
+				and dcpi.activityCode = #{activityCode:VARCHAR}
+			</if>
+		</where>
+	</select>
+</mapper>

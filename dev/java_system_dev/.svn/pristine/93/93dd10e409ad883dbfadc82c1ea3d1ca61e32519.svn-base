@@ -1,0 +1,1548 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInfoDAO">
+	<resultMap id="DrProductInfoResult" type="com.jsjf.model.product.DrProductInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />		
+		<result column="sid" property="sid" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="fullName" property="fullName" jdbcType="VARCHAR" />
+		<result column="simpleName" property="simpleName" jdbcType="VARCHAR" />		
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />	
+		<result column="intermediary" property="intermediary" jdbcType="INTEGER" />	
+		<result column="isSid" property="isSid" jdbcType="INTEGER" />	
+		<result column="amount" property="amount" jdbcType="DECIMAL" />	
+		<result column="alreadyRaiseAmount" property="alreadyRaiseAmount" jdbcType="DECIMAL" />
+		<result column="surplusAmount" property="surplusAmount" jdbcType="DECIMAL" />
+		<result column="rate" property="rate" jdbcType="DECIMAL" />
+		<result column="activityRate" property="activityRate" jdbcType="DECIMAL" />
+		<result column="repayType" property="repayType" jdbcType="INTEGER" />
+		<result column="deadline" property="deadline" jdbcType="INTEGER" />	
+		<result column="leastaAmount" property="leastaAmount" jdbcType="DECIMAL" />
+		<result column="increasAmount" property="increasAmount" jdbcType="DECIMAL" />
+		<result column="maxAmount" property="maxAmount" jdbcType="DECIMAL" />
+		<result column="raiseDeadline" property="raiseDeadline" jdbcType="INTEGER" />
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="fullDate" property="fullDate" jdbcType="TIMESTAMP" />
+		<result column="expireDate" property="expireDate" jdbcType="TIMESTAMP" />
+		<result column="introduce" property="introduce" jdbcType="VARCHAR" />
+		<result column="borrower" property="borrower" jdbcType="VARCHAR" />	
+		<result column="repaySource" property="repaySource" jdbcType="VARCHAR" />
+		<result column="windMeasure" property="windMeasure" jdbcType="VARCHAR" />
+		<result column="isShow" property="isShow" jdbcType="INTEGER" />
+		<result column="isHot" property="isHot" jdbcType="INTEGER" />	
+		<result column="isDeductible" property="isDeductible" jdbcType="INTEGER" />	
+		<result column="isInterest" property="isInterest" jdbcType="INTEGER" />	
+		<result column="isCash" property="isCash" jdbcType="INTEGER" />	
+		<result column="isDouble" property="isDouble" jdbcType="INTEGER" />		
+		<result column="mappingStatus" property="mappingStatus" jdbcType="INTEGER"/>
+		<result column="establish" property="establish" jdbcType="TIMESTAMP" />
+		<result column="accept" property="accept" jdbcType="VARCHAR" />
+		<result column="acceptPic" property="acceptPic" jdbcType="VARCHAR" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+		<result column="loanName" property="loanName" jdbcType="VARCHAR" />
+		<result column="loanCode" property="loanCode" jdbcType="VARCHAR" />
+		<result column="loanStatus" property="loanStatus" jdbcType="INTEGER" />	
+		<result column="prizeId" property="prizeId" jdbcType="INTEGER" />
+		<result column="principleId" property="principleId" jdbcType="INTEGER" />	
+		<result column="principleH5" property="principleH5" jdbcType="VARCHAR" />	
+		<result column="principlePC" property="principlePC" jdbcType="VARCHAR" />		
+			
+		
+		
+		<result column="project_no" property="project_no" jdbcType="VARCHAR" />	
+		<result column="project_usage" property="project_usage" jdbcType="VARCHAR" />	
+		<result column="project_st" property="project_st" jdbcType="VARCHAR" />	
+		<result column="itemNo" property="itemNo" jdbcType="VARCHAR" />	
+		
+		
+	</resultMap>
+	
+	<select id="getNeedMatchingProductList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select pi.*,max(mapping.endDate) as mappingEndDate,ifnull(sum(mapping.mappingAmount),0) as mappingAmount,
+			pi.amount- ifnull(sum(mapping.mappingAmount),0) as remainsAmount,count(mapping.id) as mappingCount,
+			DATE_SUB(pi.expireDate,INTERVAL pi.deadline DAY) as raiseSuccessDate,pi.repayType as repayType
+		from dr_product_info pi
+		left JOIN dr_creditor_right_mapping mapping ON pi.id = mapping.pid
+		<where>
+			<if test="code != null">
+				and pi.code like CONCAT('%','${code}','%')
+			</if>
+			<if test="simpleName != null">
+				and pi.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="searchStartDate != null">
+				<![CDATA[and DATE_FORMAT(DATE_SUB(pi.expireDate,INTERVAL pi.deadline DAY),'%Y-%m-%d') >= DATE_FORMAT(#{searchStartDate},'%Y-%m-%d') ]]>
+			</if>
+			<if test="searchEndDate != null">
+				<![CDATA[and DATE_FORMAT(DATE_SUB(pi.expireDate,INTERVAL pi.deadline DAY),'%Y-%m-%d') <= DATE_FORMAT(#{searchEndDate},'%Y-%m-%d') ]]>
+			</if>
+			
+			<if test="type != null">
+				and pi.type=#{type}
+			</if>
+			<if test="status != null">
+				and	pi.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 	#{item}  
+				</foreach>
+			</if>
+			<if test="mappingStatuses != null">
+				and mappingStatus  in
+				<foreach collection="mappingStatuses" item="item" open="(" close=")" separator=",">
+						#{item} 
+				</foreach> 
+			</if>
+			<if test="repayType!=null">
+				and pi.repayType=#{repayType}
+			</if>
+			group by pi.id
+			<if test="limit !=null">
+				limit #{offset},#{limit}
+			</if>
+		</where>
+	</select>
+		
+	<!-- 获取产品信息列表 -->
+	<select id="getDrProductInfoList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select dpi1.*,case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,
+		(select fid from dr_product_info dpi2 where dpi2.fid = dpi1.id and dpi2.`status` !=4) renewal,
+		case when dpi1.startDate>SYSDATE() then 1 else 0 end bespoke,
+		case when raiseDeadline-DATEDIFF(SYSDATE(),dpi1.startDate)>0 then raiseDeadline-DATEDIFF(SYSDATE(),dpi1.startDate) else 0 end as remainRaiseDay
+		,ifnull(jpp.`name`,jap.`name`) as prizeName
+		from dr_product_info dpi1
+		left join js_product_prize jpp on dpi1.prizeId = jpp.id
+		left join js_activity_prize jap on dpi1.atid = jap.atid
+		<where>
+			<if test="type != null ">
+				dpi1.type = #{type}
+			</if>
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="code != null and code != ''"> 
+				and dpi1.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="repayType != null"> 
+				and dpi1.repayType =#{repayType}
+			</if>
+			<if test="status != null">
+				and	dpi1.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+		<if test="limit !=null">
+			<![CDATA[ order by addDate DESC  ]]>
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<!-- 获取产品信息总数 -->
+	<select id="getDrProductInfoCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_product_info
+		<where>
+			<if test="type != null ">
+				type = #{type}
+			</if>
+			<if test="simpleName != null and simpleName != ''">
+				and simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="code != null and code != ''"> 
+				and code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="repayType != null"> 
+				and repayType =#{repayType}
+			</if>
+			<if test="status != null">
+				and	status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+	
+	</select>
+	<!-- 获取标的产品信息总数和总计 -->
+	<select id="getSubjectDrProductInfoCounts" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "总计" as code,count(1) total,sum(dr_product_info.amount) amount,sum(dr_product_info.alreadyRaiseAmount) alreadyRaiseAmount  from dr_product_info 
+		LEFT JOIN dr_subject_info dsi on dsi.id = dr_product_info.sid
+		<where>
+			<if test="simpleName != null and simpleName != ''">
+				dr_product_info.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="sid != null and sid != ''">
+				and dr_product_info.sid = #{sid}
+			</if>
+			<if test="code != null and code != ''"> 
+				and dr_product_info.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="status != null">
+				and	dr_product_info.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+	</select>
+	<!-- 获取标的产品信息总数和当页总计-->
+	<select id="getSubjectPageCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	select "本页总计" as code,sum(a.amount) amount ,sum(a.alreadyRaiseAmount) alreadyRaiseAmount FROM
+	(select dpi1.amount, dpi1.alreadyRaiseAmount ,case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,
+		(select fid from dr_product_info dpi2 where dpi2.fid = dpi1.id and dpi2.`status` !=4) renewal,
+		 case when dpi1.startDate>SYSDATE() then 1 else 0 end bespoke
+		 from dr_product_info dpi1
+		 LEFT JOIN dr_subject_info dsi on dsi.id = dpi1.sid
+		<where>
+			<if test="simpleName != null and simpleName != ''">
+				dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="sid != null and sid != ''">
+			   and dpi1.sid = #{sid}
+			</if>
+			<if test="code != null and code != ''"> 
+				and dpi1.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="status != null">
+				and	dpi1.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+			<if test="limit !=null">
+			<![CDATA[ order by surplusDay>0 and surplusDay<5  and renewal is null and isSid =1 desc,dpi1.addDate DESC  ]]>
+				limit #{offset},#{limit}) a
+			</if>
+		
+	</select>
+	<!-- 获取标的产品信息总数列表-->
+	<select id="getSubjecDrProductInfoList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select dpi1.*,case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,
+		(select fid from dr_product_info dpi2 where dpi2.fid = dpi1.id and dpi2.`status` !=4) renewal,
+		case when dpi1.startDate>SYSDATE() then 1 else 0 end bespoke
+		from dr_product_info dpi1
+		LEFT JOIN dr_subject_info dsi on dsi.id = dpi1.sid 
+		<where>
+			
+			<if test="simpleName != null and simpleName != ''">
+				dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="sid != null and sid != ''">
+				and dpi1.sid = #{sid}
+			</if>
+			<if test="code != null and code != ''"> 
+				and dpi1.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="status != null">
+				and	dpi1.status in 
+				<foreach item="item" index="index" collection="status" open="(" separator="," close=")">  
+				 #{item}  
+				</foreach>
+			</if>
+		</where>
+		<if test="limit !=null">
+			<![CDATA[ order by surplusDay>0 and surplusDay<5  and renewal is null and isSid =1 desc,addDate DESC  ]]>
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	
+	<!-- 获取放款清单列表 CONCAT(LEFT(,3),'****',RIGHT(dcc.phone,4))-->
+	<select id="getDrProductLoanList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.activityRate as activityRate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus loanStatus,dpi1.project_no project_no,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName,
+		dpi1.actLoanTime,dcc.phone as phone,dpi1.repayType as repayType,ifNull(dpir.shouldInterest,0) as shouldInterest,dpi1.project_no
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid
+		left join dr_claims_customer dcc on dcc.lid = dcl.id
+		left join (select pid,ifNull(SUM(shouldInterest),0)-ifNull(SUM(basicprofit),0) as shouldInterest from dr_product_invest_repayinfo  group by pid)dpir on dpir.pid=dpi1.id
+		<where>
+			dpi1.status in (6,8, 9) and dpi1.type!=1 and dpi1.type!=5 
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = ${loanStatus}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="project_no != null and project_no == 0">
+				and dpi1.project_no is not null 
+			</if>
+			<if test="project_no != null and project_no == 1">
+				and dpi1.project_no is null 
+			</if>
+			<if test="type==3">
+				and dpi1.type=3 <!-- 存管新手标 -->
+			</if>
+			<if test="type!=3">
+				and dpi1.type!=3 <!-- 排除存管新手标 -->
+			</if>
+		</where>
+		<choose>
+			<when test="limit !=null">
+				<![CDATA[ ORDER BY loanStatus,establish ASC  ]]>
+				limit #{offset},#{limit}
+			</when>
+			<otherwise>
+				<![CDATA[ ORDER BY establish ASC ]]>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 获取放款清单总数 -->
+	<select id="getDrProductLoanCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from (select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus loanStatus,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid 
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		<where>
+			dpi1.status in (6,8, 9) and dpi1.type!=1 and dpi1.type!=5
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = ${loanStatus}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate  != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="project_no != null and project_no == 0">
+				and dpi1.project_no is not null 
+			</if>
+			<if test="project_no != null and project_no == 1">
+				and dpi1.project_no is null 
+			</if>
+			<if test="type==3">
+				and dpi1.type=3 <!-- 存管新手标 -->
+			</if>
+			<if test="type!=3">
+				and dpi1.type!=3 <!-- 排除存管新手标 -->
+			</if>
+		</where>
+		
+		)a
+	</select>
+	
+	<!-- 放款金额汇总 -->
+	<select id="selectDrProductLoanAmountSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select sum(dpi1.alreadyRaiseAmount) alreadyRaiseAmountSum 
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		<where>
+			dpi1.status in (6,8, 9) and dpi1.type!=1 and dpi1.type!=5
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = ${loanStatus}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d %H:%i:%s') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="project_no != null and project_no == 0">
+				and dpi1.project_no is not null 
+			</if>
+			<if test="project_no != null and project_no == 1">
+				and dpi1.project_no is null 
+			</if>
+			<if test="type==3">
+				and dpi1.type=3 <!-- 存管新手标 -->
+			</if>
+			<if test="type!=3">
+				and dpi1.type!=3 <!-- 排除存管新手标 -->
+			</if>
+		</where>
+	</select>
+	
+	<!-- 导出产品 -->
+	<select id="selectDrProductInfoList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select dpi.id,dpi.code,dpi.fullName,dpi.simpleName,dpi.activityRate,dpi.repayType,dpi.deadline,dpi.rate,if(dpi.type=5,'体验标','')type,dpi.amount,dpi.alreadyRaiseAmount,sc2.cnvalue as statusName,
+		DATE_FORMAT(dpi.startDate,'%Y-%m-%d %H:%i:%s') as startDate,dpi.raiseDeadline,
+		DATE_FORMAT(dpi.fullDate,'%Y-%m-%d %H:%i:%s') as fullDate,DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') as expireDate,
+		case when DATEDIFF(dpi.expireDate,SYSDATE())>0 then DATEDIFF(dpi.expireDate,SYSDATE()) else 0 end as surplusDay,
+		dpi.accept,if(dpi.isInterest=0,'否','是')isInterest,if(dpi.isCash=0,'否','是')isCash,if(dpi.isDouble=0,'否','是')isDouble,
+		loan.`name` as sName,dpi2.fullName as parentName,sc3.cnvalue as repayTypeName
+		from dr_product_info dpi
+		left join dr_subject_info si ON dpi.sid = si.id
+		left join dr_claims_loan loan ON si.lid = loan.id
+		left JOIN sys_chooseoption  sc ON sc.category='productType' and dpi.type = sc.code
+		left JOIN sys_chooseoption  sc2 ON sc2.category='productStatus' and dpi.status= sc2.code
+		left join sys_chooseoption  sc3 on sc3.category='repayType' and dpi.repayType=sc3.code
+		left JOIN dr_product_info dpi2 ON dpi.fid = dpi2.id
+		<where>
+			<if test="simpleName != null and simpleName != ''">
+				dpi.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="code != null and code != ''"> 
+				and dpi.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="status != null">
+				and	dpi.status=#{status}
+			</if>
+			<if test="type != null">
+				and	dpi.type=#{type}
+			</if>
+			<if test="repayType != null">
+				and dpi.repayType=#{repayType}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 添加产品信息 -->
+	<insert id="insertDrProductInfo" parameterType="com.jsjf.model.product.DrProductInfo" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_product_info(fid,sid,code,fullName,simpleName,type,status,intermediary,isSid,amount,alreadyRaiseAmount,surplusAmount,rate,activityRate,repayType,deadline,
+		leastaAmount,increasAmount,maxAmount,raiseDeadline,startDate,introduce,borrower,repaySource,windMeasure,isShow,isHot,isDeductible,
+		isInterest,isCash,isDouble,establish,accept,acceptPic,addDate,addUser,atid,prizeId,principleId,principleH5,principlePC)
+		values (#{fid:INTEGER},#{sid:INTEGER},#{code:VARCHAR},#{fullName:VARCHAR},#{simpleName:VARCHAR},#{type:INTEGER},#{status:INTEGER},#{intermediary:INTEGER},#{isSid:INTEGER},
+		#{amount:DECIMAL},#{alreadyRaiseAmount:DECIMAL},#{surplusAmount:DECIMAL},#{rate:DECIMAL},#{activityRate:DECIMAL},#{repayType:INTEGER},#{deadline:INTEGER},#{leastaAmount:DECIMAL},
+		#{increasAmount:DECIMAL},#{maxAmount:DECIMAL},#{raiseDeadline:INTEGER},#{startDate:TIMESTAMP},#{introduce:VARCHAR},#{borrower:VARCHAR},
+		#{repaySource:VARCHAR},#{windMeasure:VARCHAR},#{isShow:INTEGER},#{isHot:INTEGER},#{isDeductible:INTEGER},#{isInterest:INTEGER},
+		#{isCash:INTEGER},#{isDouble:INTEGER},#{establish:TIMESTAMP},#{accept:VARCHAR},#{acceptPic:VARCHAR},sysdate(),#{addUser:INTEGER},#{atid:INTEGER},#{prizeId:INTEGER},
+		#{principleId:INTEGER},#{principleH5:VARCHAR},#{principlePC:VARCHAR})
+	</insert>
+	
+	<!-- 查询募集完成的产品 -->
+	<select id="selectRaiseSuccesProductInfo" resultMap="DrProductInfoResult">
+		select id,sid,fullName,type,status, alreadyRaiseAmount, surplusAmount, intermediary,amount,rate,activityRate,
+				repayType,deadline,leastaAmount,increasAmount,maxAmount,raiseDeadline,startDate,establish,project_no,project_st
+		from dr_product_info where status = 6 and type = 3
+		union all
+		select id,sid,fullName,type,status, alreadyRaiseAmount, surplusAmount, intermediary,amount,rate,activityRate,
+				repayType,deadline,leastaAmount,increasAmount,maxAmount,raiseDeadline,startDate,establish,project_no,project_st
+		from dr_product_info where status = 6 and type = 2 and DATE_FORMAT(establish, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+		union all 
+		select id,sid,fullName,type,status, alreadyRaiseAmount, surplusAmount, intermediary,amount,rate,activityRate,
+				repayType,deadline,leastaAmount,increasAmount,maxAmount,raiseDeadline,startDate,establish,project_no,project_st
+		from dr_product_info where status in (5,6) and type=1
+	</select>
+	
+	<!-- 修改产品信息  -->
+	<update id="updateDrProductInfo" parameterType="com.jsjf.model.product.DrProductInfo">
+		update dr_product_info
+		<set>
+			<if test="sid != null"> sid = #{sid:INTEGER},</if>
+			<if test="code != null"> code = #{code:VARCHAR},</if>
+			<if test="fullName != null"> fullName = #{fullName:VARCHAR},</if>
+			<if test="simpleName != null"> simpleName = #{simpleName:VARCHAR},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="intermediary != null"> intermediary = #{intermediary:INTEGER},</if>
+			<if test="isSid != null"> isSid = #{isSid:INTEGER},</if>
+			<if test="amount != null"> amount = #{amount:DECIMAL},</if>
+			<if test="alreadyRaiseAmount != null"> alreadyRaiseAmount = #{alreadyRaiseAmount:DECIMAL},</if>
+			<if test="surplusAmount != null"> surplusAmount = #{surplusAmount:DECIMAL},</if>
+			<if test="rate != null"> rate = #{rate:DECIMAL},</if>
+			<if test="activityRate != null"> activityRate = #{activityRate:DECIMAL},</if>			
+			<if test="repayType != null"> repayType = #{repayType:INTEGER},</if>
+			<if test="deadline != null"> deadline = #{deadline:INTEGER},</if>
+			<if test="leastaAmount != null"> leastaAmount = #{leastaAmount:DECIMAL},</if>
+			<if test="increasAmount != null"> increasAmount = #{increasAmount:DECIMAL},</if>
+			<if test="maxAmount != null"> maxAmount = #{maxAmount:DECIMAL},</if>
+			<if test="raiseDeadline != null"> raiseDeadline = #{raiseDeadline:INTEGER},</if>
+			<if test="startDate != null"> startDate = #{startDate:TIMESTAMP},</if>
+			<if test="expireDate != null"> expireDate = #{expireDate:TIMESTAMP},</if>
+			<if test="introduce != null"> introduce = #{introduce:VARCHAR},</if>
+			<if test="borrower != null"> borrower = #{borrower:VARCHAR},</if>
+			<if test="repaySource != null"> repaySource = #{repaySource:VARCHAR},</if>
+			<if test="windMeasure != null"> windMeasure = #{windMeasure:VARCHAR},</if>
+			<if test="isShow != null"> isShow = #{isShow:INTEGER},</if>
+			<if test="isHot != null"> isHot = #{isHot:INTEGER},</if>
+			<if test="isDeductible != null"> isDeductible = #{isDeductible:INTEGER},</if>
+			<if test="isInterest != null"> isInterest = #{isInterest:INTEGER},</if>
+			<if test="isCash != null"> isCash = #{isCash:INTEGER},</if>
+			<if test="isDouble != null"> isDouble = #{isDouble:INTEGER},</if>			
+			<if test="mappingStatus != null">mappingStatus=#{mappingStatus:INTEGER},</if>
+			<if test="establish != null">establish=#{establish:TIMESTAMP},</if>			
+			<if test="accept != null">accept=#{accept:VARCHAR},</if>
+			<if test="acceptPic != null">acceptPic=#{acceptPic:VARCHAR},</if>
+			
+			<if test="project_no != null">project_no=#{project_no:VARCHAR},</if>
+			<if test="project_usage != null">project_usage=#{project_usage:VARCHAR},</if>
+			<if test="project_st != null">project_st=#{project_st:VARCHAR},</if>
+			
+			
+			<if test="prizeId != null">prizeId=#{prizeId:INTEGER}, atid = null,</if>
+			<if test="fullDate != null">fullDate=#{fullDate},</if>
+			<if test="mchntTxnSsn != null">mchnt_txn_ssn=#{mchntTxnSsn:VARCHAR},</if>
+			<if test="thaw != null">thaw=#{thaw:INTEGER},</if>
+			
+			<if test="principleId != null">principleId=#{principleId},</if>
+			<if test="principleH5 != null">principleH5=#{principleH5},</if>
+			<if test="principlePC != null">principlePC=#{principlePC},</if>
+
+			<choose>
+                <when test="atid == -1">
+                       atid = null,
+						<if test="prizeId == null">prizeId = null,</if>
+                </when>
+                  <when test="atid !=null and atid != -1">
+                      atid=#{atid:INTEGER},prizeId = null,
+                </when>              
+         	</choose>
+			updDate = sysdate(),
+			<if test="updUser != null"> updUser = #{updUser:INTEGER}</if>
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<!-- 取消预约 -->
+	<update id="updateDrProductCancelBespoke" parameterType="com.jsjf.model.product.DrProductInfo">
+		update dr_product_info
+		<set>
+			status = #{status:INTEGER},
+			startDate = #{startDate:TIMESTAMP},
+			expireDate = #{expireDate:TIMESTAMP},
+			establish=#{establish:TIMESTAMP},		
+			updDate = sysdate(),
+			updUser = #{updUser:INTEGER}
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<!-- 根据id得到产品信息 -->
+	<select id="getDrProductInfoByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductInfo">
+		select *,case when DATEDIFF(expireDate,SYSDATE())>0 then DATEDIFF(expireDate,SYSDATE()) else 0 end as surplusDay from dr_product_info
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+	<!--获取体验标-->
+	<select id="getDrProductInfoExperience"  resultType="com.jsjf.model.product.DrProductInfo">
+		select *,case when DATEDIFF(expireDate,SYSDATE())>0 then DATEDIFF(expireDate,SYSDATE()) else 0 end as surplusDay from dr_product_info
+		where status in (5,6) and type = 5
+	</select>
+	
+	<!-- 根据MAP得到产品信息 -->
+	<!-- typeCg为存管新手标，存管新手标和新手标一样只能有一个 cece -->
+	<select id="getDrProductInfoByMap" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info
+		<where>
+			<if test="fid != null"> fid = #{fid:INTEGER}</if>
+			<if test="code != null"> and code = #{code:VARCHAR}</if>
+			<if test="type != null and null == typeCg"> and type = #{type:INTEGER}</if>
+			<if test="type != null and typeCg != null"> and (type = #{type:INTEGER} or type = #{typeCg:INTEGER})</if>
+			<if test="status != null"> and status = #{status:INTEGER}</if>
+			<if test="noStatus != null"> and status != #{noStatus:INTEGER}</if>
+			<if test="project_no != null and project_no != ''"> and project_no = #{project_no:VARCHAR}</if>
+			<if test="fullName != null and fullName != ''"> and fullName =#{fullName:VARCHAR}</if>
+		</where>
+		LIMIT 1
+		<if test="obStr != null">
+			order by #{obStr}
+		</if>
+	</select>
+	
+	<!-- 根据MAP得到产品信息List -->
+	<select id="getDrProductInfoListByMap" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info
+		<where>
+			<if test="sid != null"> sid = #{sid:INTEGER}</if>
+			<if test="status != null">and status != #{status:INTEGER}</if>
+			<if test="fullDate != null">and DATE_FORMAT(fullDate,'%Y-%m-%d') = DATE_FORMAT(#{fullDate},'%Y-%m-%d')</if>
+			<if test="hasSid != null and hasSid==1"> and sid is not null </if>
+			<if test="statuses != null">
+				and status in 
+				<foreach collection="statuses" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		<if test="limit != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 根据MAP得到产品信息List -->
+	<select id="getDrProductInfoListCountByMap" parameterType="java.util.HashMap" resultType="int">
+		select count(*) from dr_product_info
+		<where>
+			<if test="sid != null"> sid = #{sid:INTEGER}</if>
+			<if test="status != null"> and status != #{status:INTEGER}</if>
+			<if test="fullDate != null">and DATE_FORMAT(fullDate,'%Y-%m-%d') = DATE_FORMAT(#{fullDate},'%Y-%m-%d')</if>
+			<if test="hasSid != null and hasSid==1"> and sid is not null </if>
+			<if test="fullName !=null and fullName!=''">
+				and fullName = #{fullName}
+			</if>
+			<if test="statuses != null">
+				and status in 
+				<foreach collection="statuses" item="item" open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+	</select>
+	<!-- 查询要到期产品 -->
+	<select id="selectExpireProductInfo" resultMap="DrProductInfoResult">
+		select * from dr_product_info 
+		where status = 8 and DATE_FORMAT(expireDate,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(SYSDATE(),'%Y-%m-%d') and repayType = 1
+		union all
+		select * from dr_product_info where status in (5,6) and  type in (1,5) <!-- 1:新手标,5:体验标 -->
+		union all
+		select pi.* from dr_product_info pi left join dr_product_info_repay_detail pid on pi.id = pid.pid and pid.status = 1 
+		where pi.status = 8 and DATE_FORMAT(pid.shouldTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(SYSDATE(),'%Y-%m-%d') 
+		and (pi.repayType = 2 or pi.repayType = 3 or pi.repayType = 4)
+		UNION ALL
+		SELECT * from dr_product_info where status = 9 and id  in (
+			SELECT DISTINCT pid from dr_product_invest_repayinfo where remit_status = 3 
+		)
+	</select>
+	<update id="updateDrProductInfoStatusById">
+		update dr_product_info set status = #{status} where id = #{pid}
+	</update>
+	<!-- 查询未做债权匹配的续发产品 -->
+	<select id="selectTransferProductInfo" resultMap="DrProductInfoResult">
+		select id,status,mappingStatus,amount,fid from dr_product_info where mappingStatus = 0 and status = 8 and fid is not null
+	</select>
+	<update id="updateMappingStatusByPid" parameterType = "java.lang.Integer">
+		update dr_product_info set mappingStatus=2 where id = #{id}
+	</update>
+	<!-- 放款状态修改  -->
+	<update id="updateDrProductLoanStatus" parameterType="java.util.HashMap">
+		update dr_product_info 
+		<set>
+			loanStatus = 1
+		</set>
+		<if test="actLoanTime != null and actLoanTime != ''"> 
+			, actLoanTime=#{actLoanTime}
+		</if>
+		<if test="mchnt_txn_ssn != null and mchnt_txn_ssn != ''"> 
+			, mchnt_txn_ssn=#{mchnt_txn_ssn}
+		</if>
+		where id = #{id}
+	</update>
+	
+	<!-- 放款失败状态回滚  -->
+	<update id="updateDrProductLoanByMchntTxnSsn" parameterType="java.util.HashMap">
+		update dr_product_info set loanStatus = 0, actLoanTime=null
+		where id=#{id}
+	</update>
+	
+	<!-- 根据流水号查询产品信息  -->
+	<select id="getDrProductLoanByMchntTxnSsn" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+		select * from dr_product_info
+		where mchnt_txn_ssn=#{mchnt_txn_ssn}
+	</select>
+	
+	
+	<!-- 回款状态修改 -->
+	<update id="updateReFundDrProductLoanStatus">
+		update dr_product_info 
+		<set>
+			loanStatus = 2
+		</set>
+		where id = #{id}
+	</update>
+	<select id="getReturnNoticeList" resultType="java.util.HashMap" parameterType="java.lang.Integer">
+		select  dpi.id id, dmbi.realname realname,dm.mobilePhone mobilePhone,dpir.shouldPrincipal shouldPrincipal,dpir.shouldInterest shouldInterest,dmf.profitAmount profitAmount,dmf.`status`,dmf.type,
+			truncate(dpir.shouldPrincipal+dpir.shouldInterest,2) as  returnAmount from dr_product_info dpi
+				LEFT JOIN dr_product_invest_repayinfo dpir on dpir.pid = dpi.id
+				LEFT JOIN dr_member_base_info dmbi on dmbi.uid = dpir.uid 
+				LEFT JOIN dr_member dm on dm.uid = dmbi.uid
+				LEFT JOIN dr_product_invest dpv on dpv.id = dpir.investId
+				LEFT JOIN dr_member_favourable dmf on dmf.id = dpv.fid and dmf.`status`=1 and dmf.type = 2
+				where dpi.id = #{id}
+	</select>
+	<!-- 新手标回款列表查询 -->
+	<select id="getReturnNoticeRecordList" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select  dplr.id id, dmbi.realname realname,dm.mobilePhone mobilePhone,dpir.shouldPrincipal shouldPrincipal,dpir.shouldInterest shouldInterest,dmf.profitAmount profitAmount,dmf.`status`,dmf.type,
+				dpi.investTime,
+			truncate(dpir.shouldPrincipal+dpir.shouldInterest,2) as  returnAmount from dr_product_invest dpi 
+			LEFT JOIN dr_product_loan_record dplr  on dplr.pid = dpi.pid and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') = DATE_FORMAT(#{fullDate},'%Y-%m-%d')
+			LEFT JOIN dr_product_invest_repayinfo dpir on dpir.investId = dpi.id 
+			LEFT JOIN dr_member_base_info dmbi on dmbi.uid = dpir.uid 
+			LEFT JOIN dr_member dm on dm.uid = dmbi.uid
+			LEFT JOIN dr_member_favourable dmf on dmf.id = dpi.fid and dmf.`status`=1 and dmf.type = 2
+			where dplr.id = #{id}
+	</select>
+	
+	<select id="getDrProductInfoByPeriodList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info
+		where
+		type = 2 and status = 5 and isShow=1  and startDate <![CDATA[ <= ]]> NOW()
+		<if test="period != null"> and deadline = #{period}</if>
+		<if test="amount != null "> and surplusAmount>= #{amount}</if>
+		order by startDate ASC
+	</select>
+	
+	<select id="selectProductInfo" parameterType="java.util.HashMap" resultMap="DrProductInfoResult">
+		select
+			*
+		from dr_product_info 
+		where atid is null 		
+			<if test="status != null and status !='' " >
+				and status = #{status} 
+			</if>
+			<if test="deadline != null and deadline !='' " >
+				and deadline = #{deadline} and  deadline !=45 and deadline !=75 <!-- 排除端午节标的 -->
+			</if>
+			<if test="isShow != null " >
+				and isShow = #{isShow}
+			</if>
+			<if test="prizeId != null " >
+				and prizeId = #{prizeId}
+			</if>
+		order by addDate 
+	</select>
+	
+	<update id="updateProductSelective" parameterType="com.jsjf.model.product.DrProductInfo">
+		update dr_product_info 
+		<trim prefix=" set " suffixOverrides=",">
+			<if test="surplusAmount != null "> surplusAmount = #{surplusAmount} , </if>
+			<if test="alreadyRaiseAmount != null "> alreadyRaiseAmount = #{alreadyRaiseAmount}, </if>
+			<if test="fullDate != null"> fullDate = #{fullDate} ,</if>
+			<if test="status != null"> status = #{status} , </if>
+			<if test="establish != null"> establish = #{establish} , </if>
+			<if test="startDate != null"> startDate = #{startDate} , </if>
+			<if test="expireDate != null"> expireDate = #{expireDate} , </if>
+			<if test="project_no != null  and project_no != ''"> project_no = #{project_no} , </if>
+		</trim>
+		where id = #{id}
+	</update>
+	
+		<!-- 申请放款  -->
+	<update id="updateDrProductLoanStatusSQ" parameterType="java.util.HashMap">
+		update dr_product_info 
+		<set>
+			loanStatus = #{loanStatus}
+		</set>
+		<if test="actLoanTime != null and actLoanTime != ''"> 
+			, actLoanTime=#{actLoanTime}
+		</if>
+		where id = #{id}
+	</update>
+	<!-- 审核列表 -->
+	<select id="getDrProductLoanListSQ" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus,dpi1.project_no project_no,loanStatus,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName,
+		dpi1.actLoanTime,if(dcc.phone,CONCAT(LEFT(dcc.phone,3),'****',RIGHT(dcc.phone,4)),'') AS phone,dpi1.repayType as repayType
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		<where>
+			dpi1.status in (6,8, 9) 
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<choose>
+			<when test="loanStatus !=null">
+				and dpi1.loanStatus = ${loanStatus}
+			</when>
+			<otherwise>
+				and dpi1.loanStatus in(1,3)
+			</otherwise>
+			</choose>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="project_no != null and project_no == 0">
+				and dpi1.project_no is not null 
+			</if>
+			<if test="project_no != null and project_no == 1">
+				and dpi1.project_no is null 
+			</if>
+		</where>
+		<choose>
+			<when test="limit !=null">
+				<![CDATA[ ORDER BY loanStatus desc,establish ASC  ]]>
+				limit #{offset},#{limit}
+			</when>
+			<otherwise>
+				<![CDATA[ ORDER BY establish ASC ]]>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 审核列表总数 -->
+	<select id="getDrProductLoanCountsSQ" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from (select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus loanStatus,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid 
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		<where>
+			dpi1.status in (6,8, 9) and dpi1.loanStatus in(1,3)
+			<if test="simpleName != null and simpleName != ''">
+				and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = ${loanStatus}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate  != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="project_no != null and project_no == 0">
+				and dpi1.project_no is not null 
+			</if>
+			<if test="project_no != null and project_no == 1">
+				and dpi1.project_no is null 
+			</if>
+		</where>
+		
+		)a
+	</select>  
+	<!-- 根据id得到产品信息 -->
+	<select id="getDrProductInfoByidSQ" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductInfo">
+		select dcl.`bankName` bankName,dcl.`bankNo` bankNO,dcl.`loanName` loanName,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.simpleName 
+			from dr_product_info dpi1 
+			left join dr_subject_info dsi on dsi.id = dpi1.sid
+			left join dr_claims_loan dcl on dcl.id = dsi.lid
+			left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		<where>
+		 dpi1.`id` = #{id}
+		</where>
+	</select>
+	
+		<!-- 根据prizeId得到产品信息 -->
+	<select id="getDrProductInfoByPrizeId" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from  dr_product_info dpi where 1=1 and dpi.prizeId = #{prizeId}
+	</select>
+	
+	<!-- 查询当前时间大于等于成立时间，并且以募集金额等于0并且type=2和status=5的产品list -->
+	<select id="getDrProductInfoByType" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from `dr_product_info` dpi where date_format(now(),'%Y%m%d') = date_format(dpi.`establish`,'%Y%m%d') and dpi.`alreadyRaiseAmount` = 0 and dpi.status = 5 and dpi.`type` = #{type}
+	</select>
+	<!-- 满标提醒 -->
+	<select id="productFullRemind" resultType="com.jsjf.model.product.DrProductInfo">
+		SELECT code,fullName,amount,surplusAmount from dr_product_info WHERE isShow = 1 and `status` = 5 and type = 2 AND DATE_FORMAT(DATE_SUB(establish,INTERVAL 1 DAY),'%Y%m%d') = CURDATE();
+	</select>
+	
+	<!-- 计息回款状态更新  -->
+	<update id="updateDrProductInfoInterestRepay" parameterType="java.util.HashMap">
+		update dr_product_info 
+		<set>
+			<if test="interest_success_num != null"> interest_success_num = #{interest_success_num},</if>
+			<if test="interest_fail_num != null"> interest_fail_num = #{interest_fail_num},</if>
+			<if test="interest_status != null"> interest_status = #{interest_status},</if>
+			<if test="repay_success_num != null"> repay_success_num = #{repay_success_num},</if>
+			<if test="repay_fail_num != null"> repay_fail_num = #{repay_fail_num},</if>
+			<if test="repay_status != null"> repay_status = #{repay_status},</if>
+		</set>
+		where id = #{id}
+	</update>
+	<!-- 查询存管失败的产品 -->
+	<select id="selectDepositsRepayFail" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info 
+		where status > 5 
+		<if test="interest_status != null "> and interest_status = #{interest_status}</if>
+		<if test="repay_status != null "> and repay_status = #{repay_status}</if>
+	</select>
+	
+	<select id="getProductByThaw" parameterType="java.util.Map" resultType="java.util.Map">
+		select dpi.id as id,dpi.code as code,dpi.sid as sid,dpi.fullName as fullName,
+		dpi.rate as rate,dpi.deadline as deadline,dpi.amount as amount,
+		dpi.alreadyRaiseAmount as alreadyRaiseAmount,sc.cnvalue as status,
+		date_format(dpi.establish, '%Y-%m-%d') as establish,date_format(dpi.expireDate, '%Y-%m-%d') as expireDate,
+		date_format(dpi.fullDate, '%Y-%m-%d %H:%i:%s') as fullDate,
+		date_format(dpi.actLoanTime, '%Y-%m-%d %H:%i:%s') as actLoanTime,dpi.project_no as project_no
+		from dr_product_info dpi
+		left join sys_chooseoption sc on sc.code=dpi.status and sc.category='productStatus'
+		where dpi.thaw=2
+		<if test="id!=null">
+			and dpi.id=#{id}
+		</if>
+	</select>
+	<!-- 项目报备 -->
+	<select id="selectProjectInformation" resultType="java.util.Map" >
+		SELECT p.id as id, p.code as code, p.amount as amount, FLOOR(p.rate*100) as rate,p.fullName as fullName, p.repayType as repayType, p.deadline as deadline ,
+		date_format(p.startDate, '%Y%m%d %H:%i:%s') as startDate,(p.maxAmount/p.increasAmount)  as increasAmount,p.leastaAmount as leastaAmount,
+		p.maxAmount as maxAmount, cust.`name` as name ,cust.phone as phone, loan.`name` as loanName ,loan.loanUse as loanUse
+		FROM dr_product_info p
+		LEFT JOIN dr_subject_info sub ON p.sid = sub.id
+		LEFT JOIN dr_claims_loan loan ON loan.id = sub.lid
+		LEFT JOIN dr_claims_customer cust ON cust.lid = loan.id
+		where p.project_no = 'jzh' and (p.fileStatus is NULL )
+		AND cust.fileStatus = 2
+		<!-- or p.fileStatus = 3 -->
+	</select>
+	
+	<update id="updateFileStatus" parameterType="java.util.List">
+		<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update dr_product_info
+		<set>
+			 fileStatus = #{item.fileStatus},
+			 itemNo = #{item.itemNo},
+		 	 fuiouMessageNo = #{item.fuiouMessageNo}
+		</set>
+		where id = #{item.id:INTEGER}
+		</foreach>
+	</update>
+	<!-- 0 投资报备、1 满标放款报备 -->
+	<select id="getProductByProjectNo" resultType="java.util.Map">
+		select dpi.id as dpid,dpit.id as id,dpi.code as code,dm.mobilePhone as out_cust_no,
+		cust.phone as in_cust_no,dpi.itemNo,
+		 <if test='businessType == "0"'>
+			dpit.amount as amount,dpit.mchnt_txn_ssn as mchntTxnSsn,dpit.fileStatus as fileStatus,
+    	</if>
+    	<if test='businessType == "1"'>
+			dpit.factAmount as amount,dpit.remitMchntTxnSsn as mchntTxnSsn,dpit.fullFileStatus as fullFileStatus,
+    	</if>
+		dplr.contractCode as contractCode,cust.companyName as name,dmbi.realname as realname
+		from dr_product_invest dpit
+		left join dr_product_info dpi on dpit.pid=dpi.id
+		left join dr_member dm on dm.uid=dpit.uid
+		left join dr_subject_info sub ON dpi.sid = sub.id
+		left join dr_claims_loan loan ON loan.id = sub.lid
+		left join dr_claims_customer cust ON cust.lid = loan.id
+		left join dr_product_loan_record dplr on dplr.pid=dpi.id
+    	left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+    	<where>
+    		<if test='businessType == "0"'>
+				AND dpi.project_no is not null 
+				AND dpit.fileStatus is null
+				AND dpit.mchnt_txn_ssn is not NULL AND dpit.mchnt_txn_ssn != ''
+				AND dpi.fileStatus = 2
+				<![CDATA[AND dpit.investTime >= DATE_SUB(CURDATE(),INTERVAL 1 DAY)]]>
+				<![CDATA[AND dpit.investTime < CURDATE()]]>
+    		</if>
+    		<if test='businessType == "1"'>
+				AND dpi.project_no is not null AND dpi.project_no != ''
+				AND dpit.fullFileStatus is NULL
+				AND dpit.remitMchntTxnSsn is not NULL and dpit.remitMchntTxnSsn != ''
+				AND dpi.fileStatus = 2
+				<!-- 满标放款报备，日终报前一天计息的投资数据，即查询满标日期是报备时间2天前的投资数据 -->
+				AND <![CDATA[dpi.fullDate >= DATE_SUB(CURDATE(),INTERVAL 1 DAY)]]>
+				AND <![CDATA[dpi.fullDate < CURDATE()]]>
+    		</if>
+    	</where>
+		
+	</select>
+	<!-- 回款报备 -->
+	<select id="getProductInvestRepayInfoByProjectNo" resultType="java.util.Map">
+		select dpi.id as dpid,dpitr.id as id,dpi.code as code,dpitr.fileStatus as fileStatus,
+		case when dpitr.mchntPay = 1 Then 'tf002' ELSE cust.phone END  as out_cust_no ,
+		dm.mobilePhone as in_cust_no,
+		dplr.contractCode as contractCode,dpi.itemNo,
+		dpitr.shouldTime as  shouldTime,
+		(dpitr.shouldPrincipal + dpitr.shouldInterest) as amount,
+		dpitr.remitMchntTxnSsn as mchntTxnSsn,
+		cust.companyName as name,case when dpitr.mchntPay = 1 Then '慧信财富管理有限公司' ELSE dmbi.realname END as realname
+		from dr_product_invest_repayinfo  dpitr
+		left join dr_product_info dpi on dpitr.pid=dpi.id
+		left join dr_member dm on dm.uid=dpitr.uid
+		left join dr_subject_info sub ON dpi.sid = sub.id
+		left join dr_claims_loan loan ON loan.id = sub.lid
+		left join dr_claims_customer cust ON cust.lid = loan.id
+		left join dr_product_loan_record dplr on dplr.pid=dpi.id
+		left join dr_member_base_info dmbi on dmbi.uid=dm.uid
+		LEFT JOIN dr_product_invest dpit ON dpit.id = dpitr.investId
+		where dpi.project_no is not null and (dpitr.fileStatus is NULL)
+		AND (dpitr.remitMchntTxnSsn IS NOT NULL) AND dpitr.remitMchntTxnSsn !=''
+		<!-- 回款报备 只报前一天的  -->
+		 AND <![CDATA[LEFT(cust.mchnt_txn_ssn,8) >=DATE_SUB(CURDATE(),INTERVAL 1 DAY)]]>
+		 AND <![CDATA[LEFT(cust.mchnt_txn_ssn,8) < CURDATE()]]>
+		 <!-- or dpitr.fileStatus = 3 -->
+		 
+	</select>
+		
+	<select id="getProductInfoDetail" resultType="java.util.Map" parameterType="java.util.Map">
+		SET @add_countamount=0;  
+		SET @add_countid=0;   	
+		select dpi.code as code,jlr.contractCode as contractCode,dpi.fullName as fullName,
+		jlr.loanName as loanName,dpi.amount as amount,dpi.rate as rate,dpi.deadline as deadline,
+		truncate(dpi.amount*dpi.rate/100/360*dpi.deadline,2) as interest,
+		(dpi.amount+truncate(dpi.amount*dpi.rate/100/360*dpi.deadline,2)) as principalInterest,
+		DATE_FORMAT(dpi.fullDate,'%Y-%m-%d') as fullDate,DATE_FORMAT(jlr.addtime,'%Y-%m-%d') as loanTime,jlr.amount as loanAmount,
+		DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') as expireDate,
+		DATE_FORMAT(a.factTime,'%Y-%m-%d') as factTime,
+		b.factPrincipal,
+		b.factInterest,
+		CASE when dpi.status=9 then '已还款' else '未还款' end as isReimbursement,
+		t2.countAmount as countAmount,DATE_FORMAT(jcc.service_time,'%Y-%m-%d %H:%i:%s') as serviceTime,
+		jcc.service_charge as serviceCharge,t2.loanAmount as sumamount
+		from dr_product_info dpi
+		left join js_loan_record jlr on jlr.pid=dpi.id
+		left join (select pid  ,MIN(factTime) as factTime from dr_product_invest_repayinfo group by pid ) as a on a.pid=dpi.id
+		left join (select pid ,sum(amount) as factPrincipal,sum(interest) as factInterest from dr_product_invest where status in(1,3) group by pid) as b on b.pid=dpi.id
+		left join (
+		select case when (dpi.sid=@add_countid) then(@add_countamount := @add_countamount + dpi.amount) else (@add_countamount:=dpi.amount ) end as countAmount,
+		case when (dpi.sid=@add_countid) then(dpi.sid) else (@add_countid:=dpi.sid ) end as countid,
+		dpi.id,dcl.loanAmount as loanAmount,dcl.loanName as loanName
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t2 on t2.id=dpi.id 
+		left join js_cover_charge jcc on jcc.pid=dpi.id and jcc.service_status=2
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		<if test="code!=null and code!=''">
+			and dpi.code like CONCAT('%','${code}','%' )
+		</if>
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName like CONCAT('%','${fullName}','%' )
+		</if>
+		<if test="loanName!=null and loanName!=''">
+			and jlr.loanName like CONCAT('%','${loanName}','%' )
+		</if>
+		<if test="contractCode!=null and contractCode!=''">
+			and jlr.contractCode like CONCAT('%','${contractCode}','%' )
+		</if>
+		<if test="startfullDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.fullDate,'%Y-%m-%d') >= #{startfullDate}]]>
+		</if>
+		<if test="endfullDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.fullDate,'%Y-%m-%d') <= #{endfullDate}]]>
+		</if>
+		<if test="startloanTime!=null">
+			<![CDATA[and DATE_FORMAT(jlr.addtime,'%Y-%m-%d') >= #{startloanTime}]]>
+		</if>
+		<if test="endloanTime!=null">
+			<![CDATA[and DATE_FORMAT(jlr.addtime,'%Y-%m-%d') <= #{endloanTime}]]>
+		</if>
+		<if test="startexpireDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') >= #{startexpireDate}]]>
+		</if>
+		<if test="endexpireDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') <= #{endexpireDate}]]>
+		</if>
+		<if test="isReimbursement!=null">
+			<if test="isReimbursement==9">
+				and dpi.status=9
+			</if>
+			<if test="isReimbursement==0">
+				and dpi.status!=9
+			</if>
+		</if>
+		<if test="isReimbursement!=null">
+			<if test="isReimbursement==9">
+				and dpi.status=9
+			</if>
+			<if test="isReimbursement==0">
+				and dpi.status!=9
+			</if>
+		</if>
+		<if test="startserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') >= #{startserviceTime}]]>
+		</if>
+		<if test="endserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') <= #{endserviceTime}]]>
+		</if>
+		<if test="isService==1"><!-- 已收 -->
+			and jcc.service_charge is not null
+		</if>
+		<if test="isService==2"><!-- 未收 -->
+			and jcc.service_charge is  null
+		</if>
+		order by dpi.sid asc,dpi.startDate asc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="getProductInfoDetailCount" resultType="int" parameterType="java.util.Map">
+		select count(1)
+		from dr_product_info dpi
+		left join js_loan_record jlr on jlr.pid=dpi.id
+		left join (select pid  ,MIN(factTime) as factTime from dr_product_invest_repayinfo group by pid ) as a on a.pid=dpi.id
+		left join (select pid ,sum(amount) as factPrincipal,sum(interest) as factInterest from dr_product_invest where status in(1,3) group by pid) as b on b.pid=dpi.id
+		left join (
+		select case when (dpi.sid=@add_countid) then(@add_countamount := @add_countamount + dpi.amount) else (@add_countamount:=dpi.amount ) end as countAmount,
+		case when (dpi.sid=@add_countid) then(dpi.sid) else (@add_countid:=dpi.sid ) end as countid,
+		dpi.id,dcl.loanAmount as loanAmount,dcl.loanName as loanName
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t2 on t2.id=dpi.id 
+		left join js_cover_charge jcc on jcc.pid=dpi.id and jcc.service_status=2
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		<if test="code!=null and code!=''">
+			and dpi.code like CONCAT('%','${code}','%' )
+		</if>
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName like CONCAT('%','${fullName}','%' )
+		</if>
+		<if test="loanName!=null and loanName!=''">
+			and jlr.loanName like CONCAT('%','${loanName}','%' )
+		</if>
+		<if test="contractCode!=null and contractCode!=''">
+			and jlr.contractCode like CONCAT('%','${contractCode}','%' )
+		</if>
+		<if test="startfullDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.fullDate,'%Y-%m-%d') >= #{startfullDate}]]>
+		</if>
+		<if test="endfullDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.fullDate,'%Y-%m-%d') <= #{endfullDate}]]>
+		</if>
+		<if test="startloanTime!=null">
+			<![CDATA[and DATE_FORMAT(jlr.addtime,'%Y-%m-%d') >= #{startloanTime}]]>
+		</if>
+		<if test="endloanTime!=null">
+			<![CDATA[and DATE_FORMAT(jlr.addtime,'%Y-%m-%d') <= #{endloanTime}]]>
+		</if>
+		<if test="startexpireDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') >= #{startexpireDate}]]>
+		</if>
+		<if test="endexpireDate!=null">
+			<![CDATA[and DATE_FORMAT(dpi.expireDate,'%Y-%m-%d') <= #{endexpireDate}]]>
+		</if>
+		<if test="isReimbursement!=null">
+			<if test="isReimbursement==9">
+				and dpi.status=9
+			</if>
+			<if test="isReimbursement==0">
+				and dpi.status!=9
+			</if>
+		</if>
+		<if test="isReimbursement!=null">
+			<if test="isReimbursement==9">
+				and dpi.status=9
+			</if>
+			<if test="isReimbursement==0">
+				and dpi.status!=9
+			</if>
+		</if>
+		<if test="startserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') >= #{startserviceTime}]]>
+		</if>
+		<if test="endserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') <= #{endserviceTime}]]>
+		</if>
+		<if test="isService==1"><!-- 已收 -->
+			and jcc.service_charge is not null
+		</if>
+		<if test="isService==2"><!-- 未收 -->
+			and jcc.service_charge is  null
+		</if>
+	</select>
+	
+	<select id="getProductServiceManagement" parameterType="java.util.Map" resultType="java.util.Map">
+		SET @add_yearamount=0;  
+		SET @add_countamount=0;  
+		SET @add_yearid=0;  
+		SET @add_countid=0;    
+		select dpi.sid,jlr.contractCode as contractCode,t2.loanName as loanName,dpi.amount,t2.countAmount as countAmount,dpi.fullName as fullName,dpi.code as code,
+		dpi.deadline as deadline,
+		t1.countAmount as yearAmount,t2.loanAmount as loanAmount,
+		jcc.service_charge as serviceCharge,jcc.received_guarantee as receivedGuarantee,
+		DATE_FORMAT(jcc.service_time,'%Y-%m-%d %H:%i:%s') as serviceTime,jcc.service_remerk as serviceRemerk,
+		jcc.service_status as serviceStatus,DATE_FORMAT(ji.invoice_time,'%Y-%m-%d %H:%i:%s') as invoiceTime,
+		ji.invoice_amount as invoiceAmount,ji.invoice_number as invoiceNumber,
+		ji.invoice_remerk as invoiceRemerk,ji.invoice_status as invoiceStatus
+		from dr_product_info dpi 
+		left join js_loan_record jlr on jlr.pid=dpi.id
+		left join (
+		select case when (dpi.sid=@add_yearid) then(@add_yearamount := @add_yearamount + dpi.amount) else (@add_yearamount:=dpi.amount ) end as countAmount,
+		case when (dpi.sid=@add_yearid) then(dpi.sid) else (@add_yearid:=dpi.sid ) end as yearid,dpi.id
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		where DATE_FORMAT(dpi.startDate,'%Y')=DATE_FORMAT(now(),'%Y') and dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t1 on t1.id=dpi.id 
+		left join (
+		select case when (dpi.sid=@add_countid) then(@add_countamount := @add_countamount + dpi.amount) else (@add_countamount:=dpi.amount ) end as countAmount,
+		case when (dpi.sid=@add_countid) then(dpi.sid) else (@add_countid:=dpi.sid ) end as countid,
+		dpi.id,dcl.loanAmount as loanAmount,dcc.companyName as loanName
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		left join dr_claims_customer dcc on dcc.lid=dcl.id
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t2 on t2.id=dpi.id 
+		left join js_cover_charge jcc on jcc.pid=dpi.id
+		left join js_invoice ji on ji.pid=dpi.id
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName like CONCAT('%','${fullName}','%' )
+		</if>
+		<if test="code!=null and code!=''">
+			and dpi.code like CONCAT('%','${code}','%' )
+		</if>
+		<if test="loanName!=null and loanName!=''">
+			and t2.loanName like CONCAT('%','${loanName}','%' )
+		</if>
+		<if test="startserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') >= #{startserviceTime}]]>
+		</if>
+		<if test="endserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') <= #{endserviceTime}]]>
+		</if>
+		<if test="startinvoiceTime!=null">
+			<![CDATA[and DATE_FORMAT(ji.invoice_time,'%Y-%m-%d') >= #{startinvoiceTime}]]>
+		</if>
+		<if test="endinvoiceTime!=null">
+			<![CDATA[and DATE_FORMAT(ji.invoice_time,'%Y-%m-%d') <= #{endinvoiceTime}]]>
+		</if>
+		<if test="invoiceNumber!=null and invoiceNumber!=''">
+			and ji.invoice_number like CONCAT('%','${invoiceNumber}','%' )
+		</if>
+		<if test="serviceStatus!=null and  invoiceStatus!=null"><!-- 查询待复核的数据 -->
+			and (jcc.service_status=#{serviceStatus} or  ji.invoice_status=#{invoiceStatus})
+		</if>
+		order by dpi.sid asc,dpi.startDate asc
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="getProductServiceManagementCount" parameterType="java.util.Map" resultType="int">
+		select count(1)
+		from dr_product_info dpi 
+		left join js_loan_record jlr on jlr.pid=dpi.id
+		left join (
+		select dpi.id
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		where DATE_FORMAT(dpi.startDate,'%Y')=DATE_FORMAT(now(),'%Y') and dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t1 on t1.id=dpi.id 
+		left join (
+		select dpi.id,dcl.loanAmount as loanAmount,dcc.companyName as loanName
+		from dr_claims_loan dcl
+		left join dr_subject_info dsi on dsi.lid=dcl.id
+		left join dr_product_info dpi on dpi.sid=dsi.id 
+		left join dr_claims_customer dcc on dcc.lid=dcl.id
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		order by dpi.sid
+		) t2 on t2.id=dpi.id 
+		left join js_cover_charge jcc on jcc.pid=dpi.id
+		left join js_invoice ji on ji.pid=dpi.id
+		where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		<if test="fullName!=null and fullName!=''">
+			and dpi.fullName like CONCAT('%','${fullName}','%' )
+		</if>
+		<if test="code!=null and code!=''">
+			and dpi.code like CONCAT('%','${code}','%' )
+		</if>
+		<if test="loanName!=null and loanName!=''">
+			and t2.loanName like CONCAT('%','${loanName}','%' )
+		</if>
+		<if test="startserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') >= #{startserviceTime}]]>
+		</if>
+		<if test="endserviceTime!=null">
+			<![CDATA[and DATE_FORMAT(jcc.service_time,'%Y-%m-%d') <= #{endserviceTime}]]>
+		</if>
+		<if test="startinvoiceTime!=null">
+			<![CDATA[and DATE_FORMAT(ji.invoice_time,'%Y-%m-%d') >= #{startinvoiceTime}]]>
+		</if>
+		<if test="endinvoiceTime!=null">
+			<![CDATA[and DATE_FORMAT(ji.invoice_time,'%Y-%m-%d') <= #{endinvoiceTime}]]>
+		</if>
+		<if test="invoiceNumber!=null and invoiceNumber!=''">
+			and ji.invoice_number like CONCAT('%','${invoiceNumber}','%' )
+		</if>
+		<if test="serviceStatus!=null and  invoiceStatus!=null"><!-- 查询待复核的数据 -->
+			and (jcc.service_status=#{serviceStatus} or  ji.invoice_status=#{invoiceStatus})
+		</if>
+	</select>
+	
+	<select id="getIn_cust_noByProductId" parameterType="Integer" resultType="String">
+		SELECT dcc.phone from dr_claims_customer dcc
+		LEFT JOIN dr_subject_info dsi ON  dcc.lid = dsi.lid
+		LEFT JOIN dr_product_info dp ON dp.sid = dsi.id
+		where dp.id = #{id}
+	</select>
+	<!-- 所有存管回款列表查询  concat(left(dcc.phone,3),'****',right(dcc.phone,4))-->
+	<select id="getDepositReturnLoanList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.activityRate as activityRate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus loanStatus,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName,
+		dpi1.actLoanTime,concat(left(dcc.phone,3),'****',right(dcc.phone,4)) as phone,dpi1.repayType as repayType,ifNull(dpir.shouldInterest,0) as shouldInterest
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		left join sys_users su on su.login_id = dcc.phone
+		left join (select pid,IFNULL(ifNull(SUM(shouldInterest),0)-ifNull(SUM(basicprofit),0),0) as shouldInterest from dr_product_invest_repayinfo  group by pid)dpir on dpir.pid=dpi1.id
+		<where>
+			dpi1.status in(6,8,9) and dpi1.loanStatus != 3
+			<if test="simpleName != null and simpleName != ''">
+				 and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = #{loanStatus}
+			</if>
+			<if test="status != null"> 
+				and dpi1.status = #{status}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="loginId !=null and loginId != ''">
+				and su.login_id = #{loginId}  
+			</if>
+			<if test="type==3">
+				and dpi1.type=3 <!-- 存管新手标 -->
+			</if>
+			<if test="type!=3">
+				and dpi1.type!=3 <!-- 排除存管新手标 -->
+			</if>
+			and dpi1.project_no is not null and dcc.user_id is not null
+		</where>
+		<choose>
+			<when test="limit !=null">
+				<![CDATA[ ORDER BY status,loanStatus,establish ASC  ]]>
+				limit #{offset},#{limit}
+			</when>
+			<otherwise>
+				<![CDATA[ ORDER BY establish ASC ]]>
+			</otherwise>
+		</choose>
+	</select>
+	<!-- 所有存管回款总数 -->
+	<select id="getDepositReturnLoanCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from (select dpi1.id id, dpi1.code code,dpi1.simpleName simpleName,dpi1.rate rate,dpi1.deadline deadline,dpi1.amount amount,dpi1.alreadyRaiseAmount alreadyRaiseAmount,dpi1.status status,
+		dpi1.establish establish, dpi1.loanStatus loanStatus,dcl.name loanName,dpi1.expireDate expireDate,truncate(dpi1.rate*deadline*dpi1.amount/360/100,2) as interest,truncate(dpi1.rate*deadline*dpi1.amount/360/100+dpi1.amount,2) as heji,
+		case when DATEDIFF(dpi1.expireDate,SYSDATE())>0 then DATEDIFF(dpi1.expireDate,SYSDATE()) else 0 end as surplusDay,dpi1.fullDate,dcl.no loanCode,dcc.companyName
+		from dr_product_info dpi1 
+		left join dr_subject_info dsi on dsi.id = dpi1.sid
+		left join dr_claims_loan dcl on dcl.id = dsi.lid 
+		left join dr_claims_customer dcc on dcc.lid = dcl.id 
+		left join sys_users su on su.login_id = dcc.phone
+		<where>
+				dpi1.status in(6,8,9) and dpi1.loanStatus != 3
+			<if test="simpleName != null and simpleName != ''">
+				 and dpi1.simpleName like CONCAT('%','${simpleName}','%' )
+			</if>
+			<if test="loanStatus != null"> 
+				and dpi1.loanStatus = #{loanStatus}
+			</if>
+			<if test="status != null"> 
+				and dpi1.status = #{status}
+			</if>
+			<if test="loanName != null and loanName != ''"> 
+				and dcl.name like CONCAT('%','${loanName}','%' )
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') >= #{refundStartDate}]]>
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''"> 
+				<![CDATA[and DATE_FORMAT(dpi1.expireDate,'%Y-%m-%d') <= #{refundEndDate}]]>
+			</if>
+			<if test="fullStartDate != null and fullStartDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') >= #{fullStartDate}]]>
+			</if>
+			<if test="fullEndDate  != null and fullEndDate != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.fullDate,'%Y-%m-%d') <=#{fullEndDate}]]>
+			</if>
+			<if test="startactLoanTime != null and startactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') >= #{startactLoanTime}]]>
+			</if>
+			<if test="endactLoanTime != null and endactLoanTime != ''">
+				<![CDATA[and DATE_FORMAT(dpi1.actLoanTime,'%Y-%m-%d') <=#{endactLoanTime}]]>
+			</if>
+			<if test="repayType != null">
+				and dpi1.repayType=#{repayType}
+			</if>
+			<if test="loginId !=null and loginId != ''">
+				and su.login_id = #{loginId}
+			</if>
+			<if test="type==3">
+				and dpi1.type=3 <!-- 存管新手标 -->
+			</if>
+			<if test="type!=3">
+				and dpi1.type!=3 <!-- 排除存管新手标 -->
+			</if>
+			and dpi1.project_no is not null and dcc.user_id is not null
+		</where>
+		
+		)a
+	</select>
+	<!-- 企业用户在存管方余额不足发送短信 -->
+	 <select id="getReimbursementInfo" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT dcc.phone AS userId, dcc.companyName AS companyName,dcc.phone as phone,
+		dpi.fullName AS fullName,dpi.sid,
+		ifnull(SUM(dpir.basicprofit+dpir.shouldPrincipal),0) AS shoudReturnAmount,
+		DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') as shouldTime
+		FROM dr_claims_customer dcc 
+		LEFT JOIN dr_claims_loan dcl ON dcl.id = dcc.lid
+		LEFT JOIN dr_subject_info dsi ON dsi.lid = dcl.id
+		LEFT JOIN dr_product_info dpi ON dpi.sid = dsi.id
+		LEFT JOIN dr_product_invest_repayinfo dpir ON dpi.id = dpir.pid
+		<where>
+			<if test="type == 1">
+				<if test="dayNum==3 || dayNum==1">
+					 DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') = date_add(CURDATE(),INTERVAL #{dayNum} DAY)
+					
+				</if> 
+				<if test="dayNum==7">
+					 DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') = date_add(CURDATE(),INTERVAL #{dayNum} DAY) 
+					AND <![CDATA[dpi.type <> 3]]>
+					
+				</if> 
+			</if>
+			<if test="type == 2">
+				<if test="dayNum == 3">
+					 DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') = date_add(CURDATE(),INTERVAL #{dayNum} DAY)
+					 AND <![CDATA[dpi.type <> 3]]>
+				</if> 
+				<if test="dayNum == 1">
+					DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') = date_add(CURDATE(),INTERVAL #{dayNum} DAY) 
+				</if>
+			</if>
+		</where>
+		AND dpi.project_no = 'jzh' 
+		GROUP BY dcc.user_id 
+	</select>
+	
+	<select id="getProductInfoByCode" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInfo">
+		select * from dr_product_info dpi where dpi.status in(6,8,9) and dpi.type!=1 and dpi.type!=5
+		and dpi.code = #{code:VARCHAR}
+	</select>
+	
+	<!-- 新手标融资满标的总数 -->
+	<select id="getNewFinancingEnd" resultType="java.lang.Integer">
+		select count(1) from dr_product_info where  type =3 and status =5 and isShow=1
+	</select>
+	
+	<select id="getProductPrize" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+		select count(1) from dr_product_info where (status=5 or status=2) and prizeId=#{prizeId}
+	</select>
+	
+	<!-- 查询用户是否有交易记录 -->
+  	  	<select id="getDealRecord" parameterType="java.lang.Integer" resultType="int">
+  			select count(0) from dr_member_funds_record where uid = #{uid}
+  		</select>
+  	
+	<sql id="Base_Column_List">
+		proInf.id as proInfId,proInf.sid,proInf.code,proInf.fullName,proInf.simpleName,proInf.type,proInf.status,proInf.isSid,proInf.amount as proInfAmount,proInf.surplusAmount,proInf.rate,proInf.activityRate,proInf.repayType,proInf.deadline,proInf.leastaAmount,proInf.increasAmount,proInf.maxAmount,proInf.raiseDeadline,proInf.startDate,proInf.fullDate,proInf.expireDate,proInf.introduce,proInf.borrower,proInf.repaySource,proInf.isInterest,
+		proInf.isCash,proInf.isDouble,proInf.establish,proInf.loanStatus,proIv.id as proIvId,proIv.uid,proIv.pid,proIv.amount,proIv.investTime,proIv.status,proIv.factAmount,proIv.interest,proIv.factInterest,proIv.fid,proIv.joinType,proIv.agreementNo,proIv.specialRate,proIv.experience,proIv.contract_no
+	</sql>
+	<select id="selectProductInfoStatus" resultType="java.util.Map">
+		SELECT<include refid="Base_Column_List" />from dr_product_info proInf LEFT JOIN dr_product_invest proIv on
+		proInf.id = proIv.pid where proInf.status = 8 and proIv.evid is null;
+	</select>
+</mapper>

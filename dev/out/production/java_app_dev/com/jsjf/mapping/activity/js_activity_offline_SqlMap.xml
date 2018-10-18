@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityOfflineDAO">
+
+	<select id="selectJsActivityOfflineListByMap" resultType="com.jsjf.model.activity.JsActivityOffline" parameterType="java.util.HashMap">
+		SELECT * FROM `js_activity_offline` 
+		<where>
+			<if test = "type != null"> and type = #{type} </if>
+			<if test = "status != null"> and status = #{status} </if>
+		</where>
+		order by addtime desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="selectJsActivityOfflineListByMapCount" resultType="java.lang.Integer" parameterType="java.util.HashMap">
+		SELECT count(1) FROM `js_activity_offline` 
+		<where>
+			<if test = "type != null"> and type = #{type} </if>
+			<if test = "status != null"> and status = #{status} </if>
+		</where>
+	</select>
+	<select id="selectJsActivityOfflineDetailByMap" resultType="com.jsjf.model.activity.JsActivityOffline" parameterType="java.util.HashMap">
+		SELECT * FROM `js_activity_offline` 
+		<where>
+			<if test = "type != null"> and type = #{type} </if>
+			<if test = "id != null"> and id = #{id} </if>
+			<if test = "status != null"> and status = #{status} </if>
+		</where>
+	</select>
+</mapper>

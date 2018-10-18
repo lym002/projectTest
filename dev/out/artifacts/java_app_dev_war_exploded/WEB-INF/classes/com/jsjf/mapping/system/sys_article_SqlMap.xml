@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysArticleDAO" >
+	<resultMap id="SysArticleResult" type="com.jsjf.model.system.SysArticle" >
+		<result column="arti_id" property="artiId" jdbcType="INTEGER" />
+		<result column="pro_id" property="proId" jdbcType="INTEGER" />
+		<result column="summaryContents" property="summaryContents" jdbcType="VARCHAR" />
+		<result column="sort_rank" property="sortRank" jdbcType="SMALLINT" />
+		<result column="ishead" property="ishead" jdbcType="SMALLINT" />
+		<result column="click_count" property="clickCount" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="short_title" property="shortTitle" jdbcType="VARCHAR" />
+		<result column="writer" property="writer" jdbcType="VARCHAR" />
+		<result column="source" property="source" jdbcType="VARCHAR" />
+		<result column="litpic" property="litpic" jdbcType="VARCHAR" />
+		<result column="active" property="active" jdbcType="SMALLINT" />
+		<result column="keywords" property="keywords" jdbcType="VARCHAR" />
+		<result column="description" property="description" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="SMALLINT" />
+		<result column="create_user" property="createUser" jdbcType="SMALLINT" />
+		<result column="update_user" property="updateUser" jdbcType="SMALLINT" />
+		<result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="metakyword" property="metakyword" jdbcType="VARCHAR" />
+		<result column="metatitle" property="metatitle" jdbcType="VARCHAR" />
+		<result column="STATUS" property="status" jdbcType="INTEGER" />
+		<result column="UID" property="uid" jdbcType="INTEGER" />
+		<result column="isRecommend" property="isrecommend" jdbcType="INTEGER" />
+		<result column="content" property="content" jdbcType="LONGVARCHAR" />
+		<result property="createName" column="createname" jdbcType="VARCHAR"/><!-- 创建人姓名 -->
+    	<result property="updateName" column="updatename" jdbcType="VARCHAR"/>
+    	<result property="proName" column="proName" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<select id="selectSysArticleById" resultMap="SysArticleResult" parameterType="INTEGER" >
+	  select arti_id, pro_id, summaryContents, sort_rank, ishead, click_count, title, short_title, writer, source,
+	    litpic, active, keywords, description, remark, create_time, type, create_user, metakyword, metatitle, isRecommend, content
+	  from sys_article
+	  where arti_id = #{artiId:INTEGER}
+	</select>
+	<select id="getIndexArticle" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select arti_id, summaryContents, sort_rank, ishead, click_count, title,litpic, short_title, writer, source,create_time
+		from sys_article
+		<where>
+			status =1
+			<if test="proId != null">
+				and pro_id = #{proId:INTEGER}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				AND DATE_FORMAT(create_time,"%Y%m%d") = DATE_FORMAT(#{createTime},"%Y%m%d")
+			</if>
+			<if test="proIds != null and proIds != ''">
+				and pro_id in
+				<foreach collection="proIds" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		order by create_time desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="getSysArticleCount" resultType="int" parameterType="java.util.HashMap" >
+		SELECT count(1)	FROM sys_article
+		 where status=1
+	     <if test="proId != null">
+			and pro_id = #{proId:INTEGER}
+		 </if>
+		 <if test="isrecommend != null ">
+		 	and isRecommend =#{isrecommend }
+		 </if>
+		  <if test="keywords != null and keywords !=''">
+		 	and keywords like CONCAT('%','${keywords}','%' )
+		 </if>
+		 <if test="ishead != null ">
+		 	and ishead =#{ishead }
+		 </if>
+		 <if test="proIds != null">
+		 	and pro_id in
+		 	<foreach item="item" index="index" collection="proIds" open="(" separator="," close=")">  
+			 #{item}  
+			</foreach>
+		 </if>		
+  	</select>
+	<select id="getArticleByParam" resultMap="SysArticleResult" parameterType="java.util.HashMap">
+		select a.arti_id, a.pro_id, a.summaryContents,  a.sort_rank, a.ishead, a.click_count, a.title, a.short_title, a.writer, a.source,
+	    a.litpic, a.active, a.keywords, a.description, a.remark, a.create_time, a.type, a.create_user, a.update_user,
+	    a.update_time, a.metakyword, a.metatitle, a.STATUS, a.UID, a.isRecommend, a.content, p.pro_name as proName
+	     from sys_article a
+	     LEFT JOIN sys_program p ON a.pro_id = p.pro_id
+	     where a.status=1
+	     <if test="proId != null">
+			and a.pro_id = #{proId:INTEGER}
+		 </if>
+		 <if test="isrecommend != null ">
+		 	and a.isRecommend =#{isrecommend }
+		 </if>
+		  <if test="keywords != null and keywords !=''">
+		 	and a.keywords like CONCAT('%','${keywords}','%' )
+		 </if>
+		 <if test="ishead != null ">
+		 	and a.ishead =#{ishead }
+		 </if>
+		 <if test="proIds != null">
+			 and a.pro_id in
+		 	<foreach item="item" index="index" collection="proIds" open="(" separator="," close=")">  
+			 #{item}  
+			</foreach>
+		 </if>
+		 <if test="openDayId != null ">
+		 	and a.openDayId = #{openDayId}
+		 </if>
+		 order by 
+			 <if test="order != null and order !=''">
+			 	#{order}
+			 </if>
+			 <if test="order == null or order ==''">
+			     a.sort_rank DESC,a.create_time DESC
+			 </if>
+	    	 <if test = "offset != null and limit != null">
+			     limit #{offset},#{limit}
+			 </if>
+	</select>
+	<select id = "getArticleByUid" resultType="com.jsjf.model.system.SysArticle" parameterType="java.util.HashMap">
+		select a.*
+		from sys_article a,dr_member_bank b
+		where b.`uid` = #{uid} 
+			and b.`status` = 1 
+			and a.`status` = 1 
+			and a.pro_id = 18
+			and INSTR(a.bankName,b.bankName)>0
+		order by addTime desc
+	</select>
+
+</mapper>

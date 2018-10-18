@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInvestRepayInfoDAO">
+	<resultMap id="DrProductInvestResult" type="com.jsjf.model.product.DrProductInvestRepayInfo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="investId" property="investId" jdbcType="INTEGER"/>
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="shouldPrincipal" property="shouldPrincipal" jdbcType="DECIMAL"/>
+		<result column="factPrincipal" property="factPrincipal" jdbcType="DECIMAL"/>
+		<result column="shouldInterest" property="shouldInterest" jdbcType="DECIMAL"/>
+		<result column="factInterest" property="factInterest" jdbcType="DECIMAL"/>
+		<result column="penalty" property="penalty" jdbcType="DECIMAL"/>
+		<result column="status" property="status" jdbcType="INTEGER"/>
+		<result column="shouldTime" property="shouldTime" jdbcType="TIMESTAMP"/>
+		<result column="factTime" property="factTime" jdbcType="TIMESTAMP"/>
+		<result column="remit_status" property="remitStatus" jdbcType="INTEGER"/>
+		<result column="remit_fail_reson" property="remitFailReson" jdbcType="VARCHAR"/>
+		<result column="basicprofit" property="basicprofit" jdbcType="DECIMAL"/>
+		<result column="mchntPay" property="mchntPay" jdbcType="INTEGER"/>
+	</resultMap>
+	
+	
+	<select id="selectObjectById" resultType="com.jsjf.model.product.DrProductInvestRepayInfo" parameterType="Integer">
+		select * from dr_product_invest_repayinfo where id = #{id}
+	</select>
+	
+	<insert id="batchInsert">
+		<foreach collection="list" item="item" separator=";" >
+			insert into dr_product_invest_repayinfo (uid, investId, pid, shouldPrincipal, shouldInterest, status, shouldTime,basicprofit)
+			values
+			(#{item.uid}, #{item.investId}, #{item.pid},#{item.shouldPrincipal},#{item.shouldInterest},#{item.status},#{item.shouldTime},#{item.basicprofit})
+		</foreach>
+	</insert>
+	<select id="selectShouldRepayInfo" resultMap="DrProductInvestResult">
+		select * from dr_product_invest_repayinfo where pid = #{pid} and status = 0
+		and DATE_FORMAT(shouldTime,'%Y-%m-%d') <![CDATA[ <= ]]> DATE_FORMAT(SYSDATE(),'%Y-%m-%d')
+	</select>
+	
+	<update id="updateById" parameterType="com.jsjf.model.product.DrProductInvestRepayInfo">
+		update dr_product_invest_repayinfo
+			set factPrincipal = #{factPrincipal},
+				factInterest = #{factInterest},
+				status = #{status},
+				factTime = #{factTime}
+		where id = #{id}
+	</update>
+	<update id="updateByIdFuiou" parameterType="com.jsjf.model.product.DrProductInvestRepayInfo">
+		update dr_product_invest_repayinfo
+			set factPrincipal = #{factPrincipal},
+				factInterest = #{factInterest},
+				status = #{status},
+				factTime = #{factTime},
+				remitMchntTxnSsn = #{remitMchntTxnSsn},
+				remit_status = #{remitStatus},
+				remit_fail_reson = #{remitFailReson},
+				mchntPay = #{mchntPay}
+		where id = #{id}
+	</update>
+	<update id="updateRepayDetailIdByPid" parameterType="com.jsjf.model.product.DrProductInfo">
+		update dr_product_invest_repayinfo pir 
+		LEFT JOIN dr_product_info_repay_detail pidetail on  pidetail.pid = pir.pid and pir.shouldtime = pidetail.shouldtime
+			set pir.pdId = pidetail.id
+		where pidetail.id is not NULL and pidetail.pid = #{id}
+	</update>
+	
+	<update id="updateFileStatus" parameterType="java.util.List">
+		<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update  dr_product_invest_repayinfo
+		<set>
+			 fileStatus = #{item.fileStatus},
+		 	 fuiouMessageNo = #{item.fuiouMessageNo}
+		</set>
+		where id = #{item.id:INTEGER}
+		</foreach>
+	</update>
+	
+	<update id="updateRemit" parameterType="java.util.Map">
+		update  dr_product_invest_repayinfo
+		<trim prefix="set" suffixOverrides=","> 
+			<if test="remitStatus !=null">remit_status = #{remitStatus}, </if>
+			<if test="remitFailReson !=null and remitFailReson !=''">remit_fail_reson = #{remitFailReson}, </if>
+			<if test="RemitMchntTxnSsn !=null and RemitMchntTxnSsn !=''">remitMchntTxnSsn = #{RemitMchntTxnSsn}, </if>
+			<if test="transfer_status !=null">transfer_status = #{transfer_status}, </if>
+			<if test="transfer_fail_reson !=null">transfer_fail_reson = #{transfer_fail_reson}, </if>
+			<if test="transferMchntTxnSsn !=null">transferMchntTxnSsn = #{transferMchntTxnSsn}, </if>
+		
+		</trim>
+		where id = #{id}
+	</update>
+	
+	
+	<update id="updateRemitBatch" parameterType="java.util.List">
+		<foreach collection="list" item="var" open="" close="" separator=";">
+			update  dr_product_invest_repayinfo
+			<trim prefix="set" suffixOverrides=","> 
+				<if test="var.remitStatus !=null">remit_status = #{var.remitStatus}, </if>
+				<if test="var.remitFailReson !=null and var.remitFailReson !=''">remit_fail_reson = #{var.remitFailReson}, </if>
+				<if test="var.RemitMchntTxnSsn !=null and var.RemitMchntTxnSsn !=''">remitMchntTxnSsn = #{var.RemitMchntTxnSsn}, </if>
+				<if test="var.transfer_status !=null">transfer_status = #{var.transfer_status}, </if>
+				<if test="var.transfer_fail_reson !=null">transfer_fail_reson = #{var.transfer_fail_reson}, </if>
+				<if test="var.transferMchntTxnSsn !=null">transferMchntTxnSsn = #{var.transferMchntTxnSsn}, </if>
+			</trim>
+			where id = #{var.id}
+		</foreach>
+		
+	</update>
+	
+	<select id="selectTransferFailDrProductInvestRepayInfo" resultType="com.jsjf.model.product.DrProductInvestRepayInfo" >
+		SELECT a.*,b.type AS productType ,b.project_no as project_no FROM `dr_product_invest_repayinfo` a
+					LEFT JOIN dr_product_info b ON a.pid = b.id 
+		where b.type =2 and b.project_no = 'jzh' and NOW() > a.shouldTime   and  a.transfer_status = 3
+		UNION ALL 
+		SELECT a.*,b.type AS productType ,b.project_no as project_no FROM `dr_product_invest_repayinfo` a
+					LEFT JOIN dr_product_info b ON a.pid = b.id 
+		where b.type =5 and a.shouldTime > '2017-06-08'  and NOW() > a.shouldTime and  a.transfer_status = 3
+	</select>
+	
+	<!-- 根据投资ID查询回款数据 -->
+	<select id="getInvestRepayinfo" resultType="java.util.Map" parameterType="java.util.Map">
+		set @rowNO=0;
+		select @rowNO := @rowNO+1 as num, case when (dpir.factPrincipal=0) then dpir.shouldPrincipal else dpir.factPrincipal end as shouldPrincipal,
+		case when (dpir.factInterest=0) then dpir.shouldInterest else dpir.factInterest end as shouldInterest,
+		DATE_FORMAT(dpir.shouldTime,'%Y-%m-%d') as shouldTime,case dpir.status when 0 then '未还款' when 1 then '已还款' when 3 then '逾期'  END as status from dr_product_invest_repayinfo dpir
+		where dpir.investId=#{investId} order by dpir.shouldTime asc
+	</select>
+	
+	<!-- 根据投资ID查询剩余回款合计 -->
+	<select id="getInvestRepayinfoResidueSum" resultType="java.util.Map" parameterType="java.util.Map">
+		select case when sum(dpir.shouldPrincipal) is null then 0 else sum(dpir.shouldPrincipal) end as residueprincipal,
+		case when sum(dpir.shouldInterest) is null then 0 else sum(dpir.shouldInterest) end as residueinterest  
+		from dr_product_invest_repayinfo dpir
+		where dpir.investId=#{investId} and dpir.status=0	
+	</select>
+	
+	<!-- 根据投资ID查询已回款合计 -->
+	<select id="getInvestRepayinfoAlreadySum" resultType="java.util.Map" parameterType="java.util.Map">
+		select case when sum(dpir.factPrincipal) is null then 0 else sum(dpir.factPrincipal) end as factPrincipal,
+		case when sum(dpir.factInterest) is null then 0 else sum(dpir.factInterest) end  as factInterest  
+		from dr_product_invest_repayinfo dpir
+		where dpir.investId=#{investId} and dpir.status=1
+	</select>
+</mapper>

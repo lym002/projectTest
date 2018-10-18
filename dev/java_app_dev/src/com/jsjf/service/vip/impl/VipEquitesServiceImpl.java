@@ -1,0 +1,51 @@
+package com.jsjf.service.vip.impl;
+
+import com.jsjf.dao.vip.VipEquitiesMapper;
+import com.jsjf.model.vip.VipEquities;
+import com.jsjf.service.vip.VipEquitiesService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+public class VipEquitesServiceImpl implements VipEquitiesService {
+
+    @Autowired
+    private VipEquitiesMapper vipEquitiesMapper;
+
+    @Override
+    public int deleteByPrimaryKey(Integer id) {
+        return vipEquitiesMapper.deleteByPrimaryKey(id);
+    }
+
+    @Override
+    public int insert(VipEquities record) {
+        return vipEquitiesMapper.insert(record);
+    }
+
+    @Override
+    public int insertSelective(VipEquities record) {
+        return vipEquitiesMapper.insertSelective(record);
+    }
+
+    @Override
+    public VipEquities selectByPrimaryKey(Integer id) {
+        return vipEquitiesMapper.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public int updateByPrimaryKeySelective(VipEquities record) {
+        return vipEquitiesMapper.updateByPrimaryKeySelective(record);
+    }
+
+    @Override
+    public int updateByPrimaryKey(VipEquities record) {
+        return vipEquitiesMapper.updateByPrimaryKey(record);
+    }
+
+    @Override
+    public VipEquities selectByEquitiesName(String freeWithdrawDeposit) {
+        return vipEquitiesMapper.selectByEquitiesName(freeWithdrawDeposit);
+    }
+}

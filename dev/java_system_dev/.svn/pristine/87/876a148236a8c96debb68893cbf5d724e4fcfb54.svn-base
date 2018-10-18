@@ -1,0 +1,584 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrActivityParameterDAO">
+	<resultMap id="DrActivityParameterResult" type="com.jsjf.model.activity.DrActivityParameter">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="coupons" property="coupons" jdbcType="INTEGER" /><!-- id的别名 -->
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="raisedRates" property="raisedRates" jdbcType="DECIMAL"/>
+		<result column="enableAmount" property="enableAmount" jdbcType="DECIMAL"/>
+		<result column="grantQty" property="grantQty" jdbcType="INTEGER"/>
+		<result column="surplusQty" property="surplusQty" jdbcType="INTEGER"/>
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="applicableScenarios" property="applicableScenarios" jdbcType="VARCHAR" />
+		<result column="applicableProducts" property="applicableProducts" jdbcType="VARCHAR" />
+		<result column="applicableUser" property="applicableUser" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="deadline" property="deadline" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="VARCHAR" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result property="addName" column="addName" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updateName" jdbcType="VARCHAR"/><!--修改人姓名 -->
+		<result property="usedQty" column="usedQty" jdbcType="INTEGER"/><!-- 已使用 -->
+		<result property="sendQty" column="sendQty" jdbcType="INTEGER"/><!-- 已发放-->
+		<result property="productDeadline" column="productDeadline" jdbcType="INTEGER"/><!-- 产品期限 -->
+		<result property="multiple" column="multiple" jdbcType="DECIMAL"/><!-- 倍数 -->
+		
+	</resultMap>
+	
+	<!-- 查询优惠券 -->
+	<select id="getActivityParameter" parameterType="java.util.HashMap"  resultMap="DrActivityParameterResult">
+		select *
+		from dr_activity_parameter a
+		<where>
+			<if test="type != null and type != ''">
+				and a.type = #{type:INTEGER}
+			</if>
+			<if test="amount != null">
+				and a.amount = #{amount:DECIMAL}
+			</if>
+			<if test="multiple != null">
+				and a.multiple = #{multiple:DECIMAL}
+			</if>
+			<if test="name != null and name != ''">
+				and a.name like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+			</if>
+			<if test="code != null and code != ''">
+				and a.code like CONCAT(CONCAT('%',#{code:VARCHAR}),'%')
+			</if>
+			<if test="raisedRates != null">
+				and a.raisedRates =#{raisedRates:DECIMAL}
+			</if>
+			<if test="deadline != null ">
+				and a.deadline=#{deadline:INTEGER}
+			</if>
+			<if test="scenarios != null">
+				and a.applicableScenarios = #{scenarios}
+			</if>
+	 		<if test="status != null">
+	 			and a.status=#{status:INTEGER}
+	 		</if>
+	 		<if test="statuses != null ">
+	 			and a.status in 
+	 			<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="types != null ">
+	 			and a.type in 
+	 			<foreach collection="types" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="surplusQty != null">
+	 			and a.surplusQty <![CDATA[ > ]]> #{surplusQty:INTEGER}
+	 		</if>
+	 		<if test="startTime !=null and startTime !=''">
+	 			and  DATE_FORMAT(a.addTime,'%Y-%m-%d') >= #{startTime}
+	 		</if>
+	 		<if test="endTime !=null and endTime !=''">
+	 			and #{endTime} >= DATE_FORMAT(a.addTime,'%Y-%m-%d')  
+	 		</if>
+	 		order by a.status asc,a.id desc
+		</where>
+		LIMIT #{offset},#{limit}
+	</select>
+	<!-- 添加活动 -->
+	<insert id="insertActivityParameter" parameterType="com.jsjf.model.activity.DrActivityParameter">
+		insert into dr_activity_parameter(code,name,amount,raisedRates,enableAmount,grantQty,surplusQty,type,applicableScenarios,multiple,productDeadline,
+		applicableProducts,applicableUser,status,deadline,addUser,addTime,updateUser,updateTime)
+		values(#{code},#{name},#{amount},#{raisedRates},#{enableAmount},#{grantQty},#{surplusQty},#{type},#{applicableScenarios},#{multiple},#{productDeadline},
+		#{applicableProducts},#{applicableUser},#{status},#{deadline},#{addUser},#{addTime},#{updateUser},#{updateTime})
+	</insert>
+	
+	<!-- 获取活动 -->
+	<select id="getActivityParameterById"  resultMap="DrActivityParameterResult">
+		select a.id,a.code,a.name,amount,raisedRates,enableAmount,grantQty,surplusQty,type,applicableScenarios,multiple,productDeadline,
+			applicableProducts,applicableUser,a.status,deadline,addUser,addTime,updateUser,updateTime,b.`name` as addName,c.`name` as updateName
+		from dr_activity_parameter a
+		left join sys_users b ON a.addUser = b.user_ky
+		left join sys_users c ON a.updateUser = c.user_ky
+		where  a.id = #{id:INTEGER}		
+	</select>
+	
+	<!-- 获取后台发券列表 -->
+	<select id="getGiveOutAPList" parameterType="java.util.HashMap"  resultMap="DrActivityParameterResult">
+		select * from dr_activity_parameter 
+		where 
+			applicableScenarios = 0 
+			and surplusQty > 0 
+			and status in (0,1)
+			<if test="type != null and type != ''">
+				and type = #{type:INTEGER}
+			</if>
+	</select>
+	
+	
+	<!-- 查询活动列表 -->
+	<select id="getDrActivityParameterList" parameterType="java.util.HashMap"  resultMap="DrActivityParameterResult">
+		select a.id,a.code,a.name,a.amount,ifnull(a.raisedRates,0) as raisedRates,a.enableAmount,a.grantQty,a.grantQty - (SELECT COUNT(1) from dr_member_favourable dmf where activityId = a.id) as surplusQty,
+		a.type,a.applicableScenarios,a.multiple,a.productDeadline,
+		a.applicableProducts,a.applicableUser,a.status,a.deadline,a.addUser,a.addTime,a.updateUser,a.updateTime,b.`name` as addName,c.`name` as updateName,
+		(SELECT IFNULL(SUM(if(dmf.`status`=1,1,0)),0) usedQty from dr_member_favourable dmf where activityId = a.id) as usedQty,
+		(SELECT COUNT(1) from dr_member_favourable dmf where activityId = a.id) as sendQty,a.id as coupons,		
+		(SELECT IFNULL(SUM(dpi.amount),0) from dr_product_invest dpi where dpi.fid in (
+			SELECT dmf.id from dr_member_favourable dmf where dmf.activityId =a.id)
+		) orderAmount
+		from dr_activity_parameter a
+		left join sys_users b ON a.addUser = b.user_ky
+		left join sys_users c ON a.updateUser = c.user_ky	
+		<where>
+			<if test="type != null and type != ''">
+				and a.type = #{type:INTEGER}
+			</if>
+			<if test="amount != null">
+				and a.amount = #{amount:DECIMAL}
+			</if>
+			<if test="multiple != null">
+				and a.multiple = #{multiple:DECIMAL}
+			</if>
+			<if test="name != null and name != ''">
+				and a.name like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+			</if>
+			<if test="code != null and code != ''">
+				and a.code like CONCAT(CONCAT('%',#{code:VARCHAR}),'%')
+			</if>
+			<if test="raisedRates != null">
+				and a.raisedRates =#{raisedRates:DECIMAL}
+			</if>
+			<if test="deadline != null ">
+				and a.deadline=#{deadline:INTEGER}
+			</if>
+			<if test="scenarios != null">
+				and a.applicableScenarios = #{scenarios}
+			</if>
+	 		<if test="status != null">
+	 			and a.status=#{status:INTEGER}
+	 		</if>
+	 		<if test="statuses != null ">
+	 			and a.status in 
+	 			<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="types != null ">
+	 			and a.type in 
+	 			<foreach collection="types" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="surplusQty != null">
+	 			and a.surplusQty <![CDATA[ > ]]> #{surplusQty:INTEGER}
+	 		</if>
+	 		<if test="startTime !=null and startTime !=''">
+	 			and  DATE_FORMAT(a.addTime,'%Y-%m-%d') >= #{startTime}
+	 		</if>
+	 		<if test="endTime !=null and endTime !=''">
+	 			and #{endTime} >= DATE_FORMAT(a.addTime,'%Y-%m-%d')  
+	 		</if>
+	 		order by a.status asc,a.id desc
+		</where>
+		LIMIT #{offset},#{limit}
+	
+	</select>
+	
+	<!-- 查询活动列表总条数 -->
+	<select id="getDrActivityParameterTotal" parameterType="java.util.HashMap"  resultType="INTEGER">
+		select count(1) from dr_activity_parameter 
+		<where>
+			<if test="type != null and type != ''">
+				and type = #{type:INTEGER}
+			</if>
+			<if test="amount != null and amount != ''">
+				and amount = #{amount:DECIMAL}
+			</if>
+			<if test="name != null and name != ''">
+				and name like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+			</if>
+			<if test="raisedRates != null and raisedRates !=''">
+				and raisedRates =#{raisedRates:DECIMAL}
+			</if>
+			<if test="deadline != null ">
+				and deadline=#{deadline:INTEGER}
+			</if>
+			<if test="scenarios != null">
+				and applicableScenarios like CONCAT('%',#{scenarios:VARCHAR},'%')
+			</if>
+	 		<if test="status != null">
+	 			and status=#{status:INTEGER}
+	 		</if>
+	 		<if test="statuses != null ">
+	 			and status in 
+	 			<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="types != null ">
+	 			and type in 
+	 			<foreach collection="types" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="surplusQty != null">
+	 			and surplusQty <![CDATA[ > ]]> #{surplusQty:INTEGER}
+	 		</if>
+	 		<if test="multiple != null">
+	 			and multiple=#{multiple:DECIMAL}
+	 		</if>
+	 		<if test="code != null and code != ''">
+				and code like CONCAT(CONCAT('%',#{code:VARCHAR}),'%')
+			</if>
+			<if test="startTime !=null and startTime !=''">
+	 			and  DATE_FORMAT(addTime,'%Y-%m-%d') >= #{startTime}
+	 		</if>
+	 		<if test="endTime !=null and endTime !=''">
+	 			and #{endTime} >= DATE_FORMAT(addTime,'%Y-%m-%d')  
+	 		</if>
+		</where>
+	</select>
+	<!-- 查询活动列表 -->
+	<select id="getDrActivityParameterListCensus" parameterType="java.util.HashMap"  resultType="java.util.HashMap">
+	
+		SELECT  '已用红包金额总计' as raisedRates,sum(census.usedAmount) as amount,
+				 '订单金额总计' as enableAmount, sum(census.orderAmount) as orderAmount,
+				'使用红包用户数' as code,sum(census.disUidCount) as name
+		 from (
+			SELECT (SELECT SUM(if(dmf.`status`=1,dmf.amount,0)) from dr_member_favourable dmf where activityId = a.id) as usedAmount,
+			(SELECT ifnull(SUM(dpi.amount),0) from dr_product_invest dpi where dpi.fid in (
+				SELECT dmf.id from dr_member_favourable dmf where dmf.activityId =a.id)
+			) as orderAmount,
+			(SELECT COUNT(DISTINCT IF(dmf.status=1,dmf.uid,NULL) ) from dr_member_favourable dmf where activityId = a.id) as disUidCount
+			from dr_activity_parameter a			
+		<where>
+			<if test="type != null and type != ''">
+				and a.type = #{type:INTEGER}
+			</if>
+			<if test="amount != null">
+				and a.amount = #{amount:DECIMAL}
+			</if>
+			<if test="multiple != null">
+				and a.multiple = #{multiple:DECIMAL}
+			</if>
+			<if test="name != null and name != ''">
+				and a.name like CONCAT(CONCAT('%',#{name:VARCHAR}),'%')
+			</if>
+			<if test="code != null and code != ''">
+				and a.code like CONCAT(CONCAT('%',#{code:VARCHAR}),'%')
+			</if>
+			<if test="raisedRates != null">
+				and a.raisedRates =#{raisedRates:DECIMAL}
+			</if>
+			<if test="deadline != null ">
+				and a.deadline=#{deadline:INTEGER}
+			</if>
+			<if test="scenarios != null">
+				and a.applicableScenarios = #{scenarios}
+			</if>
+	 		<if test="status != null">
+	 			and a.status=#{status:INTEGER}
+	 		</if>
+	 		<if test="statuses != null ">
+	 			and a.status in 
+	 			<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="types != null ">
+	 			and a.type in 
+	 			<foreach collection="types" item="item" open="(" close=")" separator=",">
+	 				${item}
+	 			</foreach>
+	 		</if>
+	 		<if test="surplusQty != null">
+	 			and a.surplusQty <![CDATA[ > ]]> #{surplusQty:INTEGER}
+	 		</if>
+	 		<if test="startTime !=null and startTime !=''">
+	 			and  DATE_FORMAT(a.addTime,'%Y-%m-%d') >= #{startTime}
+	 		</if>
+	 		<if test="endTime !=null and endTime !=''">
+	 			and #{endTime} >= DATE_FORMAT(a.addTime,'%Y-%m-%d')  
+	 		</if>
+	 		group by a.id
+	 		order by a.status asc,a.id desc
+		</where>
+		LIMIT #{offset},#{limit}
+		) as census
+	</select>
+	
+	<!-- 修改活动 -->
+	<update id="updateActivityParameter" parameterType="com.jsjf.model.activity.DrActivityParameter" >
+		update dr_activity_parameter 
+		<set>	
+			<if test="code != null and code != ''">
+				code = #{code:VARCHAR},
+			</if>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="name != null and name != ''" >
+				name = #{name:VARCHAR},
+			</if>
+			<if test="amount != null and amount != ''">
+				amount = #{amount:DECIMAL},
+			</if>
+			<if test="raisedRates != null">
+				raisedRates = #{raisedRates:DECIMAL},
+			</if>
+			<if test="enableAmount != null">
+				enableAmount = #{enableAmount:DECIMAL},
+			</if>
+			<if test="grantQty != null">
+				grantQty = #{grantQty:INTEGER},
+			</if>
+			<if test="surplusQty != null">
+				surplusQty = #{surplusQty:INTEGER},
+			</if>
+			<if test="type != null">
+				type = #{type:INTEGER},
+			</if>
+			<if test="applicableUser != null">
+				applicableUser = #{applicableUser:INTEGER},
+			</if>
+			<if test="applicableScenarios != null and applicableScenarios != ''">
+				applicableScenarios = #{applicableScenarios:VARCHAR},
+			</if>
+			<if test="applicableProducts != null and applicableProducts != ''">
+				applicableProducts = #{applicableProducts:VARCHAR},
+			</if>
+			<if test="updateUser != null and updateUser != ''">
+				updateUser = #{updateUser:INTEGER},
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				updateTime = #{updateTime:TIMESTAMP},
+			</if>
+			<if test="deadline != null">
+				 deadline=#{deadline:INTEGER}
+			</if>
+			
+		</set>		
+		<where>
+			<if test="id != null">
+				and id = #{id:INTEGER}
+			</if>
+			<if test="type == 4 and applicableScenarios==1 and (id==null or id =='')">
+				and type=4 
+				and applicableScenarios=1
+			</if>
+		</where>
+	</update> 
+	
+	<update id="updateStatusByRules" parameterType="java.lang.String">
+			UPDATE dr_activity_parameter SET status=2 where FIND_IN_SET(id,#{coupons})		
+	</update>
+	<!-- 插入好友邀请返现到活动账户 -->
+	<insert id="insertFriendMemberActivityAmount">
+		insert INTO js_activity_member_account(piid,uid,afid,amount,status,addDate)
+		select dpv.id piid,m.uid uid,friend.id afid,
+		CASE when fdetail.awardType = 1 then truncate(dpv.amount*if(dpv.joinType =1 or dpv.joinType =2,fdetail.appReward,fdetail.amount)/100,2)
+		else truncate(if(dpv.joinType =1 or dpv.joinType =2,fdetail.appReward,fdetail.amount),2) END amount,
+		0 status,
+		SYSDATE() addDate
+		from dr_member  m LEFT JOIN dr_member_recommended mr on mr.referrerId = m.uid
+		LEFT JOIN (
+					SELECT
+						min(dpv1.id) minid,dpv1.uid
+					FROM
+						dr_product_invest dpv1
+					LEFT JOIN dr_product_info dpi1 ON dpi1.id = dpv1.pid
+					WHERE dpi1.deadline in (30,35,60,180)
+					GROUP BY
+						dpv1.uid
+				) T ON T.uid = mr.uid
+		LEFT JOIN dr_product_invest dpv ON dpv.id = T.minid
+		LEFT JOIN dr_product_info pi on pi.id = dpv.pid
+		LEFT JOIN js_activity_member_account ama on ama.piid = dpv.id
+		LEFT JOIN (select max(af.id) maxid,'m' type from js_activity_friend af where af.type = 0) MAF on MAF.type = 'm'
+		LEFT JOIN js_activity_friend friend on friend.id = MAF.maxid
+		LEFT JOIN js_activity_friend_detail fdetail on fdetail.fid = friend.id and fdetail.days = pi.deadline		
+		where dpv.investTime <![CDATA[ >= ]]> friend.startDate and dpv.investTime <![CDATA[ <= ]]> friend.endDate and ama.id is NULL
+	</insert>
+	<!-- 插入好友复投的180天投资返现到活动账户 -->
+	<insert id="insertFriendMemberActivityAmountFor180">
+		insert INTO js_activity_member_account(piid,uid,afid,amount,status,addDate,isRepeat)
+		select 
+		dpv.id piid,m.uid uid,friend1.id afid,
+		CASE when fdetail.awardType = 1 then truncate(dpv.amount*if(dpv.joinType =1 or dpv.joinType =2,fdetail.appReward,fdetail.amount)/100,2)
+		else truncate(if(dpv.joinType =1 or dpv.joinType =2,fdetail.appReward,fdetail.amount),2) END amount,
+		0 status,
+		SYSDATE() addDate,1
+		from (SELECT DISTINCT invest.uid investuid,account.afid aafid
+		FROM js_activity_member_account account LEFT JOIN dr_product_invest invest on invest.id = account.piid
+		LEFT JOIN dr_product_info info on info.id = invest.pid
+		LEFT JOIN js_activity_friend friend on friend.id = account.afid
+		where info.deadline = 180 and friend.type = 0) T
+		LEFT JOIN dr_product_invest dpv ON dpv.uid = T.investuid
+		LEFT JOIN dr_product_info pi on pi.id = dpv.pid
+		LEFT JOIN js_activity_friend friend1 on friend1.id = T.aafid
+		LEFT JOIN js_activity_friend_detail fdetail on fdetail.fid = friend1.id and fdetail.days = pi.deadline	
+		LEFT JOIN dr_member_recommended mr on mr.uid = dpv.uid
+		LEFT JOIN dr_member m on m.uid = mr.referrerId
+		LEFT JOIN js_activity_member_account ama on ama.piid = dpv.id
+		where pi.deadline = 180 
+		and dpv.investTime <![CDATA[ >= ]]> friend1.startDate and dpv.investTime <![CDATA[ <= ]]> friend1.endDate
+		and ama.id is NULL
+	</insert>
+	
+	<insert id="sendJsActivityMemberAccountMsg">
+		INSERT INTO dr_member_msg ( `ruid`, `puid`, `type`, `title`, `content`, `addtime`, `isread`, `status`)
+		SELECT jama.uid,0,2,'活动奖励',CONCAT('尊敬的用户，您的好友',dmbi.realname,'已完成首投，您有一笔',jama.amount,'元的活动返利奖金待领取。继续邀请好友投资，活的更多奖金。'),NOW(),0,0
+		 from js_activity_member_account jama 
+			LEFT JOIN  dr_product_invest dpi ON jama.piid = dpi.id
+			LEFT JOIN dr_member_base_info dmbi on dmbi.uid = dpi.uid
+		WHERE jama.isSend = 0
+	</insert>
+
+	<update id="updateJsActivityMemberAccount">
+		UPDATE js_activity_member_account SET isSend = 1 where isSend = 0 
+	</update>
+	
+	<select id="selectDrActivityParameterByParam" resultType="com.jsjf.model.activity.DrActivityParameter" parameterType="java.util.HashMap">
+		select * from dr_activity_parameter 
+		<where>
+			status != 2 
+			<if test="name != null and name != '' ">  and name = #{name}</if>
+			<if test="type != null and type != '' ">  and type = #{type}</if>
+			<if test="raisedRates != null and raisedRates != '' ">  and raisedRates = #{raisedRates}</if>
+		</where>
+		<if test="orders != null and orders !=''">ORDER BY  ${orders}</if>
+		<if test="limit !=null and offset !=null">  limit #{offset},#{limit}</if>
+	</select>
+	
+	<select id="insertCouponByFirstInvestLaterdays" parameterType="int">
+			INSERT INTO dr_member_favourable
+			(uid, activityId, type, code, name, amount, 
+				raisedRates, multiple, productDeadline,
+				enableAmount, status, source, remark, expireDate,  user_key, addtime) 
+			SELECT a.uid,dpa.ID,dpa.type,dpa.`code`,dpa.`name`,dpa.amount,dpa.raisedRates,dpa.multiple,dpa.productDeadline,dpa.enableAmount,0,
+				dpa.applicableScenarios,"系统发放",DATE_ADD(NOW(),INTERVAL dpa.deadline DAY),0,NOW()
+			from (
+			SELECT dpi.uid,MIN(dpi.investTime) as investTime from dr_product_invest dpi 
+			LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+			where  dp.type = 2 and dpi.status != 2  GROUP BY dpi.uid
+			)a 
+			LEFT JOIN dr_activity_parameter  dpa ON dpa.id = #{activityId}
+			where DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') = DATE_FORMAT(a.investTime,'%Y%m%d')
+	</select>
+	
+	<insert id="insertCouponByParam" parameterType="java.util.HashMap">
+		INSERT INTO dr_member_favourable
+		(uid, activityId, type, code, name, amount, 
+			raisedRates, multiple, productDeadline,
+			enableAmount, status, source, remark, expireDate,  user_key, addtime) 
+		SELECT dm.uid,dpa.ID,dpa.type,dpa.`code`,dpa.`name`,dpa.amount,dpa.raisedRates,dpa.multiple,dpa.productDeadline,dpa.enableAmount,0,
+			dpa.applicableScenarios,"系统发放",DATE_ADD(NOW(),INTERVAL dpa.deadline DAY),0,NOW()
+		from  dr_activity_parameter  dpa 
+		LEFT JOIN dr_member dm ON 1=1
+		where   dpa.id = #{activityId} and dm.uid in 
+		<foreach collection="uids" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+		</foreach>
+	</insert>
+	
+	<!-- 三重好礼第一次投资 -->
+	<insert id="insertThreePresentFirst">	
+		insert INTO js_activity_member_account(piid,uid,afid,amount,status,addDate,investOrder,isRepeat)
+		SELECT dpv.id,dmr.referrerId,a.afid,if(dpv.amount >= 1000,10,0),0,NOW(),1,0 from dr_product_invest dpv 
+		LEFT JOIN (
+		SELECT MIN(dpi.id) investId,jaf.id afid from dr_product_invest dpi
+		LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+		LEFT JOIN js_activity_friend jaf ON NOW() BETWEEN jaf.startDate and jaf.endDate
+		LEFT JOIN dr_member dm ON dm.uid = dpi.uid
+		where 	dp.deadline in (30,35,60,180) and dp.atid is null and dp.prizeId is null and dp.type=2 and dp.repayType = 1 and jaf.type = 1
+			and jaf.id
+			and (dpi.investTime BETWEEN jaf.startDate and jaf.endDate)
+			and dm.regdate BETWEEN jaf.startDate and jaf.endDate
+			AND dpi.uid not in(
+			SELECT DISTINCT dpi.uid from dr_product_invest dpi
+			LEFT JOIN js_activity_member_account ja on dpi.id = ja.piid
+			where ja.id  
+			)
+		GROUP BY dpi.uid)a ON dpv.id = a.investId
+		LEFT JOIN dr_member_recommended dmr ON dmr.uid = dpv.uid
+		where dpv.id = a.investId  and dmr.referrerId 		
+	</insert>
+	
+		<!-- 三重好礼第二次投资 -->
+	<insert id="insertThreePresentSecond">	
+		insert INTO js_activity_member_account(piid,uid,afid,amount,status,addDate,investOrder,isRepeat)
+		SELECT dpv.id,dmr.referrerId,a.afid,TRUNCATE(dpv.amount*a.rate*a.deadline/100/360*0.3,2),0,NOW(),2,1
+			from dr_product_invest dpv 
+			LEFT JOIN (
+					SELECT MIN(dpi.id) investId,jaf.id afid,dp.deadline,dp.rate from dr_product_invest dpi
+					LEFT JOIN dr_product_info dp ON dpi.pid = dp.id		
+					LEFT JOIN js_activity_friend jaf ON (NOW() BETWEEN jaf.startDate and jaf.endDate)	
+					LEFT JOIN (
+											SELECT dpi.uid,dpi.id from dr_product_invest dpi
+											LEFT JOIN js_activity_member_account ja on dpi.id = ja.piid
+											LEFT JOIN js_activity_friend jafr ON jafr.id = ja.afid and jafr.type = 1
+											where dpi.id = ja.piid and (NOW() BETWEEN jafr.startDate and jafr.endDate) GROUP BY dpi.uid HAVING COUNT(1) = 1
+										) a1 ON dpi.uid = a1.uid 					
+					where dp.deadline in (30,35,60,180) and dp.type=2 and dp.repayType = 1 and jaf.type = 1	and dp.atid is null and dp.prizeId is null				
+						AND (dpi.investTime BETWEEN jaf.startDate and jaf.endDate)	
+						AND a1.id AND dpi.id != a1.id
+						GROUP BY dpi.uid
+			)a ON dpv.id = a.investId
+			LEFT JOIN dr_member_recommended dmr ON dmr.uid = dpv.uid			
+			where dmr.referrerId AND  dpv.id = a.investId
+	</insert>
+				<!-- 三重好礼第三次投资 -->
+	<insert id="insertThreePresentThird">	
+		INSERT INTO js_activity_member_account(piid,uid,afid,amount,STATUS,ADDDATE,investOrder,isRepeat)
+			SELECT dpv.id,dmr.referrerId,a.afid,TRUNCATE(dpv.amount*a.rate*a.deadline/100/360*0.3,2),0,NOW(),3,1
+			 FROM dr_product_invest dpv 
+			LEFT JOIN (
+					SELECT dpi.id investId,jaf.id afid,dp.deadline,dp.rate FROM dr_product_invest dpi
+					LEFT JOIN dr_product_info dp ON dpi.pid = dp.id		
+					LEFT JOIN js_activity_friend jaf ON NOW() BETWEEN jaf.startDate AND jaf.endDate
+					LEFT JOIN (
+											SELECT dpi.uid from dr_product_invest dpi
+												LEFT JOIN js_activity_member_account ja on dpi.id = ja.piid
+												LEFT JOIN js_activity_friend jafr ON jafr.id = ja.afid and jafr.type = 1
+												where dpi.id = ja.piid and (NOW() BETWEEN jafr.startDate and jafr.endDate) GROUP BY dpi.uid HAVING COUNT(1) = 2
+										) a1 ON dpi.uid = a1.uid				
+					WHERE dp.deadline IN (30,35,60,180) AND dp.type=2 and dp.repayType = 1 AND jaf.type = 1 and dp.atid is null and dp.prizeId is null
+						AND jaf.id
+						AND (dpi.investTime BETWEEN jaf.startDate AND jaf.endDate)
+						AND a1.uid 
+						AND NOT EXISTS (
+								SELECT 1 from js_activity_member_account WHERE piid = dpi.id
+							)
+						GROUP BY dpi.uid
+			)a ON dpv.id = a.investId
+			LEFT JOIN dr_member_recommended dmr ON dmr.uid = dpv.uid
+			WHERE dmr.referrerId is not null AND dpv.id = a.investId AND dmr.uid = dpv.uid ;
+
+	</insert>
+	
+	<select id="selectThreePresentTop" resultType="java.util.HashMap">	
+		SELECT  CONVERT(@rownum:=@rownum+1 , CHAR) AS rownum,a.amount,a.uid,a.mobilePhone FROM (
+				SELECT TRUNCATE(SUM(dpi.amount/360*dp.deadline),2) AS amount,
+				dmr.referrerId AS uid,
+				CONCAT(LEFT(dme.mobilePhone,3),'****',RIGHT(dme.mobilePhone,4)) AS mobilePhone
+				FROM dr_product_invest dpi
+				LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+				LEFT JOIN js_activity_friend jaf ON jaf.type = 1
+				LEFT JOIN dr_member dm ON dm.uid = dpi.uid
+				LEFT JOIN dr_member_recommended dmr ON dmr.uid = dpi.uid
+				LEFT JOIN dr_member dme ON dme.uid = dmr.referrerId
+				WHERE jaf.id AND dmr.referrerId  AND dp.type =2 and dp.repayType = 1 AND dp.deadline IN (30,35,60,180)
+				 AND (dpi.investTime BETWEEN jaf.startDate AND jaf.endDate)
+				 AND dm.regdate BETWEEN jaf.startDate AND jaf.endDate AND jaf.status = 1
+				GROUP BY dmr.referrerId
+				UNION ALL
+				SELECT amount,uid,mobilePhone from js_activity_ThreePresentTop top
+					LEFT JOIN js_activity_friend  ft ON ft.id=top.type
+				where ft.id and ft.`status` = 1
+			)a,(SELECT @rownum:=0) r
+		 ORDER BY a.amount DESC;
+	</select>
+		
+</mapper>

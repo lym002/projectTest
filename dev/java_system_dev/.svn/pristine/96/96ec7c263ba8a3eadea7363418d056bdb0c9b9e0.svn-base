@@ -1,0 +1,760 @@
+﻿<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head runat="server">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Maixin ICC 云呼叫中心平台</title>
+    <link rel="stylesheet" type="text/css" href="../phoneSevice/images/Easyui/themes/default/easyui.css" />
+    <link rel="Stylesheet" type="text/css" href="../phoneSevice/images/Easyui/themes/color.css" />
+    <link rel="stylesheet" type="text/css" href="../phoneSevice/images/Easyui/themes/icon.css" />
+    <link href="../phoneSevice/images/iconfont/iconfont.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="../phoneSevice/images/Easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../phoneSevice/images/Js/SocketNew.js"></script>
+    <style type="text/css">
+body {
+	background: url("../phoneSevice/images/top_bg.gif") repeat-x scroll 0 0;
+}
+.top {
+	width: 175px;
+	height: 25px;
+	list-style: none;
+	padding-left: 5px;
+}
+.top .a {
+	font-size: 14px;
+}
+.subnav {
+	height: 30px;
+	width: 800px;
+	clear: both;
+	top: 19px;
+	left: 150px;
+	overflow: visible;
+	padding-top: 1px;
+	position: absolute;
+}
+.subnav li {
+	zoom: 1;
+	min-width: 50px;
+	text-align: center;
+	position: relative;
+	float: left;
+	padding-left: 5px;
+	padding-right: 5px;
+	color: #fff;
+	border-right: #fff 2px solid;
+	background-color: #95B8E7;
+}
+.subnav li a.top1 {
+	float: left;
+	padding-right: 10px;
+	border: 0;
+	padding-left: 10px;
+	color: #fff;
+}
+.subnav li a, .subnav li a:hover, .subnav li a:visited {
+	font-size: 14px;
+	font-weight: 800;
+	line-height: 30px;
+	height: 30px;
+	display: block;
+	text-decoration: none;
+	color: #000;
+	outline: none;
+	border-width: 0px 0;
+	border-color: #d9e5ed #FFF;
+	border-style: solid;
+}
+.subnav li a.CurMenu {
+	float: left;
+	color: #fff;
+	padding-left: 10px;
+	padding-right: 10px;
+	border: 0;
+}
+.subnav .CurMenu {
+	background-color: #ffe48d;
+}
+.bottommenu {
+	clear: both;
+	zoom: 1;
+	background: #dceefc;
+	border-top: 3px solid #0496cc;
+	overflow: hidden;
+	height: 2px;
+	padding: 10px 20px;
+}
+.bottomstatus {
+	width: 400px;
+	float: right;
+	text-align: right;
+	margin-top: -5px;
+	bottom: 0px;
+	right: 20px;
+}
+.whflink {
+	height: 50px;
+	min-width: 50px;
+	vertical-align: baseline;
+}
+#txttel {
+	height: 40px;
+	position: relative;
+	top: -14px;
+	border: 0px;
+	border: 1px dotted #95B8E7;
+	font-size: 28px;
+	color: #217FC4;
+	background-color: #E6EEF8;
+	width: 190px;
+}
+ [class*="icon-cc-"] {
+ font-size: 1.4em !important;
+ height: 1.0em !important;
+ width: 1.0em !important;
+ line-height: 1.0em !important;
+}
+.color-shenlan {
+	color: #217FC4!important;
+}
+.s60state {
+	float: left;
+	position: absolute;
+	top: 0px;
+	margin-left: 3px;
+}
+#timerSpan {
+	font-size: 14px;
+	color: red;
+}
+.red {
+	color: #f80000;
+}
+.blue {
+	color: #0496CC;
+}
+</style>
+    </head>
+    <body class="easyui-layout">
+    <form id="form1" runat="server">
+      <asp:TextBox ID="txtPageOff" runat="server" Style="display: none;"></asp:TextBox>
+      <asp:TextBox ID="txtCallpage" runat="server" Style="display: none;"></asp:TextBox>
+      <asp:TextBox ID="txtPageOutOff" runat="server" Style="display: none;"></asp:TextBox>
+      <asp:TextBox ID="txtCallOutpage" runat="server" Style="display: none;"></asp:TextBox>
+      <div id="mainTop" data-options="region:'north',border:false" style="height: 68px; background: #ffffff; padding-left: 5px; padding-top: 3px; overflow:hidden;">
+        <div style="float: left;width:1200px; overflow:hidden;" id="top-button">
+          <div style="float: left; width: 160px;" id="top-logo"> </div>
+          <div style="float:left;width:260px;"> <a id="btnInit" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-denglu color-shenlan" onclick="checkIn()">签入</a>
+            <input runat="server" name="txttel" type="text" id="txttel" value="" style="width: 190px;" />
+          </div>
+          <div style="float:left" id="top-tutton-op"> <a id="btnDial" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-huawu color-shenlan" onclick="dial(1, '');" data-options="hideEvent: 'none',disabled:false">拨号</a> <a id="btnOver" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-guaji color-shenlan" onclick="drop();" data-options="disabled:false">挂机</a> <a id="btnAuther" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-sanfang color-shenlan" onclick="showtel();" data-options="disabled:false">三方通话</a> <a id="btnTgroup" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-bohaopan color-shenlan" onclick="openImport(2);" data-options="disabled:false">转技能组</a> <a id="buttonToSeat" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-caller color-shenlan" onclick="openStation();" data-options="disabled:false">转坐席</a> <a id="btncallbak" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-cc-pingjia color-shenlan" onclick="dialback();" data-options="disabled:false">转评价</a> <a id="btnbusy" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink easyui-tooltip" iconcls="icon-jiedianhuiyuanhuaxiang color-shenlan" data-options="hideEvent: 'none',disabled:false,content: function(){return $('#divbusytoolbar').html()}, showEvent: 'click'">示忙</a> <a id="btnkeep" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-ringpause color-shenlan" onclick="Keepsilent(1);" data-options="disabled:false">保持</a> <a id="btnkeep2" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-notificationforbid color-shenlan" onclick="Keepsilent(2);" data-options="disabled:false">静音</a> <a id="btnMonitorSeat" runat="server" href="javascript:void(0);" iconalign="top" class="easyui-linkbutton whflink" plain="false" iconcls="icon-zhuangtaijiankong color-shenlan" onclick="AddNewTab('MonitorAllTabs.aspx',1090,'排队列表');" data-options="disabled:false">监控管理</a>
+            <input name="txtNtel" type="hidden" id="txtNtel" />
+            <input name="txtCallState" type="hidden" id="txtCallState" />
+            <input name="txtLinupVal" type="hidden" id="txtLinupVal" />
+          </div>
+          <div style="float:left;padding-left:5px; padding-top:16px;" id="topbuttonstate" runat="server"> <span id="state1">通时：<span id="timerSpan" style="font-size: 12px;">00:00</span></span><br/>
+            <span id="state2">状态：
+            <lable ID="laTextTop" runat="server" Visible="false"></lable>
+            <lable ID="state" runat="server" class="red" Style="width: 50px;">离线</lable>
+            &nbsp;排队：<span id="paiduinum" style="color: red;"></span></span> </div>
+        </div>
+      </div>
+      <div region="center">
+        <table>
+          <tr>
+           <!--  <td>服务地址:</td> -->
+            <td><input type="hidden" ID="txtwsUri" runat="server" value="ws://192.168.1.226:5061/" /></td>
+          </tr>
+          <tr>
+            <!-- <td>工号:</td> -->
+            <td><input type="hidden" ID="txtseatno" runat="server" value="8001" /></td>
+          </tr>
+          <tr>
+           <!--  <td>分机号:</td> -->
+            <td><input type="hidden" ID="txtstation" runat="server" value="8001" /></td>
+          </tr>
+          <tr>
+            <!-- <td>密码:</td> -->
+            <td><input type="hidden" ID="txtpassowrd" runat="server" value="123456" /></td>
+          </tr>
+          <input type="hidden" ID="IndexloadTime" runat="server" value="5000"/>
+        </table>
+        <div id="showstate" style="float:left" type="hidden"></div>
+      </div>
+      <div style="display: none">
+        <div id="divbusytoolbar" runat="server"> <a href="Javascript:;" class="easyui-linkbutton" data-options="plain:true" onclick="setbusy(0,'空闲')">空闲</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(1,'小休')">小休</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(2,'会议')">会议</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(3,'培训')">培训</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(4,'洗手')">洗手</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(5,'就餐')">就餐</a> <a href="Javascript:;" class="easyui-linkbutton" " data-options="plain:true" onclick="setbusy(6,'话后')">话后</a> 
+          <script>var statenamelist=["空闲","小休","会议","培训","洗手","就餐","话后"];</script> 
+        </div>
+        <div id="dialButton"> <a href='Javascript:;' class='easyui-linkbutton' onclick='dial(0,"")'>+0拨号</a> </div>
+      </div>
+      <div class="easyui-dialog" id="dlgTel" data-options="closed:true" style="width: 300px; height: 100px; padding: 5px; text-align: center;"> 三方号码:
+        <input type="text" class="easyui-textbox" name="txtsfTel" id="txtsfTel" />
+        <br />
+        <input type="button" class="easyui-linkbutton" value="拨号" onclick="dialauther();" style="width: 40px; height: 30px;" />
+        <input type="button" class="easyui-linkbutton" value="退出" onclick="quitdialauther()" style="width: 40px; height: 30px; margin-left: 10px;" />
+      </div>
+    </form>
+</body>
+</html>
+<script type="text/javascript">
+    var baidurun;
+    var timeIndex = 0;
+    $(function () {
+        $(window).on('beforeunload', function () {
+            console.info("123456789");
+            checkOut();
+            return false;
+        });
+        $(".subnav .top:first").addClass("hover");
+        var _mid = $(".subnav .top:first").attr("id");
+        var _classid = '.' + _mid;
+        $(_classid).css({ display: 'block' });
+        $("#menu .top:visible").eq(0).addClass("hover");
+        if ($("#menu .top:visible").eq(0).attr("href") == "javascript:;") {
+            target = $("#menu .top:visible").eq(0).next().find('li a:first').attr("href")
+            $("#menu .top:visible").eq(0).next().show()
+        } else {
+            target = $("#menu .top:visible").eq(0).attr("href")
+        }
+        $("#targetframe").attr({ src: target })
+        $("#menu .top").click(function () {
+            $(this).addClass('hover').siblings().removeClass('hover');
+            if ($(this).next().is(':hidden')) {
+                if ($(this).next().html() == "" || $(this).next().html() == "<ul></ul>") {
+                    $('#menu .top').next().slideUp();
+                } else {
+                    $('#menu .top').next().slideUp();
+                    $(this).next().slideDown();
+                }
+            }
+            else {
+                $(this).next().slideUp();
+            }
+        });
+        
+        init();
+        setButtonState(0, 0, 0);
+        //baidurun=setInterval(paidui, 300);
+    });
+    
+    var settimer=null;//计时器
+    function showPlayer(file, id) {
+        $("#playeriframe").html('<iframe style="width:100%; margin:0; padding:0; height:90px;" id="listeniframe" frameborder="0" scrolling="no" name="listeniframe" src="talklog_op.do?op=listen&file=' + file + '&id=' + id + '"></iframe>').show();
+    }
+    function closePlayer() {
+        $("#playeriframe").html('').hide();
+    }
+    /**
+        tab关闭事件
+        @param	tabId		tab组件Id
+        @param	tabMenuId	tab组件右键菜单Id
+        @param	type		tab组件右键菜单div中的name属性值
+        */
+    function CloseTab(tabId, tabMenuId, type) {
+        //tab组件对象
+        var tabs = $('#' + tabId);
+        //tab组件右键菜单对象
+        var tab_menu = $('#' + tabMenuId);
+
+        //获取当前tab的标题
+        var curTabTitle = tab_menu.data('tabTitle');
+
+        //关闭当前tab
+        if (type === 'tab_menu-tabclose') {
+            //通过标题关闭tab
+            tabs.tabs("close", curTabTitle);
+        }
+
+            //关闭全部tab
+        else if (type === 'tab_menu-tabcloseall') {
+            //获取所有关闭的tab对象
+            var closeTabsTitle = getAllTabObj(tabs);
+            //循环删除要关闭的tab
+            $.each(closeTabsTitle, function () {
+                var title = this;
+                tabs.tabs('close', title);
+            });
+        }
+
+            //关闭其他tab
+        else if (type === 'tab_menu-tabcloseother') {
+            //获取所有关闭的tab对象
+            var closeTabsTitle = getAllTabObj(tabs);
+            //循环删除要关闭的tab
+            $.each(closeTabsTitle, function () {
+                var title = this;
+                if (title != curTabTitle) {
+                    tabs.tabs('close', title);
+                }
+            });
+        }
+
+            //关闭当前左侧tab
+        else if (type === 'tab_menu-tabcloseleft') {
+            //获取所有关闭的tab对象
+            var closeTabsTitle = getLeftToCurrTabObj(tabs, curTabTitle);
+            //循环删除要关闭的tab
+            $.each(closeTabsTitle, function () {
+                var title = this;
+                tabs.tabs('close', title);
+            });
+        }
+
+            //关闭当前右侧tab
+        else if (type === 'tab_menu-tabcloseright') {
+            //获取所有关闭的tab对象
+            var closeTabsTitle = getRightToCurrTabObj(tabs, curTabTitle);
+            //循环删除要关闭的tab
+            $.each(closeTabsTitle, function () {
+                var title = this;
+                tabs.tabs('close', title);
+            });
+        }
+    }
+
+    /**
+    获取所有关闭的tab对象
+    @param	tabs	tab组件
+    */
+    function getAllTabObj(tabs) {
+        //存放所有tab标题
+        var closeTabsTitle = [];
+        //所有所有tab对象
+        var allTabs = tabs.tabs('tabs');
+        $.each(allTabs, function () {
+            var tab = this;
+            var opt = tab.panel('options');
+            //获取标题
+            var title = opt.title;
+            //是否可关闭 ture:会显示一个关闭按钮，点击该按钮将关闭选项卡
+            var closable = opt.closable;
+            if (closable) {
+                closeTabsTitle.push(title);
+            }
+        });
+        return closeTabsTitle;
+    }
+
+    /**
+    获取左侧第一个到当前的tab
+    @param	tabs		tab组件
+    @param	curTabTitle	到当前的tab
+    */
+    function getLeftToCurrTabObj(tabs, curTabTitle) {
+        //存放所有tab标题
+        var closeTabsTitle = [];
+        //所有所有tab对象
+        var allTabs = tabs.tabs('tabs');
+        for (var i = 0; i < allTabs.length; i++) {
+            var tab = allTabs[i];
+            var opt = tab.panel('options');
+            //获取标题
+            var title = opt.title;
+            //是否可关闭 ture:会显示一个关闭按钮，点击该按钮将关闭选项卡
+            var closable = opt.closable;
+            if (closable) {
+                //alert('title' + title + '  curTabTitle:' + curTabTitle);
+                if (title == curTabTitle) {
+                    return closeTabsTitle;
+                }
+                closeTabsTitle.push(title);
+            }
+        }
+        return closeTabsTitle;
+    }
+
+    /**
+    获取当前到右侧最后一个的tab
+    @param	tabs		tab组件
+    @param	curTabTitle	到当前的tab
+    */
+    function getRightToCurrTabObj(tabs, curTabTitle) {
+        //存放所有tab标题
+        var closeTabsTitle = [];
+        //所有所有tab对象
+        var allTabs = tabs.tabs('tabs');
+        for (var i = (allTabs.length - 1) ; i >= 0; i--) {
+            var tab = allTabs[i];
+            var opt = tab.panel('options');
+            //获取标题
+            var title = opt.title;
+            //是否可关闭 ture:会显示一个关闭按钮，点击该按钮将关闭选项卡
+            var closable = opt.closable;
+            if (closable) {
+                //alert('title' + title + '  curTabTitle:' + curTabTitle);
+                if (title == curTabTitle) {
+                    return closeTabsTitle;
+                }
+                closeTabsTitle.push(title);
+            }
+        }
+        return closeTabsTitle;
+    }
+
+    function closeSelecttab() {
+        var t = $('#mainCenter').tabs('getSelected');
+        var index = $('#mainCenter').tabs('getTabIndex', t);
+        $('#mainCenter').tabs("close", index);
+        $('#mainCenter').tabs("select", index - 1);
+    }
+
+    function AddNewTab(url, mid, tit,newwindow) {
+        if (url != "" && url != "javascript:;") {
+            if (newwindow == 1)
+            {
+                window.open(url);
+            }
+            if ($("#mainCenter").tabs('exists', tit)) {
+                var tab = $('#mainCenter').tabs('getTab', tit);
+                var tbId = tab.attr("id");
+                var tbIframe = $("#" + tbId + " iframe:first-child");
+                var ifid = tbIframe.attr("src");
+                if (tbIframe.attr("src") == url) {
+                    $("#mainCenter").tabs('select', tit);
+                }
+                else {
+                    tbIframe.attr("src", url);
+                    $("#mainCenter").tabs('select', tit);
+                }
+            }
+            else {
+                $("#mainCenter").tabs({ tab: $("#mainCenter").tabs("getSelected"), selected: false });
+                var context = '<iframe scrolling="yes" name="if"' + mid + '" frameborder="0"  src="' + url + '" style="width:100%;height:99%;"></iframe>'
+                $("#mainCenter").tabs('add', {
+                    id: 'tab' + mid, title: tit, content: context, closable: true, fit: true
+                });
+            }
+            //$("#mainCenter").tabs('update', { id: 'tab' + mid, options: { selected: true } });
+
+        }
+    }
+    function loadleft(mid) {
+        $("#mainLeft").panel('refresh', 'Main_Leftmenu.aspx?mid=' + mid);
+    }
+    function gotoOut() {
+        location.href = "loginOut.aspx";
+    }
+    function showAdd(obj) {
+        var topa = $(window).height() - $("#divAdd").height();
+        alert(topa + "-" + $("#divAdd").height() + "-" + $(window).height());
+        $("#divAdd").offset({ top: topa, left: 0 });
+        if ($("#divAdd").is(":hidden")) {
+            $("#divAdd").show();
+        }
+        else {
+            $("#divAdd").hide();
+        }
+    }
+    function showDiv() {
+        if ($("#divleve").is(":hidden")) {
+            $("#divleve").show();
+        }
+        else {
+            $("#divleve").hide();
+        }
+    }
+    function opentager(title, link) {
+        t = title;
+        a = link;
+        g = false;
+        tb_show(t, a, g);
+    }
+    function dial(z, t) {
+        var tel = $("#txttel").val();
+        if (t.length > 0)
+        { tel = t; }
+        if (z == 0)
+        { tel = "0" + tel; }
+        if (true) {
+            $("#txtNtel").val(tel);
+            makeCall(tel, '');
+        }
+        $("#btnDial").tooltip("hide");
+    }
+    function showtel() {
+        $("#dlgTel").dialog("open");
+    }
+    function dialauther() {
+        var tel = $("#txtsfTel").val();
+        if (tel != "") {
+            Callauther(tel);
+            //$("#dlgTel").dialog("close");
+        }
+    }
+    function quitdialauther() {
+        doCalling = 0;
+        quittreetalk(doCalling);
+    }
+    function dialback() {
+        var ntel = $("#txtNtel").val();
+        if (ntel != "") {
+            Callback(ntel);
+        }
+    }
+    function drop() {
+        dropCall();
+        s60Etimer();
+    }
+    window.addEventListener("message", function (event) {
+        if (Array.isArray(event.data) && event.data[0].channel) {
+            var message = JSON.stringify(event.data[0].message);
+            console.debug('[Child] A message has been received from the parent', message);
+            $("#txtseatno").val(event.data[0].message.csid);
+            // $("#txttel").val(event.data[0].message.userPhone);
+            $("#txtstation").val(event.data[0].message.seatNumber);
+            // document.getElementById('placeholder').innerHTML = message;
+        }
+    }, false);
+
+    function newcall(tel, sale) {
+        // alert(tel)
+        setButtonState(5, 1, 1);
+        $("#txttel").val(tel);
+        // z("#call_in").html("当前来电:" + tel + "," + sale);
+        if ($("#txtPageOff").val() == "1") {
+            AddNewTab($("#txtCallpage").val() + "?tel=" + tel, 901, '新来电' + tel);
+        }
+    }
+    function newOutcall(tel, sale) {
+        setButtonState(5, 1, 2);
+        if ($("#txtPageOutOff").val() == "1") {
+            AddNewTab($("#txtCallOutpage").val() + "?tel=" + tel, 902, '新去电' + tel);
+        }
+    }
+    function openImport() {
+        var url = "GroupId.aspx";
+        $("iframe[name='ifIn']").attr("src", url);
+        $("#dlgIn").dialog('open');
+    }
+    function openStation() {
+        var url = "SeatnoSelect_gotoStation.aspx";
+        $("iframe[name='ifIn']").attr("src", url);
+        $("#dlgIn").dialog('open');
+    }
+    //转技能组
+    function GOTOGroup2(ntel) {
+        gotoGroup(ntel);
+    }
+    
+    //强插
+    function strongCall(seatno) {
+        StrongCall(seatno);
+    }
+    //强拆
+    function qiangchaiCall(seatno) {
+        QiangchaiCall(seatno);
+    }
+    //抢接
+    function qiangjie(seatno) {
+        Qiangjie(seatno);
+    }
+    //保持静音
+    function Keepsilent(type) {
+        var ntel = $("#txtNtel").val();
+        if (ntel != "") {
+            var go = checkspeed(type);
+            Keep(ntel, go);
+        }
+    }
+    //获取排队数与当前客服状态
+    function paidui() {
+        $("#txtLinupVal").val("");
+        getlineup();
+        /*$.get("ajax.aspx", { typ: 'getSeatbusy', dd: new Date().getTime() }, function (data) {
+            if (data != "") {
+                $("#state").text(data);
+            }
+            else {
+                $("#state").text("离线");
+            }
+        });*/
+    }
+    //设置忙闲
+    function setbusy(edit, tx) {
+        var b = $("#btnbusy");
+        if (edit == 0) {
+            b.linkbutton({ "text": "示忙", iconCls: "icon-jiedianhuiyuanhuaxiang color-shenlan", onClick: function () { return false; } });
+            $("#btnbusy").tooltip({ content: $('#divbusytoolbar').html(), showEvent: "click", onShow: function () { var t = $(this); t.tooltip('tip').unbind().bind('mouseleave', function () { t.tooltip('hide') }); } });
+        }
+        else {
+            $("#btnbusy").tooltip("destroy");
+            b.linkbutton({ "text": "示闲", iconCls: "icon-jiediankehuxiangying color-shenlan", onClick: function () { setbusy(0, "") } });
+        }
+        $("#btnbusy").tooltip("hide");
+        setbusyState(edit);
+
+    }
+    function showCallmiss() {
+        AddNewTab('Report/Report_Callmiss.aspx', 48, '未接电话');
+        return false;
+    }
+    function toOut() {
+        if (confirm('是否退出系统？')) {
+            top.location = 'logOut.aspx';
+        }
+    }
+    
+    //开始计时
+    function s60Stimer() {
+        timeIndex = 0;
+        if (settimer == null) {
+            settimer = setInterval(function () {
+                setTime();
+            }, 999);
+        }
+        else {
+            clearInterval(settimer);
+            settimer = setInterval(function () {
+                setTime();
+            }, 999);
+        }
+    }
+    //结束计时
+    function s60Etimer() {
+        if (settimer != null) {
+            clearInterval(settimer);
+            timeIndex = 0;
+        }
+        //$("#timerSpan").html("00:00:00");
+    }
+    //计时器方法
+    function setTime() {
+        var hour = parseInt(timeIndex / 3600);    // 计算时 
+        var minutes = parseInt((timeIndex % 3600) / 60);    // 计算分 
+        var seconds = parseInt(timeIndex % 60);    // 计算秒  
+        hour = hour < 10 ? "0" + hour : hour;
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+        $("#timerSpan").html(minutes + ":" + seconds);
+        timeIndex++;
+    }
+    //查看保持静音状态
+    function checkspeed(id) {
+        var v = $("#txtCallState").val();
+        if (v != "") {
+            $("#txtCallState").val("")
+            if (v == "1") {
+                $("#btnkeep").linkbutton({ text: "保持" });
+            }
+            if (v == "2") {
+                $("#btnkeep2").linkbutton({ text: "静音" });
+            }
+            return "0";
+        }
+        else {
+            if (id == "1") {
+                $("#btnkeep").linkbutton({ text: "取消保持" });
+                $("#btnkeep").linkbutton("enable");
+            }
+            if (id == "2") {
+                $("#btnkeep2").linkbutton({ text: "取消静音" });
+                $("#btnkeep2").linkbutton("enable");
+            }
+            $("#txtCallState").val(id)
+            return id
+        }
+    }
+
+    //设置按扭状态login=1签入login=0签出,call=1拨通电话call=0挂机,calltype=1呼入2呼出
+    function setButtonState(login, call, calltype) {
+        if (login == 1) {
+            $("#btnInit").linkbutton({ text: "签出", onClick: function () { checkOut() } });
+            $("#btnDial").linkbutton("enable");
+            $("#btnDial").tooltip({ content: $("#dialButton").html(), onShow: function () { var t = $(this); t.tooltip('tip').unbind().bind('mouseleave', function () { t.tooltip('hide') }); } });
+            //$("#btnDial0").linkbutton("enable");
+            $("#btnExit").linkbutton("enable");
+            $("#btnbusy").linkbutton("enable");
+            $("#btnbusy").tooltip({ content: $('#divbusytoolbar').html(), showEvent: "click" });
+            $("#btnMonitorSeat").linkbutton("enable");
+
+            //全部显示
+            $("#btnDial").linkbutton("enable");
+            $("#btnOver").linkbutton("enable");
+            $("#btnExit").linkbutton("enable");
+            $("#btnAuther").linkbutton("enable");
+            $("#btnTgroup").linkbutton("enable");
+            $("#btncallbak").linkbutton("enable");
+            $("#buttonToSeat").linkbutton("enable");
+            $("#btnkeep").linkbutton("enable");
+            $("#btnkeep2").linkbutton("enable");
+            $("#btnbusy").linkbutton("enable");
+            $("#btnMonitorSeat").linkbutton("enable");
+            //$("#state1").linkbutton("enable");
+            //$("#state2").linkbutton("enable");
+
+        }
+        else if (login == 0) {
+            $("#btnInit").linkbutton({ text: "签入", onClick: function () { checkIn() } });
+            $("#btnDial").linkbutton("disable");
+            $("#btnDial").tooltip("destroy");
+            //$("#btnDial0").linkbutton("disable");
+            $("#btnExit").linkbutton("disable");
+            $("#btnbusy").linkbutton("disable");
+            $("#btnMonitorSeat").linkbutton("disable");
+            $("#btnbusy").tooltip("destroy");
+            call = 0;
+            //全部隐藏
+            $("#btnDial").linkbutton("disable");
+            //$("#txttel").hide();
+            $("#btnOver").linkbutton("disable");
+            $("#btnExit").linkbutton("disable");
+            $("#btnAuther").linkbutton("disable");
+            $("#btnTgroup").linkbutton("disable");
+            $("#btncallbak").linkbutton("disable");
+            $("#buttonToSeat").linkbutton("disable");
+            $("#btnkeep").linkbutton("disable");
+            $("#btnkeep2").linkbutton("disable");
+            $("#btnbusy").linkbutton("disable");
+            $("#btnMonitorSeat").linkbutton("disable");
+            //$("#state1").hide();
+            //$("#state2").hide();
+        }
+        if (call == 1) {
+            $("#btnOver").linkbutton("enable");
+            $("#btnAuther").linkbutton("enable");
+            $("#btnTgroup").linkbutton("enable");
+            $("#btncallbak").linkbutton("enable");
+            $("#buttonToSeat").linkbutton("enable");
+            $("#btnkeep").linkbutton("enable");
+            $("#btnkeep2").linkbutton("enable");
+        }
+        else if (call == 0) {
+            $("#btnOver").linkbutton("disable");
+            $("#btnAuther").linkbutton("disable");
+            $("#btnTgroup").linkbutton("disable");
+            $("#btncallbak").linkbutton("disable");
+            $("#buttonToSeat").linkbutton("disable");
+            $("#btnkeep").linkbutton("disable");
+            $("#btnkeep2").linkbutton("disable");
+        }
+        if (calltype == 1)
+        {
+            $("#btnkeep").linkbutton("enable");
+            $("#btnkeep2").linkbutton("enable");
+        }
+        else if (calltype == 2)
+        {
+            $("#btnkeep").linkbutton("enable");
+            $("#btnkeep2").linkbutton("enable");
+        }
+    }
+    function goClose() {
+        clearInterval(baidurun);
+        setButtonState(0, 0, 0);
+    }
+    function goStart() {
+        var loadtim = $("#IndexloadTime").val();
+        if (baidurun != null)
+            clearInterval(baidurun);
+        baidurun = setInterval(paidui, loadtim);
+    }
+    function outlogin()
+    {
+        checkOut();
+        return true;
+    }
+    function onbeforeunload_handler() {
+        var warning = "确认退出?";
+        return false;
+    }
+</script>

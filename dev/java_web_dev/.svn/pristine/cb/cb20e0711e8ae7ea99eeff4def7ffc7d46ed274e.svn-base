@@ -1,0 +1,166 @@
+package com.jsjf.controller.system;
+
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.jsjf.common.ConfigUtil;
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.jsjf.common.Utils;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberCrush;
+import com.jsjf.model.system.SysFuiouNoticeLog;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.member.DrMemberCrushService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.product.DrProductInfoService;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.system.SysFuiouNoticeLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jzh.FuiouConfig;
+import com.jzh.data.RechargeAndWithdrawalNoticeData;
+import com.jzh.data.WtRechargeAndWtWithdrawalRspData;
+import com.jzh.service.JZHService;
+import com.jzh.util.SecurityUtils;
+
+@Controller
+@RequestMapping("/deposits")
+public class SysDepositsController {
+	
+	Logger log = Logger.getLogger(this.getClass());
+	@Autowired 
+	DrMemberService drMemberService;
+	@Autowired
+	SysFuiouNoticeLogService sysFuiouNoticeLogService;
+	@Autowired
+	DrMemberCrushService drMemberCrushService;
+	@Autowired
+	DrMemberCarryService drMemberCarryService;
+	@Autowired
+	DrProductInvestService drProductInvestService;
+	@Autowired
+	DrProductInfoService drProductInfoService;
+	@Autowired
+	RedisClientTemplate redisClientTemplate;
+
+	
+	/**
+	 * 退票处理
+	 * @param req
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping("/txTpBackMchntRspData")
+	@ResponseBody
+	public String txTpBackMchntRspData(HttpServletRequest req) throws Exception{
+		WtRechargeAndWtWithdrawalRspData rspData = new WtRechargeAndWtWithdrawalRspData();
+		String signature = req.getParameter("signature");
+		BeanUtils.populate(rspData, req.getParameterMap());
+		log.info(rspData.createSignValue());
+		boolean signVal = SecurityUtils.verifySign(rspData.createSignValue(), signature);
+		if(signVal){
+			System.out.println("["+Utils.format(new Date(), "yyyy-MM-dd HH:mm:ss")+"]退票操作验签成功---------------------");	
+			/**
+			 * 分为两种有手续的和没有手续费的;
+			 * 当有手续费的时候,需要调用存管的转账接口把手续费转到用户存管账户中,在公司日志中添加一个日志说明退票操作,再把提现金额回滚到用户资金表,提现记录更新备注为退票操作
+			 * 当没有手续费的时候,把提现金额回滚到用户资金表,提现记录更新备注为退票操作
+			 */
+			String result = drMemberCarryService.selectDrMemberCarryByPaymentnum(rspData);
+			return result;
+		}else{
+			return "FAILE";
+		}
+	}
+	
+	/**
+	 * 充值异步通知(网银(对公,对私),快捷,直连充值) 
+	 * 存管 充值异步通知, 只对充值成的 流水 推送
+	 * 1是系统在交易完成后定时通知；
+	 * 2只通知成功交易；
+	 * 3通知后需收到对方返回成功应答码，没有返回或应答码失败，存管系统会定时再次通知，反复次数为6次。（生产环境通知时间 2m,15m,50m,2h,5h,12h）
+	 * @param req
+	 * @return
+	 * @throws Exception
+	 */
+	@RequestMapping("/fuiouRechargNotice")
+	@ResponseBody
+	public String fuiouRechargNotice(HttpServletRequest req) throws Exception{
+		RechargeAndWithdrawalNoticeData noticeData = new RechargeAndWithdrawalNoticeData();
+		String signature = req.getParameter("signature");
+		SysFuiouNoticeLog noticeLog = null;
+		
+		String resp_code = "0001";
+		BeanUtils.populate(noticeData, req.getParameterMap());// 数据处理
+		String reqParam = net.sf.json.JSONObject.fromObject(noticeData).toString();
+		System.out.println("-----存管充值直连异步通知------\n"+reqParam);
+		try {
+			if(JZHService.verifySignAsynNotice(noticeData, signature)){// 验签
+				noticeLog = sysFuiouNoticeLogService.selectObjectBy_txn_ssn(noticeData.getMchnt_txn_ssn());
+				if(Utils.isObjectNotEmpty(noticeLog) && !"0000".equals(noticeLog.getResp_code())){
+					
+					if(noticeLog.getProject_no()==null){//对私
+						resp_code = rehcage(noticeData);
+					}else{//对公
+						resp_code = drMemberCrushService.updateReFundDrProductLoanStatus(noticeLog);
+
+					}
+					
+					SysFuiouNoticeLog nlog = new SysFuiouNoticeLog();
+					//记录存管返回的日志
+					nlog.setId(noticeLog.getId());
+					nlog.setMessage(reqParam);
+					nlog.setStatus(2);//2成功3失败
+					nlog.setResp_code("0000");
+					nlog.setResp_desc("成功");
+					sysFuiouNoticeLogService.update(nlog);
+				}
+			}
+			
+		} catch (Exception e) {
+			log.error("------存管快捷充值-异步通知:系统错误["+reqParam+"]\n"+e.getMessage(),e);
+		}
+		return FuiouConfig.notifyRspXml(resp_code, noticeData.getMchnt_txn_dt());
+	}
+	
+	private String  rehcage(RechargeAndWithdrawalNoticeData noticeData){
+		DrMember m = drMemberService.selectDrMemberByMobilephone(noticeData.getMobile_no());
+		boolean relockFlag = false;
+		if(Utils.isObjectNotEmpty(m)){
+            String value = String.valueOf(System.currentTimeMillis());
+			relockFlag  = redisClientTemplate.tryLock(ConfigUtil.AboutTheCash+m.getUid(),  30, TimeUnit.SECONDS,false,value);// 枷锁
+			try {
+				if(relockFlag){
+					DrMemberCrush dmc = drMemberCrushService.getFuiouDrMemberCrushByPayNum(noticeData.getMchnt_txn_ssn());
+					if(Utils.isObjectNotEmpty(dmc) && dmc.getStatus() != 1){//订单存在且不是成功的
+						dmc.setStatus(1);
+						dmc.setRemark("成功|异步通知");
+						drMemberCrushService.depositsRecharge(dmc, m);
+					}
+					//通知 处理完成  返回结果
+					return "0000";
+				}else{
+					log.info("存管充值-异步通知:系统繁忙");
+				}
+			} catch (Exception e) {
+				log.info("存管充值-异步通知失败:"+e.getMessage());
+			}finally{
+				if(relockFlag){
+					//释放枷锁
+                    redisClientTemplate.releaseLock(ConfigUtil.AboutTheCash + m.getUid(), value);
+				}
+			}
+		}else{
+			log.info("存管充值-异步通知:没有用户");
+		}
+		return "0001";
+	}
+	
+	
+}

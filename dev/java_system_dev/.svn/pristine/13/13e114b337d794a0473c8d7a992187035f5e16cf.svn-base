@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.MemberVipInfoMapper">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.MemberVipInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="uid" jdbcType="INTEGER" property="uid" />
+    <result column="growth_value" jdbcType="DECIMAL" property="growthValue" />
+    <result column="vip_level" jdbcType="INTEGER" property="vipLevel" />
+    <result column="code" jdbcType="VARCHAR" property="code" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, uid, growth_value, vip_level
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_member_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByUid" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    SELECT
+    <include refid="Base_Column_List" />
+    FROM byp_member_vip_info
+    WHERE uid = #{uid,jdbcType=INTEGER} limit 1
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_member_vip_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.MemberVipInfo">
+    insert into byp_member_vip_info (id, uid,
+    growth_value, vip_level)
+    values (#{id,jdbcType=INTEGER}, #{uid,jdbcType=INTEGER},
+    #{growthValue,jdbcType=DECIMAL}, #{vipLevel,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.vip.MemberVipInfo">
+    insert into byp_member_vip_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="uid != null">
+        uid,
+      </if>
+      <if test="growthValue != null">
+        growth_value,
+      </if>
+      <if test="vipLevel != null">
+        vip_level,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="uid != null">
+        #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="growthValue != null">
+        #{growthValue,jdbcType=DECIMAL},
+      </if>
+      <if test="vipLevel != null">
+        #{vipLevel,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.vip.MemberVipInfo">
+    update byp_member_vip_info
+    <set>
+      <if test="uid != null">
+        uid = #{uid,jdbcType=INTEGER},
+      </if>
+      <if test="growthValue != null">
+        growth_value = #{growthValue,jdbcType=DECIMAL},
+      </if>
+      <if test="vipLevel != null">
+        vip_level = #{vipLevel,jdbcType=INTEGER},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.MemberVipInfo">
+    update byp_member_vip_info
+    set uid = #{uid,jdbcType=INTEGER},
+    growth_value = #{growthValue,jdbcType=DECIMAL},
+    vip_level = #{vipLevel,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <select id="selectTodayBirthdayMemberCode" resultMap="BaseResultMap">
+       SELECT
+   dr_member.`uid`, bmvi.`vip_level`, dr_member.brithday, bvap.code
+    FROM (SELECT uid, FROM_UNIXTIME(
+    UNIX_TIMESTAMP(
+    CAST(
+    SUBSTRING(
+    dr_member_base_info.`idcards`,
+    7,
+    8
+    ) AS DATETIME
+    )
+    ),
+    '%m%d'
+    ) brithday FROM dr_member_base_info) AS dr_member
+    LEFT JOIN byp_member_vip_info bmvi ON dr_member.`uid` = bmvi.`uid`
+    LEFT JOIN byp_vip_activity_parameter bvap ON CASE WHEN bmvi.`vip_level` IS NULL THEN 0 ELSE bmvi.`vip_level` END =  bvap.`vip_level`
+    WHERE bvap.`is_birthday` = 1
+    AND bvap.`is_open` =1
+    AND dr_member.brithday = DATE_FORMAT(NOW(),'%m%d')
+  </select>
+</mapper>

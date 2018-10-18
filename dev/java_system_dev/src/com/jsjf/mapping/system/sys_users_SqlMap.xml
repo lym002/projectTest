@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysUsersVoDAO">
+	<resultMap id="BaseResultMap" type="com.jsjf.model.system.SysUsersVo">
+		<id column="USER_KY" property="userKy" jdbcType="BIGINT" />
+		<result column="LOGIN_ID" property="loginId" jdbcType="VARCHAR" />
+		<result column="PASSWORD" property="password" jdbcType="VARCHAR" />
+		<result column="registertime" property="registertime" jdbcType="TIMESTAMP" />
+		<result column="lastLoginIp" property="lastLoginIp" jdbcType="VARCHAR" />
+		<result column="FAIL_LOGIN_NUM" property="failLoginNum" jdbcType="DECIMAL" />
+		<result column="STATUS" property="status" jdbcType="DECIMAL" />
+		<result column="NAME" property="name" jdbcType="VARCHAR" />
+		<result column="dept_id" property="deptId" jdbcType="VARCHAR" />
+		<result column="job_id" property="jobId" jdbcType="BIGINT" />
+		<result column="MOBILE" property="mobile" jdbcType="VARCHAR" />
+		<result column="PHONE" property="phone" jdbcType="VARCHAR" />
+		<result column="EMAIL" property="email" jdbcType="VARCHAR" />
+		<result column="ADDRESS" property="address" jdbcType="VARCHAR" />
+		<result column="CSID" property="csid" jdbcType="BIGINT" />
+		<result column="recommCodes" property="recommCodes" jdbcType="VARCHAR" />
+		<result column="manage_flag" property="manageFlag" jdbcType="INTEGER" />
+		<result column="manage_parents" property="manageParents" jdbcType="BIGINT" />
+		<result column="role_ky" property="roleKy" jdbcType="BIGINT" />
+		<result column="roleName" property="roleName" jdbcType="BIGINT" />
+		<result column="code" property="roleCode" jdbcType="VARCHAR" />
+	</resultMap>
+	<insert id="insert" useGeneratedKeys="true" keyProperty="userKy"
+		parameterType="com.jsjf.model.system.SysUsersVo">
+		insert into sys_users (USER_KY, LOGIN_ID, PASSWORD,
+		recommCodes, manage_flag, manage_parents, registertime,
+		lastLoginIp,
+		FAIL_LOGIN_NUM, STATUS, NAME, dept_id, MOBILE, PHONE, EMAIL, ADDRESS,
+		CSID,JOB_ID)
+		values (#{userKy,jdbcType=BIGINT},
+		#{loginId,jdbcType=VARCHAR},
+		#{password,jdbcType=VARCHAR},#{recommCodes,jdbcType=VARCHAR},
+		#{manageFlag,jdbcType=INTEGER},#{manageParents,jdbcType=BIGINT},#{registertime,jdbcType=TIMESTAMP},
+		#{lastLoginIp,jdbcType=VARCHAR}, #{failLoginNum,jdbcType=DECIMAL},
+		#{status,jdbcType=DECIMAL},
+		#{name,jdbcType=VARCHAR},
+		#{deptId,jdbcType=VARCHAR}, #{mobile,jdbcType=VARCHAR},
+		#{phone,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR},
+		#{address,jdbcType=VARCHAR},
+		#{csid,jdbcType=BIGINT},#{jobId,jdbcType=BIGINT})
+	</insert>
+	<select id="getUserList" parameterType="java.util.Map"
+		resultMap="BaseResultMap">
+		select u.*,r.`name` as roleName from sys_users u
+		left join sys_user_role ur on u.user_ky = ur.user_ky
+		LEFT JOIN sys_role r on ur.role_ky = r.role_ky 
+		WHERE 1=1
+		<if test="loginId != null and loginId != '' ">
+			and LOGIN_ID LIKE CONCAT(CONCAT('%', #{loginId,jdbcType=VARCHAR}),'%')
+		</if>
+		<if test="name != null and name != ''">
+			and u.NAME LIKE CONCAT(CONCAT('%', #{name,jdbcType=VARCHAR}),'%')
+		</if>
+		<if test="status != null">
+			and u.STATUS = #{status,jdbcType=DECIMAL}
+		</if>
+		<if test="deptId != null and deptId != ''">
+			and u.dept_id = #{deptId}
+		</if>
+		<if test="roleKy != null and roleKy != ''">
+			and r.role_ky = #{roleKy}
+		</if>
+		limit #{offset},#{limit}
+	</select>
+	<select id="getUserListCount" parameterType="java.util.Map"
+		resultType="java.lang.Integer">
+		select count(DISTINCT u.user_ky) from sys_users u
+		left join sys_user_role ur on u.user_ky = ur.user_ky
+		LEFT JOIN sys_role r on ur.role_ky = r.role_ky
+		where 1=1
+		<if test="loginId != null and loginId != '' ">
+			and LOGIN_ID LIKE CONCAT(CONCAT('%', #{loginId,jdbcType=VARCHAR}),'%')
+		</if>
+		<if test="name != null and name != ''">
+			and u.NAME LIKE CONCAT(CONCAT('%', #{name,jdbcType=VARCHAR}),'%')
+		</if>
+		<if test="status != null">
+			and u.STATUS = #{status,jdbcType=DECIMAL}
+		</if>
+		<if test="deptId != null and deptId != ''">
+			and u.dept_id = #{deptId}
+		</if>
+		<if test="roleKy != null and roleKy != ''">
+			and r.role_ky = #{roleKy}
+		</if>
+	</select>
+	
+	
+	<select id="selectByPrimaryKey" parameterType="java.lang.Long"
+		resultMap="BaseResultMap">
+		select u.USER_KY, u.LOGIN_ID, u.PASSWORD, u.recommCodes,
+		u.manage_flag, u.manage_parents, u.registertime, u.lastLoginIp,
+		u.FAIL_LOGIN_NUM, u.STATUS, u.NAME, u.dept_id, u.MOBILE, u.PHONE,
+		u.EMAIL, u.ADDRESS, u.CSID,u.JOB_ID,ul.role_ky
+		from sys_users u left
+		join sys_user_role ul on u.user_ky=ul.user_ky
+		where u.USER_KY =
+		#{userKy,jdbcType=BIGINT}
+	</select>
+	<update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.system.SysUsersVo">
+		update sys_users
+		<set>
+			<if test="loginId != null and loginId != '' ">
+				LOGIN_ID = #{loginId,jdbcType=VARCHAR},
+			</if>
+			<if test="password != null and password != '' ">
+				PASSWORD = #{password,jdbcType=VARCHAR},
+			</if>
+			<if test="recommCodes != null and recommCodes != '' ">
+				recommCodes = #{recommCodes,jdbcType=VARCHAR},
+			</if>
+			<if test="manageFlag != null">
+				manage_flag = #{manageFlag,jdbcType=INTEGER},
+			</if>
+			<if test="manageParents != null">
+				manage_parents = #{manageParents,jdbcType=BIGINT},
+			</if>
+			<if test="registertime != null">
+				registertime = #{registertime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="lastLoginIp != null and lastLoginIp != '' ">
+				lastLoginIp = #{lastLoginIp,jdbcType=VARCHAR},
+			</if>
+			<if test="failLoginNum != null">
+				FAIL_LOGIN_NUM = #{failLoginNum,jdbcType=DECIMAL},
+			</if>
+			<if test="status != null">
+				STATUS = #{status,jdbcType=DECIMAL},
+			</if>
+			<if test="name != null and name != '' ">
+				NAME = #{name,jdbcType=VARCHAR},
+			</if>
+			<if test="deptId != null and deptId != '' ">
+				dept_id = #{deptId,jdbcType=VARCHAR},
+			</if>
+			<if test="mobile != null and mobile != '' ">
+				MOBILE = #{mobile,jdbcType=VARCHAR},
+			</if>
+			<if test="phone != null and phone != '' ">
+				PHONE = #{phone,jdbcType=VARCHAR},
+			</if>
+			<if test="email != null and email != '' ">
+				EMAIL = #{email,jdbcType=VARCHAR},
+			</if>
+			<if test="address != null and address != '' ">
+				ADDRESS = #{address,jdbcType=VARCHAR},
+			</if>
+			<if test="csid != null">
+				CSID = #{csid,jdbcType=BIGINT},
+			</if>
+			<if test="jobId != null">
+				JOB_ID = #{jobId,jdbcType=BIGINT},
+			</if>
+		</set>
+		where USER_KY = #{userKy,jdbcType=BIGINT}
+	</update>
+	<update id="changPwd" parameterType="com.jsjf.model.system.SysUsersVo">
+		update sys_users
+		set
+		PASSWORD = #{password,jdbcType=VARCHAR}
+		where USER_KY =
+		#{userKy,jdbcType=BIGINT}
+	</update>
+
+	<select id="selectByLoginUser" resultMap="BaseResultMap"
+		parameterType="com.jsjf.model.system.SysUsersVo">
+		select su.*,sr.role_ky as role_ky,sr.name as roleName,sr.code as roleCode from sys_users su
+		left join sys_user_role sur on sur.user_ky=su.user_ky
+		left join sys_role sr on sr.role_ky=sur.role_ky
+		where su.LOGIN_ID =
+		#{loginId,jdbcType=VARCHAR} and su.PASSWORD =
+		#{password,jdbcType=VARCHAR} and su.status!=0
+	</select>
+	<select id="selectSysUsersVoList" resultMap="BaseResultMap"
+		parameterType="java.util.Map">
+		select * from sys_users
+		where 1=1
+		<if test="loginId !=null and loginId !='' ">
+			and login_id = #{loginId,jdbcType=VARCHAR}
+		</if>
+	</select>
+
+	<!-- 查询属于部门下的管理者 -->
+	<select id="queryDeptManager" parameterType="java.util.Map"
+		resultMap="BaseResultMap">
+		select * from sys_users
+		<where>
+			<if test="manage_flag !=null and manage_flag !='' ">
+				manage_flag = #{manage_flag}
+			</if>
+			<if test="(deptId !=null and deptId !='') or deptId==0 ">
+				and dept_id = #{deptId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="queryUserByRole" parameterType="java.util.Map" resultMap="BaseResultMap">
+		select su.* from sys_users su
+		inner join sys_user_role sur on sur.user_ky=su.user_ky
+		inner join sys_role sr on sr.role_ky=sur.role_ky
+		where sr.name='电销'
+		<if test="name !=null and name !='' ">
+			and su.name LIKE CONCAT('%', #{name,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="mobile !=null and mobile !='' ">
+			and su.mobile LIKE CONCAT('%', #{mobile,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="phone !=null and phone !='' ">
+			and su.phone LIKE CONCAT('%', #{phone,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="status !=null">
+			and su.status = #{status}
+		</if>
+		<if test="deptId !=null">
+			and su.dept_id = #{deptId}
+		</if>
+	</select>
+	
+	<select id="selectJsCallNull" parameterType="Long" resultType="java.util.Map">
+		select jc.user_ky as userKy,login_id as login_id,jc.num as num,jc.phone as phone  from sys_users su
+		inner join js_call_num jc on jc.user_ky=su.user_ky where jc.user_ky = #{userKy}
+	</select>
+	
+	<update id="updateCallNum" parameterType="java.util.Map">
+		update js_call_num set phone=#{phone,jdbcType=VARCHAR}  where user_ky=#{userKy}
+	</update>
+	
+	<select id="selectOperateByMap"  parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT u.user_ky as userKy ,u.name  from sys_users u
+			LEFT JOIN sys_user_role ur ON u.user_ky = ur.user_ky
+			LEFT JOIN sys_role r ON r.role_ky = ur.role_ky
+		<where>
+			<if test="status !=null">
+				and u.status = #{status}  
+			</if>
+			<if test="rName !=null and rName!=''">
+				and r.name = #{rName}
+			</if>
+		</where>
+	</select>
+	<select id="getUserByPhone" resultType="com.jsjf.model.system.SysUsersVo" parameterType="java.lang.String">
+		SELECT * from sys_users where login_id = #{phone}
+	</select>
+	<select id="selectDeptUserCount" resultType="java.util.HashMap" >
+		SELECT SUM(if(vo.dept_id=1,1,0)) dept1,SUM(if(vo.dept_id=2,1,0)) dept2 from sys_users vo
+		LEFT JOIN sys_user_role vr ON vo.user_ky = vr.user_ky
+		LEFT JOIN sys_role r ON r.role_ky = vr.role_ky
+		WHERE r.`name` = '电销' and vo.`status` = 1 ;
+	</select>
+	
+	<select id="selectUserCallNum" resultType="java.util.Map" parameterType="java.util.Map">
+		select su.user_ky as userKy,su.name as name,su.mobile as mobile,jcn.phone as phone,jcn.num as num
+		from sys_users su
+		left join sys_user_role sur on sur.user_ky=su.user_ky
+		left join sys_role sr on sr.role_ky=sur.role_ky
+		left join js_call_num jcn on jcn.user_ky=su.user_ky
+		where (sr.code='10' or sr.code='11' or sr.code='kefu') and su.status=1
+		<if test="name !=null and name!=''">
+			and su.name LIKE CONCAT('%', #{name},'%')
+		</if>
+		<if test="sort !=null and sort!=''">
+		order by ${sort} ${order}
+		</if>
+	</select>
+	
+	<delete id="deleteUserCallNum" parameterType="java.util.Map">
+		delete from js_call_num where user_ky=#{userKy}
+	</delete>
+	
+	<select id="selectCallNumByUserKy" parameterType="java.util.Map" resultType="java.util.Map">
+		select * from js_call_num where user_ky=#{userKy}
+	</select>
+	
+	<insert id="addCallNum" parameterType="java.util.Map">
+		insert into js_call_num (user_ky,num,phone)
+		values(#{userKy},#{num},#{phone})
+	</insert>
+</mapper>

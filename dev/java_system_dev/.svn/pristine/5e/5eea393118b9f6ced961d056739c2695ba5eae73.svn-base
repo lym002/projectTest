@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.JsThreeFundSituationDAO" >
+	
+	<select id="getThreeFundSituation" parameterType="java.util.Map" resultType="java.util.Map">
+	select jtfs.id as id,DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') as datetime,
+	jtfs.invest_amount as investAmount,jtfs.recharge_amount as rechargeAmount,
+	jtfs.income_amount as incomeAmount,jtfs.standby_recharge_amount as standbyRechargeAmount,
+	ifnull(jtfs.recharge_amount,0)+ifnull(jtfs.income_amount,0)+ifnull(jtfs.standby_recharge_amount,0) as srSum,
+	jtfs.loan_amount as loanAmount,jtfs.withdrawal_amount as withdrawalAmount,jtfs.poundage_amount as poundageAmount,
+	jtfs.standby_withdrawal_amount as standbyWithdrawalAmount,jtfs.activity_amount as activityAmount,
+	ifnull(jtfs.loan_amount,0)+ifnull(jtfs.withdrawal_amount,0)+ifnull(jtfs.poundage_amount,0)+ifnull(jtfs.standby_withdrawal_amount,0)+ifnull(jtfs.activity_amount,0) as zcSum
+	from js_three_fund_situation jtfs where 1=1
+	<if test="startdatetime!=null">
+		<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') >= #{startdatetime}]]>
+	</if>
+	<if test="enddatetime!=null">
+		<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') <= #{enddatetime}]]>
+	</if>
+	order by jtfs.datetime desc
+	limit #{offset},#{limit}
+	</select>
+	
+	<select id="getThreeFundSituationCount" parameterType="java.util.Map" resultType="int">
+		select count(1)
+		from js_three_fund_situation jtfs where 1=1
+		<if test="startdatetime!=null">
+			<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') >= #{startdatetime}]]>
+		</if>
+		<if test="enddatetime!=null">
+			<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') <= #{enddatetime}]]>
+		</if>
+	</select>
+	
+	<select id="getThreeFundSituationSum" parameterType="java.util.Map" resultType="java.util.Map">
+		select 
+		sum(ifnull(jtfs.invest_amount,0)) as investAmount,sum(ifnull(jtfs.recharge_amount,0)) as rechargeAmount,
+		sum(ifnull(jtfs.income_amount,0)) as incomeAmount,sum(ifnull(jtfs.standby_recharge_amount,0)) as standbyRechargeAmount,
+		sum(ifnull(jtfs.recharge_amount,0)+ifnull(jtfs.income_amount,0)+ifnull(jtfs.standby_recharge_amount,0)) as srSum,
+		sum(ifnull(jtfs.loan_amount,0)) as loanAmount,sum(ifnull(jtfs.withdrawal_amount,0)) as withdrawalAmount,sum(ifnull(jtfs.poundage_amount,0)) as poundageAmount,
+		sum(ifnull(jtfs.standby_withdrawal_amount,0)) as standbyWithdrawalAmount,sum(ifnull(jtfs.activity_amount,0)) as activityAmount,
+		sum(ifnull(jtfs.loan_amount,0)+ifnull(jtfs.withdrawal_amount,0)+ifnull(jtfs.poundage_amount,0)+ifnull(jtfs.standby_withdrawal_amount,0)+ifnull(jtfs.activity_amount,0)) as zcSum
+		from js_three_fund_situation jtfs where 1=1
+
+		<if test="startdatetime!=null">
+			<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') >= #{startdatetime}]]>
+		</if>
+		<if test="enddatetime!=null">
+			<![CDATA[and DATE_FORMAT(jtfs.datetime,'%Y-%m-%d') <= #{enddatetime}]]>
+		</if>
+	</select>
+	
+	<update id="updateThreeFundSituation" parameterType="java.util.Map">
+		update js_three_fund_situation 
+		<set>
+			<if test="incomeAmount != null"> income_amount = #{incomeAmount},</if>
+			<if test="standbyRechargeAmount != null"> standby_recharge_amount = #{standbyRechargeAmount},</if>
+			<if test="loanAmount != null"> loan_amount = #{loanAmount},</if>
+			<if test="poundageAmount != null"> poundage_amount = #{poundageAmount},</if>
+			<if test="standbyWithdrawalAmount != null"> standby_withdrawal_amount = #{standbyWithdrawalAmount},</if>
+			<if test="activityAmount != null"> activity_amount = #{activityAmount},</if>
+		</set>
+		where id=#{id}
+	</update>
+</mapper>

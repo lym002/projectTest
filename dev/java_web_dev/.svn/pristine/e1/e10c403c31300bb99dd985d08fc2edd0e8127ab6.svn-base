@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsProductReservationDAO">
+	<resultMap id="JsProductReservationResult" type="com.jsjf.model.activity.JsProductReservation">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="periods" property="periods" jdbcType="INTEGER" />	
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />		
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,name,periods,startTime,endTime,status,addUser,addTime,updateUser,updateTime
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsProductReservationResult" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_product_reservation where id = #{id:INTEGER}
+	</select>
+
+	 <select id="selectJsProductReservationByMap" parameterType="java.util.HashMap" resultMap="JsProductReservationResult">
+	 	select <include refid="Base_Column_List" /> from js_product_reservation
+	 	<trim prefix=" where " prefixOverrides="and">
+	 		<if test="periods != null">
+	 			and periods = #{periods}
+	 		</if>
+	 	</trim>
+	 	<if test="order != null and order !='' ">
+	 		order by ${order}
+	 	</if>
+	 	<if test="offset != null and limit !=null">
+	 		limit #{offset},#{limit}
+	 	</if>
+	 </select>
+	 
+	 <select id="update" parameterType="com.jsjf.model.activity.JsProductReservation">
+	 	update js_product_reservation 
+	 		set updateUser = 0
+	 			,updateTime = now()
+	 			<if test="status != null"> , status = #{status}</if>
+	 	where id = #{id}
+	 </select>
+</mapper>

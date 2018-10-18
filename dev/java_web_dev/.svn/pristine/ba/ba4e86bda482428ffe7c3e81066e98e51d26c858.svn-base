@@ -1,0 +1,22 @@
+package com.jsjf.service.activity;
+
+import java.util.Map;
+
+import com.jsjf.common.BaseResult;
+
+public interface JsActivityRewardService {
+
+	/**
+	 * 抽奖
+	 * @param map
+	 * @return
+	 */
+	public BaseResult getJsActivityRewardByAid(Map<String,Object> map);
+
+	/**查詢用戶的积分
+	 * @param uid
+	 * @return
+	 */
+	public BaseResult getIntegralByUser(Integer uid);
+
+}

@@ -1,0 +1,73 @@
+package com.jsjf.service.integral.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.integral.UserDetailIntegralDao;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.service.integral.UserDetailIntegralService;
+
+@Service
+@Transactional
+public class UserDetailIntegralServiceImpl implements UserDetailIntegralService {
+	
+	@Autowired
+	private UserDetailIntegralDao userDetailIntegralDao;
+
+
+
+	@Override
+	public PageInfo queryDetailintegralList(PageInfo info, Map<String, Object> param) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		map.put("mobilePhone", param.get("mobilePhone"));
+		map.put("integralSourceId", param.get("integralSourceId"));
+		map.put("startaddTime", param.get("startaddTime"));
+		map.put("endaddTime", param.get("endaddTime"));
+		map.put("orders", "id desc");
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryDetailintegralList(map);
+		int total = userDetailIntegralDao.queryDetailintegralListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+		
+	}
+
+
+
+	@Override
+	public PageInfo queryIntegralManageList(PageInfo info,
+			Map<String, Object> param) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("offset", info.getPageInfo().getOffset());
+		map.put("limit",  info.getPageInfo().getLimit());
+		
+		map.put("mobilePhone", param.get("mobilePhone"));
+		map.put("integralType", param.get("integralType"));
+		map.put("startaddTime", param.get("startaddTime"));
+		map.put("endaddTime", param.get("endaddTime"));
+		map.put("greaterIntegral", param.get("greaterIntegral"));
+		map.put("lessIntegral", param.get("lessIntegral"));
+		
+		List<UserDetailIntegralBean> rows = userDetailIntegralDao.queryIntegralManageList(map);
+		int total = userDetailIntegralDao.queryIntegralManageListCount(map);
+		
+		info.setRows(rows);
+		info.setTotal(total);
+		
+		return info;
+		
+	}
+
+}

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.vip.VipActivityParameterMapper">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.vip.VipActivityParameter">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <id column="vip_level" jdbcType="INTEGER" property="vipLevel" />
+    <result column="code" jdbcType="VARCHAR" property="code" />
+    <result column="is_birthday" jdbcType="INTEGER" property="isBirthday" />
+    <result column="is_open" jdbcType="INTEGER" property="isOpen" />
+    <result column="created_time" jdbcType="TIMESTAMP" property="createdTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, vip_level, code, is_birthday, is_open, created_time, update_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_activity_parameter
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByVipLevel" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_vip_activity_parameter
+    where vip_level = #{vipLevel,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_vip_activity_parameter
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.vip.VipActivityParameter">
+    insert into byp_vip_activity_parameter (id, vip_level, code,
+    is_birthday, is_open, created_time, update_time
+    )
+    values (#{id,jdbcType=INTEGER}, #{vipLevel,jdbcType=INTEGER}, #{code,jdbcType=VARCHAR},
+    #{isBirthday,jdbcType=INTEGER}, #{isOpen,jdbcType=INTEGER}, #{createdTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+    )
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.vip.VipActivityParameter">
+    insert into byp_vip_activity_parameter
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="vipLevel != null">
+        vip_level,
+      </if>
+      <if test="code != null">
+        code,
+      </if>
+      <if test="isBirthday != null">
+        is_birthday,
+      </if>
+      <if test="isOpen != null">
+        is_open,
+      </if>
+      <if test="createdTime != null">
+        created_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="vipLevel != null">
+        #{vipLevel,jdbcType=INTEGER},
+      </if>
+      <if test="code != null">
+        #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="isBirthday != null">
+        #{isBirthday,jdbcType=INTEGER},
+      </if>
+      <if test="isOpen != null">
+        #{isOpen,jdbcType=INTEGER},
+      </if>
+      <if test="createdTime != null">
+        #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.vip.VipActivityParameter">
+    update byp_vip_activity_parameter
+    <set>
+      <if test="code != null">
+        code = #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="isBirthday != null">
+        is_birthday = #{isBirthday,jdbcType=INTEGER},
+      </if>
+      <if test="isOpen != null">
+        is_open = #{isOpen,jdbcType=INTEGER},
+      </if>
+      <if test="createdTime != null">
+        created_time = #{createdTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+    and vip_level = #{vipLevel,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.vip.VipActivityParameter">
+    update byp_vip_activity_parameter
+    set code = #{code,jdbcType=VARCHAR},
+      is_birthday = #{isBirthday,jdbcType=INTEGER},
+      is_open = #{isOpen,jdbcType=INTEGER},
+      created_time = #{createdTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+      and vip_level = #{vipLevel,jdbcType=INTEGER}
+  </update>
+</mapper>

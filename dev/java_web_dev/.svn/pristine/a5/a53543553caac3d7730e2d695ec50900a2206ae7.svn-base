@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.BypCommodityDetailDAO">
+	<resultMap id="BypCommodityDetailResult" type="com.jsjf.model.activity.BypCommodityDetail">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="prid" property="prid" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="starttime" property="starttime" jdbcType="TIMESTAMP" />
+		<result column="endtime" property="endtime" jdbcType="TIMESTAMP" />
+		<result column="provide" property="provide" jdbcType="TIMESTAMP" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		<result column="prizeName" property="prizeName" jdbcType="VARCHAR" />
+		<result column="price" property="price" jdbcType="INTEGER" />
+		<result column="details" property="details" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="VARCHAR" />
+		<result column="NAME" property="NAME" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="product_url" property="product_url" jdbcType="VARCHAR" />
+		<result column="need_points" property="need_points" jdbcType="INTEGER" />
+	</resultMap>
+	<sql id="byp_commodity_detail">
+	detail.code,detail.uid,detail.status,detail.endtime,commodity.prizeName,commodity.price,commodity.details,commodity.type,commodity.product_url,detail.addtime,commodity.need_points
+	</sql>
+	<select id="doubleTwelve" resultMap="BypCommodityDetailResult"
+		parameterType="Integer">
+		SELECT
+		<include refid="byp_commodity_detail"/>
+		FROM
+		byp_commodity_detail detail LEFT JOIN byp_commodity commodity ON commodity.prid = detail.prid WHERE detail.uid = #{uid} and detail.status=1
+        <!--拦截5880显示-->
+        and detail.addtime  <![CDATA[<=]]> '2018-1-24' and detail.addtime <![CDATA[>=]]>'2018-2-08'
+	</select>
+	<insert id="insertSelective" parameterType="com.jsjf.model.activity.BypCommodityDetail">
+		insert into byp_commodity_detail
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				id,
+			</if>
+			<if test="code != null">
+				code,
+			</if>
+			<if test="prid != null">
+				prid,
+			</if>
+			<if test="uid != null">
+				uid,
+			</if>
+			<if test="status != null">
+				status,
+			</if>
+			<if test="addtime != null">
+				addtime,
+			</if>
+			<if test="starttime != null">
+				starttime,
+			</if>
+			<if test="endtime != null">
+				endtime,
+			</if>
+			<if test="provide != null">
+				provide,
+			</if>
+			<if test="address != null">
+				address,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="id != null">
+				#{id,jdbcType=INTEGER},
+			</if>
+			<if test="code != null">
+				#{code,jdbcType=VARCHAR},
+			</if>
+			<if test="prid != null">
+				#{prid,jdbcType=INTEGER},
+			</if>
+			<if test="uid != null">
+				#{uid,jdbcType=INTEGER},
+			</if>
+			<if test="status != null">
+				#{status,jdbcType=TINYINT},
+			</if>
+			<if test="addtime != null">
+				#{addtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="starttime != null">
+				#{starttime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="endtime != null">
+				#{endtime,jdbcType=TIMESTAMP},
+			</if>
+			<if test="provide != null">
+				#{provide,jdbcType=TIMESTAMP},
+			</if>
+			<if test="address != null">
+				#{address,jdbcType=VARCHAR},
+			</if>
+		</trim>
+	</insert>
+	<!-- 查询双旦top10 -->
+<select id="selectTopIntegralLog" resultMap="BypCommodityDetailResult">
+		SELECT
+		CONCAT(
+		LEFT (c.mobilePhone, 3),
+		'****',
+		RIGHT (c.mobilePhone, 4)
+		) AS mobilePhone,
+		a.addtime,
+		ifnull(b.prizeName, '') AS NAME
+		FROM
+		byp_commodity_detail a
+		LEFT JOIN byp_commodity b ON a.prid = b.prid
+		LEFT JOIN dr_member c ON a.uid = c.uid
+		WHERE
+		b.type = 2
+		ORDER BY
+		a.addtime DESC
+		LIMIT 10
+	</select>
+<select id="selectConvertGiftByUid" resultMap="BypCommodityDetailResult" parameterType="Integer">
+			SELECT
+			*
+		FROM
+			byp_commodity_detail a
+		LEFT JOIN byp_commodity b ON a.prid = b.prid
+		WHERE
+			uid = #{uid}
+		ORDER BY
+			a.addtime DESC
+		LIMIT 1
+	</select>
+</mapper>

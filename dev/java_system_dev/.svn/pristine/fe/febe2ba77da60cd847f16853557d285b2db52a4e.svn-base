@@ -1,0 +1,162 @@
+package com.jsjf.controller.task;
+
+import com.esign.util.SignHelper;
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.service.activity.DrActivityParameterService;
+import com.jsjf.service.product.DrProductInfoService;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@Component
+public class TaskController implements InitializingBean {
+
+    private static Logger log = Logger.getLogger(TaskController.class);
+
+    @Autowired
+    private DrActivityParameterService drActivityParameterService;
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+    @Autowired
+    private DrProductInvestService drProductInvestService;
+    @Autowired
+    private DrProductInfoService drProductInfoService;
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String value = String.valueOf(System.currentTimeMillis());
+                boolean relockFlag = false;
+                Map<String, Object> param = new HashMap<String, Object>();
+                Map<String, Object> map = new HashMap<String, Object>();
+                Integer uid = null;
+                Integer type = null;
+                Integer deadline = null;
+                BigDecimal amount = BigDecimal.ZERO;
+                byte[] uidMap = null;
+                //E签宝初始化方法
+                SignHelper.initProject();
+                while(true){
+                    try {
+                        Thread.sleep(500l);
+                        uidMap = redisClientTemplate.rpop("regAndVerifySendRedUidList".getBytes());
+                        param = (Map<String,Object>)SerializeUtil.unserialize(uidMap);
+
+                        if(param == null || Utils.isObjectEmpty(param.get("type")))continue;
+                        //业务逻辑
+                        uid  = param.get("uid") !=null ? (Integer)param.get("uid") : null;
+                        type = param.get("type") != null ? (Integer)param.get("type") : null;
+                        log.info("redis 队列   开始 ..."+uid+","+type);
+                        boolean flag = true;
+                        if (type == 1) {
+                            deadline = Integer.parseInt(param.get("deadline").toString());
+                            amount = new BigDecimal(String.valueOf(param.get("amount")));
+                            // 发年终奖
+                            param.clear();
+                            param.put("uid",uid);
+                            param.put("type",type);
+                            param.put("deadline",deadline);
+                            param.put("amount",amount);
+                            drActivityParameterService.annualBonus(param);
+                            log.info("TaskToComplete");
+                        } else if (type == 0 || type == 3) {
+                            // 发优惠券
+                            drActivityParameterService.valentineActivitys(uid, type);
+                            //邀请好有三重礼
+                            drActivityParameterService.threePresentMultipleCoupon(uid);
+                            log.info("TaskToComplete");
+                        }else if(type == 4){//感恩活动 发放优惠券
+                            drActivityParameterService.gratitudeBlessing(uid);
+                            log.info("TaskToComplete");
+                        }else if(type == 50){//自动发标
+                            flag = false;
+                            drProductInvestService.toAutoReleaseProduct(param);
+                            log.info("TaskToComplete");
+                        }else if(type == 51){//回款发放收益走营销存管账号
+                            log.info("--------回款发放收益走营销存管账号");
+                            drProductInvestService.productOtherInterestDistributeByFuiouMarketingAccount(param);
+                            log.info("TaskToComplete");
+                        }else if(type == 52){//投资红包返现走营销存管账号
+                            log.info("--------投资红包返现走营销存管账号");
+                            try{
+                                relockFlag = redisClientTemplate.tryLock(ConfigUtil.AboutTheCash + uid, 30, TimeUnit.SECONDS, false, value);// 枷锁
+                                if (relockFlag) {
+                                    drProductInvestService.cashbackDistributeByFuiouMarketingAccount(param);
+                                }
+                            }catch (Exception e){
+                                log.error(e.getMessage());
+                            }finally {
+                                redisClientTemplate.releaseLock(ConfigUtil.AboutTheCash + uid, value);
+                            }
+                            log.info("TaskToComplete");
+                        }else if(type == 53){//满标 执行冻结到冻结
+                            log.info("----满标冻结到冻结");
+                            drProductInfoService.productFullfreezeToFreeze(param);
+                            log.info("TaskToComplete");
+                        }else if(type == 6){//老用户送红包 cece
+                            // 发优惠券
+                            drActivityParameterService.valentineActivitys(uid, type);
+                        }else if (type == 8) {
+                            //抢标送现金
+                            log.info("--------抢标送现金");
+
+                            try{
+                                relockFlag = redisClientTemplate.tryLock(ConfigUtil.AboutTheCash + uid, 30, TimeUnit.SECONDS, false, value);// 枷锁
+                                if (relockFlag) {
+                                    drProductInvestService.BidreversalImplement(param);
+                                }
+                            }catch (Exception e){
+                                log.error(e.getMessage());
+                            }finally {
+                                redisClientTemplate.releaseLock(ConfigUtil.AboutTheCash + uid, value);
+                            }
+                            log.info("TaskToComplete");
+                        }else if (type == 9) {
+                            //抢标送现金
+                            log.info("--------满万元活动发放");
+
+                            try{
+                                relockFlag = redisClientTemplate.tryLock(ConfigUtil.AboutTheCash + uid, 30, TimeUnit.SECONDS, false, value);// 枷锁
+                                if (relockFlag) {
+                                    drProductInvestService.newBidreversalImplement(param);
+                                }
+                            }catch (Exception e){
+                                log.error(e.getMessage());
+                            }finally {
+                                redisClientTemplate.releaseLock(ConfigUtil.AboutTheCash + uid, value);
+                            }
+                            log.info("TaskToComplete");
+                        }
+                        //发成功统计
+                        if(flag)
+                            redisClientTemplate.lpush("regAndVerifySendRedUidListCount", uid+"_"+type);
+                    } catch (Exception e) {
+                        log.error("执行TaskController出错",e);
+                        e.printStackTrace();
+
+                        if(type ==52)
+                            redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(), uidMap);
+                        else
+                            redisClientTemplate.lpush("regAndVerifySendRedUidList_bak".getBytes(), uidMap);
+                    }
+                }
+            }
+//		});
+        }).start();
+
+        log.info("送红包线程开始");
+    }
+
+
+}

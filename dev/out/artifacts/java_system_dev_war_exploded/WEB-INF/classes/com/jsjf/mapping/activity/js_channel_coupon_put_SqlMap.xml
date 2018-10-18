@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsChannelCouponPutDAO">
+	<resultMap id="JsChannelCouponPutResult" type="com.jsjf.model.activity.JsChannelCouponPut">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="auditUser" property="auditUser" jdbcType="INTEGER" />
+		<result column="auditTime" property="auditTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<sql id="sql_base">id,name,addtime,type,status,remark,addUser,updateTime,updateUser,auditUser,auditTime</sql>
+	
+	<select id="selectObjectById" resultMap="JsChannelCouponPutResult" parameterType="Integer">
+		select <include refid="sql_base"/> from js_channel_coupon_put where id = #{id}
+	</select>
+	
+	<insert id="insert" parameterType="com.jsjf.model.activity.JsChannelCouponPut" keyProperty="id" useGeneratedKeys="true">
+		INSERT INTO js_channel_coupon_put (name, addtime, type, addUser) 
+			VALUES (#{name}, now(), #{type}, #{addUser});
+	</insert>
+	
+	<update id="update" parameterType="com.jsjf.model.activity.JsChannelCouponPut">
+		update
+			js_channel_coupon_put
+		<trim prefix="set" suffixOverrides=",">
+			<if test=" name != null and name !='' "> name = #{name} ,</if>
+			<if test=" addtime != null "> addtime = #{addtime} ,</if>
+			<if test=" type != null "> type = #{type} ,</if>
+			<if test=" status != null "> status = #{status} ,</if>
+			<if test=" remark != null and remark != '' "> remark = #{remark} ,</if>
+			<if test=" addUser != null "> addUser = #{addUser} ,</if>
+			<if test=" updateTime != null "> updateTime = #{updateTime} ,</if>
+			<if test=" updateUser != null "> updateUser = #{updateUser} ,</if>
+			<if test=" auditUser != null "> auditUser = #{auditUser} ,</if>
+			<if test=" auditTime != null "> auditTime = #{auditTime} ,</if>
+		</trim>
+		where id = #{id}
+	</update>
+	
+	<select id="selectObjectList" parameterType="java.util.HashMap" resultMap="JsChannelCouponPutResult">
+			select <include refid="sql_base"/> from 
+				js_channel_coupon_put
+			<trim prefix="where" prefixOverrides="and">
+				<if test="name !=null and name !=''"> and  name like concat('%',trim(#{name}),'%') </if>
+				<if test="type !=null "> and type = #{type} </if>
+				<if test="status !=null "> and  status = #{status} </if>
+				<if test="startDate !=null and startDate !=''"> and date_format(addtime,'%Y-%m-%d') >= #{startDate} </if>
+				<if test="endDate !=null and endDate !=''"> and #{endDate} >= date_format(addtime,'%Y-%m-%d') </if>
+			</trim>
+			<if test="orders !=null and orders !=''">
+				order by ${orders}
+			</if>
+			<if test="limit !=null and offset !=null">
+				limit #{offset},#{limit}
+			</if>
+	</select>
+	<select id="selectObjectListCount" parameterType="java.util.HashMap" resultType="Integer">
+		select count(1) from 
+				js_channel_coupon_put
+			<trim prefix="where" prefixOverrides="and">
+				<if test="name !=null and name !=''"> and  name like concat('%',trim(#{name}),'%') </if>
+				<if test="type !=null "> and   type = #{type} </if>
+				<if test="status !=null "> and  status = #{status} </if>
+				<if test="startDate !=null and startDate !=''"> and date_format(addtime,'%Y-%m-%d') >= #{startDate} </if>
+				<if test="endDate !=null and endDate !=''"> and #{endDate} >= date_format(addtime,'%Y-%m-%d') </if>
+			</trim>
+	</select>
+	
+	<insert id="insertPutDetail" parameterType="java.util.HashMap">
+		insert into 
+			js_channel_coupon_put_detail (mobile,amount,putId,code,recommCodes)
+			values
+			<foreach collection="list" item="item" separator=",">
+				(#{item.mobile},#{item.amount},#{putId},#{item.code},#{item.recommCodes})
+			</foreach>
+	</insert>
+	<select id="selectCouponDetailListList" parameterType="java.util.HashMap" resultType="com.jsjf.model.activity.JsChannelCouponPutDetail">
+		select * from (
+			SELECT a.id,CONCAT(LEFT(a.mobile,3),'****',RIGHT(a.mobile,4)) AS mobile,a.amount,a.code,a.status,putId,c.type as channelType,a.recommCodes as recommCodes FROM js_channel_coupon_put_detail a
+				left join `dr_member` b on  a.mobile = b.mobilePhone 
+				LEFT JOIN dr_channel_info c on INSTR(b.toFrom,c.code)=1 
+				<trim prefix="where" prefixOverrides="and">
+					b.uid
+					<if test="putId != null">  and a.putId = #{putId}</if>
+					<if test="status != null">  and a.status = #{status}</if>
+				</trim>
+			UNION ALL
+			
+			SELECT a.id,CONCAT(LEFT(a.mobile,3),'****',RIGHT(a.mobile,4)) AS mobile,a.amount,a.code,a.status,putId,c.type as channelType,a.recommCodes as recommCodes FROM js_channel_coupon_put_detail a
+				left join `dr_member` b on  a.recommCodes = b.recommCodes 
+				LEFT JOIN dr_channel_info c on INSTR(b.toFrom,c.code)=1 
+				<trim prefix="where" prefixOverrides="and">
+					b.uid 
+					<if test="putId != null">  and a.putId = #{putId}</if>
+					<if test="status != null">  and a.status = #{status}</if>
+					AND  IF(a.mobile,0,1)
+				</trim>
+				
+			UNION ALL
+
+			SELECT a.id,CONCAT(LEFT(a.mobile,3),'****',RIGHT(a.mobile,4)) AS mobile,a.amount,a.code,a.status,putId,0 as channelType,a.recommCodes as recommCodes 
+				FROM js_channel_coupon_put_detail a 
+			<trim prefix="where" prefixOverrides="and">
+					<if test="putId != null">  and a.putId = #{putId}</if>
+					<if test="status != null">  and a.status = #{status}</if>
+					 and a.mobile and  NOT EXISTS (SELECT 1 from dr_member where mobilePhone = a.mobile)
+			</trim>
+			
+			UNION ALL
+			
+			SELECT a.id,CONCAT(LEFT(a.mobile,3),'****',RIGHT(a.mobile,4)) AS mobile,a.amount,a.code,a.status,putId,0 as channelType,a.recommCodes as recommCodes 
+				FROM js_channel_coupon_put_detail a 
+			<trim prefix="where" prefixOverrides="and">
+					<if test="putId != null">  and a.putId = #{putId}</if>
+					<if test="status != null">  and a.status = #{status}</if>
+					and a.mobile is NULL and  NOT EXISTS (SELECT 1 from dr_member where recommCodes = a.recommCodes)	
+			</trim>
+			
+			)a
+			<if test="orders !=null and orders !=''">
+					order by ${orders}
+			</if>
+			<if test="limit !=null and offset !=null">
+					limit #{offset},#{limit}
+			</if>
+			
+	</select>
+	<select id="selectCouponDetailListCount" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT count(1) from js_channel_coupon_put_detail 
+			<trim prefix="where" prefixOverrides="and">
+				<if test="putId != null">  and putId = #{putId}</if>
+				<if test="status != null">  and status = #{status}</if>
+				<if test="statuses != null"> 
+					and status in
+					<foreach collection="statuses" close=")" index="index" item="item" open="(" separator=",">
+						#{item}
+					</foreach>
+				</if>
+			</trim>
+	</select>
+	<update id="checkOutCouponPutDetail"  parameterType="Integer">
+		UPDATE js_channel_coupon_put_detail jpd,(
+				SELECT pd.id,
+			if(dm.uid is NULL,5,
+				if(dap.`code` is NULL,3,
+					if(p.type != dap.type,2,
+						if(pd.amount != if(dap.type =2,dap.raisedRates,if(dap.type =4,dap.multiple,if(dap.type =5,2,dap.amount))),4,1)
+					)
+				)
+			) as status
+			from js_channel_coupon_put_detail pd
+			LEFT JOIN js_channel_coupon_put p ON pd.putId = p.id
+			LEFT JOIN dr_member dm ON pd.mobile = dm.mobilePhone 
+			LEFT JOIN dr_activity_parameter  dap ON dap.`code` = pd.`code`	
+			LEFT JOIN `dr_channel_info` dci ON INSTR(dm.toFrom,dci.code)=1		
+			where pd.status = 0 and dm.uid  and  pd.putId = #{putId}
+			UNION ALL
+			SELECT pd.id,
+			if(dm.uid is NULL,5,
+				if(dap.`code` is NULL,3,
+					if(p.type != dap.type,2,
+						if(pd.amount != if(dap.type =2,dap.raisedRates,if(dap.type =4,dap.multiple,if(dap.type =5,2,dap.amount))),4,1)
+					)
+				)
+			) as status
+			from js_channel_coupon_put_detail pd
+			LEFT JOIN js_channel_coupon_put p ON pd.putId = p.id
+			LEFT JOIN dr_member dm ON  pd.recommCodes=dm.recommCodes
+			LEFT JOIN dr_activity_parameter  dap ON dap.`code` = pd.`code`	
+			LEFT JOIN `dr_channel_info` dci ON INSTR(dm.toFrom,dci.code)=1		
+			where pd.status = 0 and dm.uid  and   pd.putId = #{putId} AND  IF(pd.mobile,0,1)
+			
+			UNION ALL
+			SELECT  pd.id,5 as status  FROM js_channel_coupon_put_detail pd 
+			where  pd.putId =  #{putId} and pd.status = 0  and pd.mobile and  NOT EXISTS (SELECT 1 from dr_member where mobilePhone = pd.mobile)
+			
+			UNION ALL
+			
+			SELECT  pd.id,5 as status FROM js_channel_coupon_put_detail pd 
+			where  pd.putId =  #{putId} and pd.status = 0  and pd.mobile is NULL and  NOT EXISTS (SELECT 1 from dr_member where recommCodes = pd.recommCodes)
+						
+			 ) a
+			SET jpd.`status` = a.`status` where jpd.id = a.id
+	</update>
+	<insert id="insertCouponByPutDetail" parameterType="Integer">
+		INSERT INTO dr_member_favourable(uid,activityId,type,code,name,amount,profitAmount,raisedRates,multiple,productDeadline,enableAmount,`status`,source,remark,expireDate,user_key,addtime)
+			SELECT c.uid,c.ID,c.type,c.`code`,c.`name`,c.amount,0,c.raisedRates,c.multiple, c.productDeadline,c.enableAmount,0,2,'运营发放',c.expireDate,99,SYSDATE() 
+			from (
+				SELECT  dm.uid,a.ID,a.type,a.`code`,a.`name`,a.amount,
+				a.raisedRates,a.multiple, a.productDeadline,a.enableAmount,CONCAT(date_add(current_date, interval a.deadline day),SPACE(1),'23:59:59') as expireDate,SYSDATE() 
+				 from dr_activity_parameter a 
+				LEFT JOIN js_channel_coupon_put_detail jpd ON a.`code` = jpd.`code`
+				LEFT JOIN dr_member dm ON jpd.mobile = dm.mobilePhone 
+				where dm.uid and jpd.putId = #{putId} and jpd.`status` = 1				
+				UNION ALL
+				SELECT  dm.uid,a.ID,a.type,a.`code`,a.`name`,a.amount,
+				a.raisedRates,a.multiple, a.productDeadline,a.enableAmount,CONCAT(date_add(current_date, interval a.deadline day),SPACE(1),'23:59:59') as expireDate,SYSDATE() 
+				 from dr_activity_parameter a 
+				LEFT JOIN js_channel_coupon_put_detail jpd ON a.`code` = jpd.`code`
+				LEFT JOIN dr_member dm ON jpd.mobile = dm.mobilePhone or jpd.recommCodes=dm.recommCodes
+				where dm.uid and jpd.putId = #{putId} and jpd.`status` = 1 AND  IF(jpd.mobile,0,1)			
+			)c
+	</insert>
+	
+	<delete id="deleteCouponByPutDetail" parameterType="Integer">
+			delete from js_channel_coupon_put_detail where putId = #{putId}	
+	</delete>
+	
+</mapper>

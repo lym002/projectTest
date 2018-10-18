@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberCpsFavourableRuleDAO" >
+  <resultMap id="DrMemberCpsFavourableRuleBaseResultMap" type="com.jsjf.model.member.DrMemberCpsFavourableRule" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="minAmount" property="minAmount" jdbcType="DECIMAL" />
+    <result column="maxAmount" property="maxAmount" jdbcType="DECIMAL" />
+    <result column="isFirst" property="isFirst" jdbcType="INTEGER" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="isCps" property="isCps" jdbcType="INTEGER" />
+    <result column="activityId_1" property="activityId_1" jdbcType="INTEGER" />
+    <result column="activityId_2" property="activityId_2" jdbcType="INTEGER" />
+    <result column="activityId_3" property="activityId_3" jdbcType="INTEGER" />
+    <result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+    <result column="addUserKey" property="addUserKey" jdbcType="INTEGER" />
+    <result column="updTime" property="updTime" jdbcType="TIMESTAMP" />
+    <result column="updUserKey" property="updUserKey" jdbcType="INTEGER" />
+    <result column="code_1" property="code_1" jdbcType="VARCHAR" />
+    <result column="code_2" property="code_2" jdbcType="VARCHAR" />
+    <result column="code_3" property="code_3" jdbcType="VARCHAR" />
+    <result column="addUserName" property="addUserName" jdbcType="VARCHAR" />
+    <result column="updUserName" property="updUserName" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <!-- 查询回款促复投送红包发放规则 -->
+  <select id="selectByParam" resultMap="DrMemberCpsFavourableRuleBaseResultMap" parameterType="java.util.HashMap">
+  	select ru.*,p1.name as code_1,p2.name as code_2,p3.name as code_3,u.name as addUserName, upd.name as updUserName from dr_member_cps_favourable_rule ru
+  	left join dr_activity_parameter p1 on ru.activityId_1 = p1.id
+  	left join dr_activity_parameter p2 on ru.activityId_2 = p2.id
+  	left join dr_activity_parameter p3 on ru.activityId_3 = p3.id
+  	left join sys_users u on u.user_ky = ru.addUserKey
+  	left join sys_users upd on upd.user_ky = ru.updUserKey
+  	<where>
+  		<if test="isFirst != null"> and ru.isFirst = #{isFirst}</if>
+  		<if test="isCps != null"> and ru.isCps = #{isCps}</if>
+  		<if test="status != null"> and ru.status = #{status}</if>
+  	</where>
+  	<if test="limit != null and limit != ''"> limit #{offset}, #{limit}</if>
+  </select>
+  <select id="selectCountByParam" resultType="int" parameterType="java.util.HashMap">
+  	select count(id) from dr_member_cps_favourable_rule
+  	<where>
+  		<if test="isFirst != null"> and isFirst = #{isFirst}</if>
+  		<if test="isCps != null"> and isCps = #{isCps}</if>
+  		<if test="status != null"> and status = #{status}</if>
+  		<if test="str != null and str != ''"> and ( ${str} )</if>
+  	</where>
+  </select>
+  
+  <insert id="insert" parameterType="com.jsjf.model.member.DrMemberCpsFavourableRule">
+  	insert into dr_member_cps_favourable_rule (minAmount, maxAmount, activityId_1, activityId_2, activityId_3, isFirst, isCps, status, addTime, addUserKey)
+  	values
+  	(#{minAmount}, #{maxAmount}, #{activityId_1}, #{activityId_2}, #{activityId_3}, #{isFirst}, #{isCps}, #{status}, #{addTime}, #{addUserKey})
+  </insert>
+  
+  <update id="updateBySelective" parameterType="com.jsjf.model.member.DrMemberCpsFavourableRule">
+  	update dr_member_cps_favourable_rule
+  	<set>
+  		<if test="minAmount != null"> minAmount = #{minAmount}, </if>
+  		<if test="maxAmount != null"> maxAmount = #{maxAmount}, </if>
+  		<if test="activityId_1 != null"> activityId_1 = #{activityId_1}, </if>
+  		<if test="activityId_2 != null"> activityId_2 = #{activityId_2}, </if>
+  		<if test="activityId_3 != null"> activityId_3 = #{activityId_3}, </if>
+  		<if test="isFirst != null"> isFirst = #{isFirst}, </if>
+  		<if test="isCps != null"> isCps = #{isCps}, </if>
+  		<if test="status != null"> status = #{status}, </if>
+  		<if test="addTime != null"> addTime = #{addTime}, </if>
+  		<if test="addUserKey != null"> addUserKey = #{addUserKey}, </if>
+  		<if test="updTime != null"> updTime = #{updTime}, </if>
+  		<if test="updUserKey != null"> updUserKey = #{updUserKey}, </if>
+  	</set>
+  	where id = #{id}
+  </update>
+  
+</mapper>

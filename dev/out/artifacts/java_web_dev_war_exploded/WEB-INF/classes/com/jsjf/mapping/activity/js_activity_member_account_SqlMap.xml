@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityMemberAccountDAO">
+	<resultMap id="JsActivityMemberAccountResult" type="com.jsjf.model.activity.JsActivityMemberAccount">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="piid" property="piid" jdbcType="VARCHAR" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="afid" property="afid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,piid,uid,status,afid,amount,adddate
+	</sql>
+	<select id="selectByPrimaryKey" resultMap="JsActivityMemberAccountResult">
+		select <include refid="Base_Column_List" /> from js_activity_member_account where id = #{id}
+	</select>
+	<update id="update">
+		update js_activity_member_account
+			set status = #{status}				
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null"> and uid = #{uid}</if>
+			<if test="afid != null"> and afid = #{afid}</if>
+			<if test="endStatus != null"> and status = #{endStatus}</if>
+		</trim>
+	</update>
+	
+	<!-- 完成好友首投数 -->
+	<select id="selectFirstInvestCount" resultType="Integer" parameterType="java.util.HashMap">
+		SELECT count(distinct(dpi.uid)) from js_activity_member_account jama 
+			LEFT JOIN dr_product_invest dpi ON jama.piid = dpi.id
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="uid != null"> and jama.uid = #{uid}</if>
+			<if test="afid != null"> and jama.afid = #{afid}</if>
+		</trim>	
+	</select>
+	<!-- 活动奖励sum -->
+	<select id="selectActivityRewardsSum" resultType="DECIMAL" parameterType="java.util.HashMap" >
+		SELECT ifnull(SUM(amount),0) from js_activity_member_account 
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="afid != null"> and afid = #{afid}</if>
+			<if test="uid != null"> and uid = #{uid}</if>
+			<if test="status != null" > and status = #{status}</if>				
+		</trim>	
+	</select>
+	
+	<!-- 当期好友投资详情 -->
+	<select id="selectFriendInvestList" parameterType="java.util.HashMap" resultType="java.util.HashMap" >
+				
+		SELECT * from (
+			select dmm.uid,dmbi.realname as realName,
+				dmm.regDate,dpi.amount investAmount,jama.amount,jama.status ,dp.deadline,jama.isRepeat,dpi.joinType
+			from js_activity_member_account jama		
+			LEFT JOIN dr_product_invest dpi on dpi.id = jama.piid
+			LEFT JOIN dr_product_info dp ON  dp.id = dpi.pid	
+			LEFT JOIN dr_member_base_info dmbi ON dpi.uid = dmbi.uid
+			LEFT JOIN dr_member dmm ON dmm.uid = dmbi.uid
+			where jama.uid =#{uid} and jama.afid = #{afid}
+		)a
+		<if test="offset !=null">limit #{offset},#{limit} </if>		
+	</select>
+	
+	<select id="selectFriendInvestListCount" parameterType="java.util.HashMap" resultType="Integer">
+		SELECT ifnull(count(1),0) from (
+			select dmm.uid,dmbi.realname as realName,
+				dmm.regDate,dpi.amount investAmount,jama.amount,jama.status ,dp.deadline
+			from js_activity_member_account jama		
+			LEFT JOIN dr_product_invest dpi on dpi.id = jama.piid
+			LEFT JOIN dr_product_info dp ON  dp.id = dpi.pid	
+			LEFT JOIN dr_member_base_info dmbi ON dpi.uid = dmbi.uid
+			LEFT JOIN dr_member dmm ON dmm.uid = dmbi.uid
+			where jama.uid =#{uid} and jama.afid = #{afid}			
+		)a
+	</select>
+	
+	<select id="selectFriendAmountTopTen" parameterType="Integer" resultType="com.jsjf.model.activity.JsActivityMemberAccount">
+		 select @rowNO := @rowNO + 1 AS id,amountSum,userName from (select ifnull(sum(jama.amount),0) as amountSum ,concat(substring(dm.`mobilePhone`,1,3),"****",substring(dm.`mobilePhone`,8)) as userName from `js_activity_member_account` jama  
+			left join `dr_member` dm on dm.`uid` = jama.`uid`
+			where 1 = 1 
+			<if test="afid != null">
+				and jama.`afid` =#{afid} 
+			</if>
+			group by jama.`uid` ORDER BY amountSum DESC LIMIT 10) a,(select @rowNO:=0) b;
+	</select>
+	
+</mapper>

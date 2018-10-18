@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsOpenDayDao">
+	<resultMap id="JsOpenDayResult" type="com.jsjf.model.activity.JsOpenDay">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="openDayName" property="openDayName" jdbcType="VARCHAR" />
+		<result column="imgUrl" property="impUrl" jdbcType="VARCHAR" />	
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="subscribeStartDate" property="subscribeStartDate" jdbcType="TIMESTAMP" />
+		<result column="subscribeEndDate" property="subscribeEndDate" jdbcType="TIMESTAMP" />
+		<result column="openDayDate" property="openDayDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateDate" property="updateDate" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<sql id="Base_Column_List">
+		id,openDayName,imgUrl,status,DATE_FORMAT(subscribeStartDate,'%Y-%m-%d') as 'subscribeStartDate',DATE_FORMAT(subscribeEndDate,'%Y-%m-%d') as 'subscribeEndDate',
+		DATE_FORMAT(openDayDate,'%Y-%m-%d') as 'openDayDate',addUser,addDate,updateUser,updateDate
+	</sql>
+	<select id="selectByPrimaryKey" resultType="com.jsjf.model.activity.JsOpenDay" parameterType="Integer">
+		select <include refid="Base_Column_List" /> from js_open_day where id = #{id:INTEGER}
+	</select>
+	 
+	 <select id="update" parameterType="com.jsjf.model.activity.JsOpenDay">
+	 	update js_open_day
+	 		<set>
+		 		<if test="openDayName !=null and openDayName !=''">
+		 			 openDayName = #{openDayName:VARCHAR},
+		 		</if>
+		 		<if test="imgUrl != null and imgUrl !='' ">
+		 			imgUrl = #{imgUrl:VARCHAR},
+		 		</if>
+		 		<if test="status !=null">
+		 			status = #{status:INTEGER},
+		 		</if>
+		 		<if test="subscribeStartDate !=null and subscribeStartDate !=''">
+		 			subscribeStartDate = #{subscribeStartDate:TIMESTAMP},
+		 		</if>
+		 		<if test="subscribeEndDate !=null and subscribeEndDate !=''">
+		 			subscribeEndDate = #{subscribeEndDate:TIMESTAMP},
+		 		</if>
+		 		<if test="openDayDate !=null and openDayDate !=''">
+		 			openDayDate = #{openDayDate:TIMESTAMP},
+		 		</if>
+		 		<if test="addUser != null">
+		 			addUser = #{addUser:INTEGER},
+		 		</if>
+		 		<if test="addDate != null and addDate !=''">
+		 			addDate = #{addDate:TIMESTAMP},
+		 		</if>
+		 		<if test="updateUser != null">
+		 			updateUser = #{updateUser:INTEGER},
+		 		</if>
+		 		<if test="updateDate != null and updateDate !=''">
+		 			updateDate = #{updateDate:TIMESTAMP}
+		 		</if>
+	 		</set>
+	 	where id = #{id:INTEGER}
+	 </select>
+
+	 <insert id = "insert" parameterType="com.jsjf.model.activity.JsOpenDay" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+	 	 insert into js_open_day(openDayName,imgUrl,status,subscribeStartDate,subscribeEndDate,
+			openDayDate,addUser,addDate,updateUser,updateDate)values(#{openDayName:VARCHAR},
+			#{imgUrl:VARCHAR},#{status:INTEGER},#{subscribeStartDate:TIMESTAMP},#{subscribeEndDate:TIMESTAMP},
+			#{openDayDate:TIMESTAMP},#{addUser:INTEGER},#{addDate:TIMESTAMP},#{updateUser:INTEGER},#{updateDate:TIMESTAMP})
+	 </insert>
+	 
+	 <select id="getOpenDayList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.JsOpenDay">
+	 	select jod.id,jod.openDayName,jod.openDayDate,jod.`status`,jod.subscribeEndDate,jod.subscribeStartDate,jod.imgUrl 
+	 		from js_open_day jod 
+	 		<where>
+	 			1=1
+	 			<if test="openDayName !=null and openDayName !=''">
+	 				and instr(jod.openDayName,#{openDayName})
+	 			</if>
+	 			<if test="startDate !=null and startDate !=''">
+	 				and date_format(jod.openDayDate,'%Y-%m-%d') >= date_format(#{startDate},'%Y-%m-%d') 
+	 			</if>
+	 			<if test="endDate !=null and endDate !=''">
+	 				and <![CDATA[ date_format(jod.openDayDate,'%Y-%m-%d') <= date_format(#{endDate},'%Y-%m-%d') ]]>
+	 			</if>
+	 		</where>
+	 		order by jod.id desc
+	 		<if test="limit !=null">
+				limit #{offset},#{limit}
+			</if>
+	 </select>
+	 
+	 <select id="getOpenDayCount" parameterType="java.util.Map" resultType="int">
+	 	select count(1)
+	 		from js_open_day jod 
+	 		<where>
+	 			1=1
+	 			<if test="openDayName !=null and openDayName !=''">
+	 				and instr(jod.openDayName,#{openDayName})
+	 			</if>
+	 			<if test="startDate !=null and startDate !=''">
+	 				and date_format(jod.openDayDate,'%Y-%m-%d') >= date_format(#{startDate},'%Y-%m-%d') 
+	 			</if>
+	 			<if test="endDate !=null and endDate !=''">
+	 				and <![CDATA[ date_format(jod.openDayDate,'%Y-%m-%d') <= date_format(#{endDate},'%Y-%m-%d') ]]>
+	 			</if>
+	 		</where>
+	 </select>
+	 
+	 <select id="getOpenDayByStatus" parameterType="Integer" resultType="com.jsjf.model.activity.JsOpenDay">
+	 		select * from js_open_day where status = #{status:INTEGER}
+	 </select>
+	 
+</mapper>

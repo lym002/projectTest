@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsSpecialDAO">
+
+	<select id="selectJsSpecial" resultType="com.jsjf.model.activity.JsSpecial" >
+		select * from `js_special` where `status` =1
+	</select>
+	<select id="selectJsSpecialPic" resultType="com.jsjf.model.activity.JsSpecialPic" >
+		select a.* from `js_special_pic` a
+		 left join  `js_special` b on a.specialId = b.id
+		WHERE b.STATUS = 1
+	</select>
+</mapper>

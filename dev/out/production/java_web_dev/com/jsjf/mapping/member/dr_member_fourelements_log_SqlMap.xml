@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFourElementsLogDAO" >
+  <resultMap id="DrMemberFourElementsLogResult" type="com.jsjf.model.member.DrMemberFourElementsLog" >
+    <result column="id" property="id" jdbcType="INTEGER" />
+    <result column="uid" property="uid" jdbcType="INTEGER" />
+	<result column="realName" property="realName" jdbcType="VARCHAR" />
+	<result column="idCards" property="idCards" jdbcType="VARCHAR" />	
+    <result column="bankNum" property="bankNum" jdbcType="VARCHAR" />
+	<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+    <result column="mobilePhone" property="mobilePhone" jdbcType="CHAR" />
+    <result column="flag" property="flag" jdbcType="INTEGER" />
+    <result column="sendTime" property="sendTime" jdbcType="TIMESTAMP" />
+    <result column="reasonStatus" property="reasonStatus" jdbcType="VARCHAR" />    
+    <result column="reason" property="reason" jdbcType="VARCHAR" />
+    <result column="orderNo" property="orderNo" jdbcType="VARCHAR" />
+  </resultMap>
+  <insert id="insertMemberFourElementsLog" parameterType="com.jsjf.model.member.DrMemberFourElementsLog" >
+    insert into dr_member_fourelements_log (uid, realName,idCards,bankNum,bankName,mobilePhone,flag, sendTime, reasonStatus,reason,orderNo)
+    values (#{uid:INTEGER}, #{realName:VARCHAR},#{idCards:VARCHAR},#{bankNum:VARCHAR},#{bankName:VARCHAR},#{mobilePhone:VARCHAR},
+    #{flag:INTEGER}, SYSDATE(), #{reasonStatus:VARCHAR},#{reason:VARCHAR},#{orderNo:VARCHAR})
+  </insert>
+  <select id="queryMemberFourElementsLogList" parameterType="java.lang.Integer" resultMap="DrMemberFourElementsLogResult">
+  	select id from dr_member_fourelements_log 
+  	where uid = #{uid:INTEGER} 
+  </select>
+</mapper>

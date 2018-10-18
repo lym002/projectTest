@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.store.CommodityExchangeDao">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.store.CommodityExchange">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="exchange_id" jdbcType="INTEGER" property="exchangeId" />
+    <result column="code" jdbcType="VARCHAR" property="code" />
+    <result column="order_number" jdbcType="VARCHAR" property="orderNumber" />
+    <result column="commodity_status" jdbcType="INTEGER" property="commodityStatus" />
+    <result column="expiration_time" jdbcType="TIMESTAMP" property="expirationTime" />
+    <result column="user_mobilephone" jdbcType="VARCHAR" property="userMobilephone" />
+    <result column="exchange_time" jdbcType="TIMESTAMP" property="exchangeTime" />
+    <result column="add_date" jdbcType="TIMESTAMP" property="addDate" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, exchange_id, code, order_number, commodity_status, expiration_time, user_mobilephone, 
+    exchange_time, add_date, update_time, remark
+  </sql>
+  <select id="queryCommodityExchangeList" parameterType="java.lang.Integer" resultType="com.jsjf.model.store.CommodityExchange">
+    select 
+    	bce.id as id,bce.code as code,bcr.commodity_type as commodityType,bce.commodity_status as commodityStatus,
+    	bce.expiration_time as expirationTime,bcr.face_value as faceValue,bcr.commodity_worth as commodityWorth,
+    	bce.user_mobilephone as userMobilephone,bce.exchange_time as exchangeTime,bce.add_date as addDate,
+    	bce.update_time as updateTime,bcc.type_name as typeName,bce.remark,bcr.commodity_name as commodityName
+    from byp_commodity_exchange bce
+    left join byp_commodity_repertory bcr on bce.exchange_id=bcr.id
+    left join byp_commodity_class bcc on bcr.exchange_channel_code = bcc.type_code
+    where 1=1
+    <if test="code != null and code != ''">
+				and bce.code=#{code}
+	</if>
+	<if test="commodityStatus != null and commodityStatus != ''">
+				and bce.commodity_status=#{commodityStatus}
+	</if>
+	<if test="sexpirationTime != null and sexpirationTime != ''">
+				and bce.expiration_time<![CDATA[ >= ]]>#{sexpirationTime}
+	</if>
+	<if test="eexpirationTime != null and eexpirationTime != ''">
+				and bce.expiration_time<![CDATA[ <= ]]>#{eexpirationTime}
+	</if>
+	<if test="sexchangeTime != null and sexchangeTime != ''">
+				and bce.exchange_time<![CDATA[ >= ]]>#{exchangeTime}
+	</if>
+	<if test="eexchangeTime != null and eexchangeTime != ''">
+				and bce.exchange_time<![CDATA[ <= ]]>#{eexchangeTime}
+	</if>
+	<if test="commodityType != null and commodityType != ''">
+				and bcr.commodity_type=#{commodityType}
+	</if>
+	<if test="commodityName != null and commodityName != ''">
+				and bcr.commodity_name=#{commodityName}
+	</if>
+     <if test="limit !=null">
+		 limit #{offset},#{limit}
+	</if>
+  </select>
+  <select id="queryCommodityExchangeListCount"  parameterType="java.util.Map" resultType="Integer">
+    select 
+    count(0)
+    from byp_commodity_exchange bce
+    left join byp_commodity_repertory bcr on bce.exchange_id=bcr.id
+    left join byp_commodity_class bcc on bcr.exchange_channel_code = bcc.type_code
+    where 1=1
+    <if test="code != null and code != ''">
+				and bce.code=#{code}
+	</if>
+	<if test="commodityStatus != null and commodityStatus != ''">
+				and bce.commodity_status=#{commodityStatus}
+	</if>
+	<if test="sexpirationTime != null and sexpirationTime != ''">
+				and bce.expiration_time<![CDATA[ >= ]]>#{sexpirationTime}
+	</if>
+	<if test="eexpirationTime != null and eexpirationTime != ''">
+				and bce.expiration_time<![CDATA[ <= ]]>#{eexpirationTime}
+	</if>
+	<if test="sexchangeTime != null and sexchangeTime != ''">
+				and bce.exchange_time<![CDATA[ >= ]]>#{exchangeTime}
+	</if>
+	<if test="eexchangeTime != null and eexchangeTime != ''">
+				and bce.exchange_time<![CDATA[ <= ]]>#{eexchangeTime}
+	</if>
+	<if test="commodityType != null and commodityType != ''">
+				and bcr.commodity_type=#{commodityType}
+	</if>
+	<if test="commodityName != null and commodityName != ''">
+				and bcr.commodity_name=#{commodityName}
+	</if>
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_commodity_exchange
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.store.CommodityExchange">
+    insert into byp_commodity_exchange (id, exchange_id, code, 
+      order_number, commodity_status, expiration_time, 
+      user_mobilephone, exchange_time, add_date, 
+      update_time, remark)
+    values (#{id,jdbcType=INTEGER}, #{exchangeId,jdbcType=INTEGER}, #{code,jdbcType=VARCHAR}, 
+      #{orderNumber,jdbcType=VARCHAR}, #{commodityStatus,jdbcType=INTEGER}, #{expirationTime,jdbcType=TIMESTAMP}, 
+      #{userMobilephone,jdbcType=VARCHAR}, #{exchangeTime,jdbcType=TIMESTAMP}, #{addDate,jdbcType=TIMESTAMP}, 
+      #{updateTime,jdbcType=TIMESTAMP}, #{remark,jdbcType=VARCHAR})
+  </insert>
+  <insert id="addCommodityExchange" parameterType="com.jsjf.model.store.CommodityExchange">
+    insert into byp_commodity_exchange
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="exchangeId != null">
+        exchange_id,
+      </if>
+      <if test="code != null">
+        code,
+      </if>
+      <if test="orderNumber != null">
+        order_number,
+      </if>
+      <if test="commodityStatus != null">
+        commodity_status,
+      </if>
+      <if test="expirationTime != null">
+        expiration_time,
+      </if>
+      <if test="userMobilephone != null">
+        user_mobilephone,
+      </if>
+      <if test="exchangeTime != null">
+        exchange_time,
+      </if>
+      <if test="addDate != null">
+        add_date,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="exchangeId != null">
+        #{exchangeId,jdbcType=INTEGER},
+      </if>
+      <if test="code != null">
+        #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="orderNumber != null">
+        #{orderNumber,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityStatus != null">
+        #{commodityStatus,jdbcType=INTEGER},
+      </if>
+      <if test="expirationTime != null">
+        #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="userMobilephone != null">
+        #{userMobilephone,jdbcType=VARCHAR},
+      </if>
+      <if test="exchangeTime != null">
+        #{exchangeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addDate != null">
+        #{addDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateCommodityExchange" parameterType="com.jsjf.model.store.CommodityExchange">
+    update byp_commodity_exchange
+    <set>
+      <if test="exchangeId != null">
+        exchange_id = #{exchangeId,jdbcType=INTEGER},
+      </if>
+      <if test="code != null">
+        code = #{code,jdbcType=VARCHAR},
+      </if>
+      <if test="orderNumber != null">
+        order_number = #{orderNumber,jdbcType=VARCHAR},
+      </if>
+      <if test="commodityStatus != null">
+        commodity_status = #{commodityStatus,jdbcType=INTEGER},
+      </if>
+      <if test="expirationTime != null">
+        expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="userMobilephone != null">
+        user_mobilephone = #{userMobilephone,jdbcType=VARCHAR},
+      </if>
+      <if test="exchangeTime != null">
+        exchange_time = #{exchangeTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="addDate != null">
+        add_date = #{addDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.store.CommodityExchange">
+    update byp_commodity_exchange
+    set exchange_id = #{exchangeId,jdbcType=INTEGER},
+      code = #{code,jdbcType=VARCHAR},
+      order_number = #{orderNumber,jdbcType=VARCHAR},
+      commodity_status = #{commodityStatus,jdbcType=INTEGER},
+      expiration_time = #{expirationTime,jdbcType=TIMESTAMP},
+      user_mobilephone = #{userMobilephone,jdbcType=VARCHAR},
+      exchange_time = #{exchangeTime,jdbcType=TIMESTAMP},
+      add_date = #{addDate,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      remark = #{remark,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+   <insert id="addImportCommodity" parameterType="java.util.List">
+   <foreach collection="list" item="item" index="index" open="" close="" separator=";" > 
+	    insert into byp_commodity_exchange
+	    <trim prefix="(" suffix=")" suffixOverrides=",">
+	      <if test="item.id != null">
+	        id,
+	      </if>
+	      <if test="item.exchangeId != null">
+	        exchange_id,
+	      </if>
+	      <if test="item.code != null">
+	        code,
+	      </if>
+	      <if test="item.orderNumber != null">
+	        order_number,
+	      </if>
+	      <if test="item.commodityStatus != null">
+	        commodity_status,
+	      </if>
+	      <if test="item.expirationTime != null">
+	        expiration_time,
+	      </if>
+	      <if test="item.userMobilephone != null">
+	        user_mobilephone,
+	      </if>
+	      <if test="item.exchangeTime != null">
+	        exchange_time,
+	      </if>
+	      <if test="item.addDate != null">
+	        add_date,
+	      </if>
+	      <if test="item.remark != null">
+	        remark,
+	      </if>
+	    </trim>
+	    <trim prefix="values (" suffix=")" suffixOverrides=",">
+	      <if test="item.id != null">
+	        #{item.id,jdbcType=INTEGER},
+	      </if>
+	      <if test="item.exchangeId != null">
+	        #{item.exchangeId,jdbcType=INTEGER},
+	      </if>
+	      <if test="item.code != null">
+	        #{item.code,jdbcType=VARCHAR},
+	      </if>
+	      <if test="item.orderNumber != null">
+	        #{item.orderNumber,jdbcType=VARCHAR},
+	      </if>
+	      <if test="item.commodityStatus != null">
+	        #{item.commodityStatus,jdbcType=INTEGER},
+	      </if>
+	      <if test="item.expirationTime != null">
+	        #{item.expirationTime,jdbcType=TIMESTAMP},
+	      </if>
+	      <if test="item.userMobilephone != null">
+	        #{item.userMobilephone,jdbcType=VARCHAR},
+	      </if>
+	      <if test="item.exchangeTime != null">
+	        #{item.exchangeTime,jdbcType=TIMESTAMP},
+	      </if>
+	      <if test="item.addDate != null">
+	        #{item.addDate,jdbcType=TIMESTAMP},
+	      </if>
+	      <if test="item.remark != null">
+	        #{item.remark,jdbcType=VARCHAR},
+	      </if>
+	    </trim>
+	   </foreach>  
+  </insert>
+
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsProjectDAO">
+	<resultMap id="DrAuditInfoResult" type="com.jsjf.model.claims.DrClaimsProject">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<!-- 添加债权审核项目 -->
+	<insert id="insertDrClaimsProject" parameterType="com.jsjf.model.claims.DrClaimsProject" useGeneratedKeys="true" keyProperty="id">
+		insert into dr_claims_project(lid,name) values (#{lid:INTEGER},#{name:VARCHAR})
+	</insert>
+	
+	<!-- 根据pid得到债权审核项目 -->
+	<select id="getDrClaimsProjectByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsProject">
+		select * from dr_claims_project
+		<where>
+			lid = #{lid:INTEGER}
+		</where>
+	</select>
+	
+	<!-- 根据PID删除债权审核项目 -->
+	<delete id="deleteDrClaimsProjectByLid" parameterType="java.lang.Integer" >
+	    delete from dr_claims_project where lid = #{lid:INTEGER} 
+	</delete>
+</mapper>

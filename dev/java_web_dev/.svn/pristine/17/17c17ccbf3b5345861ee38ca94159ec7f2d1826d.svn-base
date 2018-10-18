@@ -1,0 +1,105 @@
+package com.jsjf.service.activity.impl;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.service.member.DrMemberService;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.service.activity.BypCommodityService;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class BypCommodityServiceImpl implements BypCommodityService {
+
+	private Logger log = Logger.getLogger(BypCommodityServiceImpl.class);
+
+	@Autowired
+	private BypCommodityDAO bypCommodityDAO;
+	@Autowired
+	private DrMemberService drMemberService;
+
+	@Override
+	public BypCommodity selectIntegralByPid(String pid) {
+		return bypCommodityDAO.selectIntegralByPid(pid);
+	}
+
+	/**
+	 * \积分商城首页数据
+	 * @param uid
+	 * @param type
+	 * @return
+	 */
+	@Override
+	public BaseResult selectIntegralShopping(int uid, int type) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		try {
+			map.put("status", 1);
+			map.put("activity_id", "shop");
+			map.put("type", type);
+			List<BypCommodity> integralCommodity = bypCommodityDAO.selectCommodityList(map);
+			map.clear();
+			map.put("commodityList", integralCommodity);
+			DrMember dm = drMemberService.selectForUpDateByPrimaryKey(uid);
+			map.put("userIntegral", dm.getUserIntegralUse());
+			br.setMap(map);
+		}catch (Exception e){
+			log.error(e.getMessage());
+		}
+		return br;
+	}
+
+	/**
+	 * 获取积分商品列表/红包列表
+	 * @param type
+	 * @return
+	 */
+	@Override
+	public List<BypCommodity> selectCommodityList(int type){
+		Map<String, Object> map = new HashMap<>();
+		List<BypCommodity> integralCommodity = new ArrayList<>();
+		try {
+			map.put("status", 1);
+			map.put("type", type);
+			integralCommodity = bypCommodityDAO.selectCommodityList(map);
+			map.clear();
+		}catch (Exception e){
+			log.error(e.getMessage());
+		}
+		return integralCommodity;
+	}
+
+	/**
+	 * 获取积分商品详情
+	 * @param uid
+	 * @param pid
+	 * @return
+	 */
+	@Override
+	public BaseResult selectCommodityInfo(int uid, String pid){
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		BypCommodity integralCommodity = null;
+		try {
+			integralCommodity = bypCommodityDAO.selectIntegralByPid(pid);
+			map.put("commodity", integralCommodity);
+			DrMember dm = drMemberService.selectForUpDateByPrimaryKey(uid);
+			map.put("userIntegral", dm.getUserIntegralUse());
+			br.setMap(map);
+			map.clear();
+		}catch (Exception e){
+			log.error(e.getMessage());
+		}
+		return br;
+	}
+
+}

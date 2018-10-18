@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrAgentParameterDAO">
+	<resultMap id="DrAgentParameterResult" type="com.jsjf.model.activity.DrAgentParameter">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="agentLevel" property="agentLevel" jdbcType="INTEGER" />
+		<result column="rebateRate" property="rebateRate" jdbcType="DECIMAL" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="getDrAgentParameterList"  parameterType="java.util.HashMap" resultMap="DrAgentParameterResult">
+		select a.id,agentLevel,rebateRate,a.type,a.startTime,a.endTime,a.`status`,
+			u.`name` as addName,a.addTime,us.`name` as updateName,a.updateTime
+		from dr_agent_parameter a
+		left join sys_users u ON a.addUser=u.user_ky
+		left JOIN sys_users us ON a.updateUser=us.user_ky
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getDrAgentParameterById" parameterType="java.lang.Integer"  resultType="com.jsjf.model.activity.DrAgentParameter">
+		select id,agentLevel,rebateRate,type,startTime,endTime,status
+		from dr_agent_parameter a
+		where id = #{id:INTEGER}
+	</select>
+	
+	<select id="getDrAgentParameterTotal"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(1) from dr_agent_parameter 
+	</select>
+	
+	
+	<update id="udpateDrAgentParameter" parameterType="com.jsjf.model.activity.DrAgentParameter" >
+		update dr_agent_parameter
+		<set>
+			<if test="agentLevel != null">
+				agentLevel = #{agentLevel:INTEGER},
+			</if>
+			<if test="rebateRate != null">
+				rebateRate = #{rebateRate:DECIMAL},
+			</if>
+			<if test="type != null">
+				type = #{type:INTEGER},
+			</if>
+			<if test="startTime != null">
+				startTime = #{startTime:TIMESTAMP},
+			</if>
+			<if test="endTime != null">
+				endTime = #{endTime:TIMESTAMP},
+			</if>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="updateUser != null">
+				updateUser = #{updateUser:INTEGER},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime:TIMESTAMP},
+			</if>
+		</set>
+		<where>
+			 id=#{id:INTEGER}
+		</where>
+	</update>
+</mapper>

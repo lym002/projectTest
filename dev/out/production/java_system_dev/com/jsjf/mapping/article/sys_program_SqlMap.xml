@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.article.SysProgramDAO" >
+	<resultMap id="SysProgramResult" type="com.jsjf.model.article.SysProgram" >
+		<result column="pro_id" property="proId" jdbcType="INTEGER" />
+		<result column="pro_name" property="proName" jdbcType="VARCHAR" />
+		<result column="description" property="description" jdbcType="VARCHAR" />
+		<result column="active" property="active" jdbcType="SMALLINT" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+		<result column="create_user" property="createUser" jdbcType="SMALLINT" />
+		<result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="update_user" property="updateUser" jdbcType="SMALLINT" />
+		<result column="status" property="status" jdbcType="SMALLINT" />
+		<result property="createName" column="createname" jdbcType="VARCHAR"/><!-- 创建人姓名 -->
+    	<result property="updateName" column="updatename" jdbcType="VARCHAR"/>
+	</resultMap>
+	<select id="getSysProgramList" resultMap="SysProgramResult" parameterType="java.util.HashMap" >
+	    select pro_id, pro_name, description, active, remark,
+	      create_time, create_user, update_time, update_user,a.status,b.NAME AS createname,
+			c. NAME AS updatename
+	    from sys_program a
+		LEFT JOIN sys_users b ON a.CREATE_USER = b.USER_KY
+		LEFT JOIN sys_users c ON a.UPDATE_USER = c.USER_KY
+		ORDER BY a.status desc
+		limit #{offset},#{limit}
+  	</select>
+  	
+  	<select id="getSysProgramCounts" resultType="int" parameterType="java.util.HashMap" >
+		SELECT count(1)
+		FROM sys_program a
+		LEFT JOIN sys_users b ON a.CREATE_USER = b.USER_KY
+		LEFT JOIN sys_users c ON a.UPDATE_USER = c.USER_KY
+  	</select>
+  	
+	<insert id="insertSysProgram" parameterType="com.jsjf.model.article.SysProgram" >
+	  insert into sys_program ( pro_name, description, active,
+	    remark, create_time, create_user, update_time, update_user)
+	  values ( #{proName:VARCHAR},
+	    #{description:VARCHAR},#{active:SMALLINT}, #{remark:VARCHAR},
+	    sysdate(), #{createUser:SMALLINT}, #{updateTime:TIMESTAMP}, #{updateUser:SMALLINT})
+	</insert>
+  	
+	<select id="selectSysProgramById" resultMap="SysProgramResult" parameterType="com.jsjf.model.article.SysProgram" >
+	  select pro_id, pro_name, description, active, remark,
+	    create_time, create_user, update_time, update_user,status
+	  from sys_program
+	  where 1=1
+	 <if test="proId != null" >
+	  and pro_id = #{proId:INTEGER}
+	  </if>
+	 <if test="status != null" >
+	  and status = #{status:INTEGER}
+	  </if>
+	</select>
+	<update id="updateSysProgramById" parameterType="com.jsjf.model.article.SysProgram" >
+	  update sys_program
+	  <set>
+	    <if test="proName != null" >
+	      pro_name = #{proName:VARCHAR},
+	    </if>
+	    <if test="description != null" >
+	      description = #{description:VARCHAR},
+	    </if>
+	     update_time =sysdate(),
+	    <if test="updateUser != null" >
+	      update_user = #{updateUser:SMALLINT},
+	    </if>
+	    <if test="status != null" >
+	      status = #{status:SMALLINT}
+	    </if>
+	  </set>
+	  <where>
+	  pro_id = #{proId:INTEGER}
+	  </where>
+	</update>
+</mapper>

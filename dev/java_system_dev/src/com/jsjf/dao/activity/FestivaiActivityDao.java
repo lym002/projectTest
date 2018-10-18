@@ -1,0 +1,75 @@
+package com.jsjf.dao.activity;
+
+import java.util.List;
+import java.util.Map;
+
+import com.jsjf.model.activity.BypCommodityBean;
+import com.jsjf.model.activity.BypCommodityDetailBean;
+
+public interface FestivaiActivityDao {
+
+	public List<BypCommodityDetailBean> queryFestivaIActivityList(
+			Map<String, Object> param);
+
+	public Integer queryFestivaIActivityListCount(Map<String, Object> param);
+
+	public void updateFestivaIActivity(BypCommodityDetailBean bypCommodityBean);
+
+	public List<Integer> sendPrizeSms();
+
+	public List<BypCommodityDetailBean> getSendPrizeSms();
+
+	public void updateSendPrizeSms(Integer ids[]);
+
+	public List<BypCommodityDetailBean> queryDownloadDetail(
+			Map<String, Object> param);
+
+	public List<BypCommodityDetailBean> queryPrizeStatistics(
+			Map<String, Object> param);
+
+	public List<Integer> queryPrizeUid(Map<String, Object> param);
+
+	public void addPrizeStatistics(BypCommodityDetailBean bean);
+
+	public List<BypCommodityDetailBean> queryPrid(Integer type);
+
+	public void addBatchCode(List<BypCommodityDetailBean> beanList);
+
+	public Integer queryIsNotTj(Map<String, Object> param);
+
+	public Integer queryIsNotCps(Map<String, Object> map);
+
+	public List<BypCommodityDetailBean> queryYearInvestList(
+			Map<String, Object> param);
+
+	public Integer queryYearInvestListCount(Map<String, Object> param);
+
+	public List<BypCommodityDetailBean> queryTodayRankingList(
+			Map<String, Object> param);
+
+	public Integer queryTodayRankingListCount(Map<String, Object> param);
+
+	public List<BypCommodityDetailBean> queryUserInvest(
+			Map<String, Object> tjMap);
+
+
+	public void addUserInvest(BypCommodityDetailBean bypCommodityDetailBean);
+
+	public List<BypCommodityDetailBean> queryUserTotalList(
+			Map<String, Object> param);
+
+	public Integer queryUserTotalListCount(Map<String, Object> param);
+
+	public List<BypCommodityDetailBean> queryUserCommodityDetail();
+
+	public Integer queryJdPrid();
+
+	public void updateUserCommodityDetail(Integer uid);
+
+	public Integer queryJdCardSmall(BypCommodityBean bypCommodityBean);
+
+	public List<BypCommodityDetailBean> queryYearInvestPrid(Integer uid);
+
+
+	
+}

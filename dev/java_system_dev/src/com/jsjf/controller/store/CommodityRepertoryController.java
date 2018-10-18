@@ -1,0 +1,163 @@
+package com.jsjf.controller.store;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.model.store.CommodityRepertory;
+import com.jsjf.service.store.CommodityClassService;
+import com.jsjf.service.store.CommodityRepertoryService;
+
+/**
+ * 库存管理
+ * @author cece
+ *
+ */
+@Controller
+@RequestMapping("/commodityRep")
+public class CommodityRepertoryController {
+	
+	@Autowired
+	private CommodityRepertoryService commodityRepertoryService;
+
+	@Autowired
+	private CommodityClassService commodityClassService;
+	
+	@RequestMapping("/repertoryView")
+	public String repertoryView(Map<String,Object> model){
+		List<CommodityRepertory> list = commodityClassService.queryDd();
+		model.put("qd", list);
+		return "system/store/commodityRepertory";
+	}
+	
+	@RequestMapping(value="/commodityRepertory",method=RequestMethod.GET)
+	@ResponseBody
+	public PageInfo queryCommodityRepertoryList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = commodityRepertoryService.queryCommodityRepertoryList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	@RequestMapping(value="/commodityRepertory",method=RequestMethod.POST,produces = "text/html; charset=utf-8")
+	@ResponseBody
+	public String addCommodityRepertory(@RequestParam(value="filename",required=false)MultipartFile appPicFile,
+			HttpServletRequest request,
+			HttpServletResponse response) throws IOException{
+		BaseResult result = new BaseResult();
+		CommodityRepertory bean = new CommodityRepertory();
+		bean.setCommodityWorth(new BigDecimal(request.getParameter("commodityWorth")));
+		bean.setCommodityType(Integer.parseInt(request.getParameter("commodityType")));
+		bean.setFaceValue(new BigDecimal(request.getParameter("faceValue")));
+		bean.setCommodityName(request.getParameter("commodityName"));
+		bean.setExchangeChannelCode(request.getParameter("exchangeChannelCode"));
+		bean.setDetail(request.getParameter("detail"));
+		//bean.setRepertoryInto(Integer.parseInt(request.getParameter("repertoryInto")));
+		
+		String reg = ".+(.JPEG|.jpeg|.JPG|.jpg|.GIF|.gif|.BMP|.bmp|.PNG|.png)$";
+        Pattern pattern = Pattern.compile(reg);
+        Map<String,Object> fileMap = new HashMap<String,Object>();
+		List<MultipartFile> list = new ArrayList<MultipartFile>();
+		if(appPicFile != null){
+			fileMap.put("picFile", appPicFile);
+			list.add(appPicFile);
+		}
+		for(int i=0;i<list.size();i++){
+			Matcher matcher = pattern.matcher(list.get(i).getOriginalFilename().toLowerCase());
+			if(!matcher.find()){
+				result.setSuccess(false);
+				result.setMsg("请上传正确的图片格式!");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+			
+			long fileSize = list.get(i).getSize();
+			if(fileSize>1024*5000){
+				result.setSuccess(false);
+				result.setMsg("图片不能大于5M！");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+		}
+		result = commodityRepertoryService.addCommodityRepertory(bean,appPicFile);
+        JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+		return jsonObject.toString();
+	}
+	
+	@RequestMapping(value="/commodityRepertory2",method=RequestMethod.POST,produces = "text/html; charset=utf-8")
+	@ResponseBody
+	public String updateCommodityRepertory(@RequestParam(value="filename",required=false)MultipartFile appPicFile,
+			HttpServletRequest request,
+			HttpServletResponse response){
+		BaseResult result = new BaseResult();
+		CommodityRepertory bean = new CommodityRepertory();
+		bean.setCommodityWorth(new BigDecimal(request.getParameter("commodityWorth")));
+		bean.setCommodityType(Integer.parseInt(request.getParameter("commodityType")));
+		bean.setFaceValue(new BigDecimal(request.getParameter("faceValue")));
+		bean.setCommodityName(request.getParameter("commodityName"));
+		bean.setExchangeChannelCode(request.getParameter("exchangeChannelCode"));
+		bean.setDetail(request.getParameter("detail"));
+		//bean.setRepertoryInto(Integer.parseInt(request.getParameter("repertoryInto")));
+		bean.setId(Integer.parseInt(request.getParameter("id")));
+		String reg = ".+(.JPEG|.jpeg|.JPG|.jpg|.GIF|.gif|.BMP|.bmp|.PNG|.png)$";
+        Pattern pattern = Pattern.compile(reg);
+        Map<String,Object> fileMap = new HashMap<String,Object>();
+		List<MultipartFile> list = new ArrayList<MultipartFile>();
+		if(appPicFile != null){
+			fileMap.put("picFile", appPicFile);
+			list.add(appPicFile);
+		}
+		for(int i=0;i<list.size();i++){
+			Matcher matcher = pattern.matcher(list.get(i).getOriginalFilename().toLowerCase());
+			if(!matcher.find()){
+				result.setSuccess(false);
+				result.setMsg("请上传正确的图片格式!");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+			
+			long fileSize = list.get(i).getSize();
+			if(fileSize>1024*5000){
+				result.setSuccess(false);
+				result.setMsg("图片不能大于5M！");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+		}
+		result = commodityRepertoryService.updateCommodityRepertory(bean,appPicFile);
+		JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+		return jsonObject.toString();
+	}
+	
+	@RequestMapping(value="/commodityRepertory",method=RequestMethod.DELETE)
+	@ResponseBody
+	public BaseResult deleteCommodityClass(HttpServletRequest req,int id) {
+		BaseResult br = new BaseResult();
+		br = commodityRepertoryService.deleteCommodityClass(id);
+		return br;
+	}
+}

@@ -1,0 +1,109 @@
+package com.jsjf.service.vip.impl;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.dao.activity.DrActivityParameterDAO;
+import com.jsjf.dao.vip.VipActivityParameterMapper;
+import com.jsjf.model.activity.DrActivityParameter;
+import com.jsjf.model.vip.VipActivityParameter;
+import com.jsjf.service.vip.VipActivityParameterService;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@Transactional
+public class VipActivityParameterServiceImpl implements VipActivityParameterService {
+
+    @Autowired
+    private VipActivityParameterMapper vipActivityParameterMapper;
+    @Autowired
+    private DrActivityParameterDAO drActivityParameterDAO;
+
+    private static transient Logger logger = Logger.getLogger(VipActivityParameterServiceImpl.class);
+
+    @Override
+    public int deleteByPrimaryKey(Integer id) {
+        return vipActivityParameterMapper.deleteByPrimaryKey(id);
+    }
+
+    @Override
+    public int insert(VipActivityParameter record) {
+        return vipActivityParameterMapper.insert(record);
+    }
+
+    @Override
+    public int insertSelective(VipActivityParameter record) {
+        return vipActivityParameterMapper.insertSelective(record);
+    }
+
+    @Override
+    public VipActivityParameter selectByPrimaryKey(Integer id) {
+        return vipActivityParameterMapper.selectByPrimaryKey(id);
+    }
+
+    @Override
+    public List<VipActivityParameter> selectByVipLevel(Integer vipLevel) {
+        return vipActivityParameterMapper.selectByVipLevel(vipLevel);
+    }
+
+    @Override
+    public int updateByPrimaryKeySelective(VipActivityParameter record) {
+        return vipActivityParameterMapper.updateByPrimaryKeySelective(record);
+    }
+
+    @Override
+    public int updateByPrimaryKey(VipActivityParameter record) {
+        return vipActivityParameterMapper.updateByPrimaryKey(record);
+    }
+    /**
+     * 查询月度礼包
+     * @return
+     */
+    @Override
+    public BaseResult queryMonthPacket(Integer vipLevel, Integer uid){
+        BaseResult br = new BaseResult();
+        Map<String ,Object> resultMap = new HashMap<>();
+        try {
+            List<DrActivityParameter> drActivityParameterList = drActivityParameterDAO.selectParameterByVipMonth(vipLevel);
+            if (drActivityParameterList == null) {
+                drActivityParameterList = new ArrayList<>();
+                logger.error("vip月度礼包查询为空！vipLevel ：" + vipLevel);
+            }
+            //查询用户是否领取过月度红包
+            boolean isGet = queryMonthPacketIsGet(uid);
+            resultMap.put("list", drActivityParameterList);//礼包内加息券或红包列表
+            resultMap.put("total", 1);//礼包内加息券或红包数量
+            resultMap.put("isGet", isGet);//是否领取过了月度礼包
+            br.setMap(resultMap);
+            br.setSuccess(true);
+        }catch (Exception e) {
+            logger.error("月度礼包查询错误！vipLevel：" + vipLevel);
+            br.setErrorCode("9999");
+            br.setSuccess(false);
+            br.setErrorMsg("月度礼包查询错误！");
+        }
+        return br;
+    }
+
+    /**
+     * 查询用户是否领取过月度礼包
+     * @param uid
+     * @return
+     */
+    @Override
+    public boolean queryMonthPacketIsGet(Integer uid){
+        //默认为已领取
+        boolean isGet = true;
+        DrActivityParameter drActivityParameter = drActivityParameterDAO.selectParameterByVipMonthIsGet(uid);
+        if(drActivityParameter == null){
+            isGet = false;
+        }
+        return isGet;
+    }
+}

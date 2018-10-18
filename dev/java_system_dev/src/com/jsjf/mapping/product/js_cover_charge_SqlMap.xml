@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.JsCoverChargeDAO">
+	<select id="selectCoverChargeByPid" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.JsCoverCharge">
+		select * from js_cover_charge where pid=#{pid}
+	</select>
+	
+	<insert id="insertCoverCharge" parameterType="com.jsjf.model.product.JsCoverCharge">
+		insert into js_cover_charge(id,service_charge,received_guarantee,pid,service_remerk,service_status,service_time,add_date,userKy)
+		values(#{id},#{serviceCharge},#{receivedGuarantee},#{pid},#{serviceRemerk},#{serviceStatus},#{serviceTime},now(),#{userKy})
+	</insert>
+	
+	<update id="updateCoverCharge" parameterType="com.jsjf.model.product.JsCoverCharge">
+		update js_cover_charge
+		<set>
+			<if test="serviceCharge!=null">
+				 service_charge=#{serviceCharge},
+			</if>
+			<if test="receivedGuarantee!=null">
+				received_guarantee=#{receivedGuarantee},
+			</if>
+			<if test="serviceTime!=null">
+				service_time=#{serviceTime},
+			</if>
+			<if test="serviceStatus!=null">
+				service_status=#{serviceStatus}, 
+			</if>
+			<if test="serviceRemerk!=null and serviceRemerk!=''">
+				service_remerk=#{serviceRemerk}, 
+			</if>
+		</set>		
+		where pid=#{pid}
+	</update>
+	
+	<delete id="deleteCoverCharge" parameterType="java.lang.Integer">
+		delete from js_cover_charge where pid=#{pid}
+	</delete>
+</mapper>

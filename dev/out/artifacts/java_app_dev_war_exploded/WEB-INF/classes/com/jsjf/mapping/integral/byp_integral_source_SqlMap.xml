@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.integral.IntegralSourceDao">
+
+	<sql id="colNameStr">
+		id as id ,expiration_date as expirationDate,is_using as isUsing,
+		add_time as addTime,update_time as updateTime,convert_rules,disclaimer
+	</sql>
+	
+	
+	 <select id="queryIntegralSourceList" parameterType="java.util.Map" resultType="com.jsjf.model.integral.IntegralSourceBean">
+	 	select  
+	 		<include refid="colNameStr"/>
+	 	from byp_integral_source where 1=1
+		<if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	 </select>
+	 
+	 <select id="queryIntegralSourceListCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(0)
+	 	from byp_integral_source where 1=1
+	</select>
+
+	<!-- 修改-->
+	<update id="updateIntegralSource" parameterType="com.jsjf.model.integral.IntegralSourceBean">
+	 	update byp_integral_source
+	 		<set>
+		 		<if test="expirationDate !=null and expirationDate !=''">
+		 			 expiration_date = #{expirationDate},
+		 		</if>
+		 		<if test="isUsing !=null and isUsing !=''">
+		 			 is_using = #{isUsing},
+		 		</if>
+		 		<if test="updateTime !=null and updateTime !=''">
+		 			 update_time = #{updateTime},
+		 		</if>
+		 	</set>
+	 	where id = #{id:INTEGER}
+	</update>
+
+	 
+	
+	 
+</mapper>

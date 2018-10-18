@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsLoanDAO">
+	<resultMap id="DrClaimsLoanResult" type="com.jsjf.model.claims.DrClaimsLoan">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="no" property="no" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />		
+		<result column="loanUse" property="loanUse" jdbcType="VARCHAR" />
+		<result column="loanAmount" property="loanAmount" jdbcType="DECIMAL" />	
+		<result column="receiveInterest" property="receiveInterest" jdbcType="DECIMAL" />	
+		<result column="currency" property="currency" jdbcType="VARCHAR" />
+		<result column="loanDeadline" property="loanDeadline" jdbcType="VARCHAR" />
+		<result column="rate" property="rate" jdbcType="DECIMAL" />
+		<result column="repayType" property="repayType" jdbcType="INTEGER" />
+		<result column="repayDeadline" property="repayDeadline" jdbcType="INTEGER" />	
+		<result column="startDate" property="startDate" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endDate" jdbcType="TIMESTAMP" />
+		<result column="dateType" property="dateType" jdbcType="INTEGER" />
+		<result column="loanName" property="loanName" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="bankNo" property="bankNo" jdbcType="VARCHAR" />
+		<result column="advisoryRate" property="advisoryRate" jdbcType="DECIMAL" />	
+		<result column="serviceRate" property="serviceRate" jdbcType="DECIMAL" />
+		<result column="defaultersRate" property="defaultersRate" jdbcType="DECIMAL" />
+		<result column="overdueRate" property="overdueRate" jdbcType="DECIMAL" />
+		<result column="overduePenaltyRate" property="overduePenaltyRate" jdbcType="DECIMAL" />	
+		<result column="riskRate" property="riskRate" jdbcType="DECIMAL" />	
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="updDate" property="updDate" jdbcType="TIMESTAMP" />														
+		<result column="updUser" property="updUser" jdbcType="INTEGER" />
+		<result column="companyNameProtocolShow" property="companyNameProtocolShow" jdbcType="VARCHAR" />
+	</resultMap>
+	<select id="selectByPrimaryKey" resultMap="DrClaimsLoanResult" parameterType="java.lang.Integer">
+		select 
+			cl.name, cl.no, cl.status, cl.loanUse, cl.loanAmount, cl.loanDeadline, cl.repayType, cl.dateType, cl.repayDeadline,cl.endDate,
+		cl.loanName, cl.bankName, cl.bankNo,cc.companyName,cc.businessNo,cc.companyNameProtocolShow
+		from dr_claims_loan cl
+		left join dr_claims_customer cc on cc.lid = cl.id
+		where cl.id = #{id}
+	</select>
+	
+	<!-- 根据id得到贷款项目基本信息 -->
+	<select id="getDrClaimsLoanByid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsLoan">
+		SELECT id,name,`no`,`status`,loanUse,loanAmount/10000 as loanAmount,receiveInterest,currency,loanDeadline,
+		rate,repayType,repayDeadline,startDate,endDate,dateType,loanName,bankName,bankNo,serviceCharge,
+		advisoryRate,serviceRate,defaultersRate,overdueRate,overduePenaltyRate,riskRate,addDate,
+		addUser,updDate,updUser,cardFlag,isAuditEdit,bankAddress
+		FROM dr_claims_loan 
+		<where>
+			id = #{id:INTEGER}
+		</where>
+	</select>
+    <select id="selectByPrimaryKey1" resultMap="DrClaimsLoanResult" parameterType="java.lang.Integer">
+        select
+        dc.name, dc.no, dc.status, dc.loanUse, dc.loanAmount, dc.loanDeadline, dc.receiveInterest, dc.loanDeadline, dc.repayType, dc.dateType, dc.repayDeadline,
+        dc.startDate, dc.endDate, dc.loanName, dc.bankName, dc.bankNo, dc.advisoryRate, dc.serviceRate, dc.defaultersRate, dc.overdueRate, dc.overduePenaltyRate, dc.riskRate
+        from dr_claims_loan dc
+        LEFT JOIN
+        dr_subject_info ds on ds.lid=dc.id
+        LEFT JOIN
+        dr_product_info dp on dp.sid=ds.id
+        where dp.id = #{id}
+    </select>
+</mapper>

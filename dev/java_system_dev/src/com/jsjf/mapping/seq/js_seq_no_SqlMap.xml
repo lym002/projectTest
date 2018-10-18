@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.seq.SeqNoDAO">
+	<resultMap id="SeqNoDAOResult" type="com.jsjf.model.system.SeqNo">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="category" property="category" jdbcType="VARCHAR" />	
+		<result column="currNo" property="currNo" jdbcType="INTEGER" />
+		<result column="addDate" property="addDate" jdbcType="TIMESTAMP" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />														
+	</resultMap>
+	<sql id="main_Column_list">
+			id,category,currNo,addDate,updateTime
+	</sql>
+	
+	<select id="getById" parameterType="String" resultMap="SeqNoDAOResult">
+		select
+			<include refid="main_Column_list" />
+		from js_seq_no
+		where category = #{category}
+	</select>
+	
+	<update id="update" parameterType="com.jsjf.model.system.SeqNo">
+		update js_seq_no 
+		<trim prefix=" set " suffixOverrides=",">
+			<if test="currNo != null "> currNo = #{currNo},</if>
+			
+			<if test="updateTime != null "> updateTime = #{updateTime},</if>
+		</trim>
+		where id = #{id}
+	</update>
+	
+	<insert id="add" parameterType="com.jsjf.model.system.SeqNo" useGeneratedKeys="true" keyProperty="id">
+		insert into js_seq_no(category,currNo,addDate)
+		values (#{category:VARCHAR},#{currNo:INTEGER},#{addDate:TIMESTAMP})
+	</insert>
+	
+</mapper>

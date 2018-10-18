@@ -1,0 +1,367 @@
+package com.jsjf.service.member.impl;
+
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.json.JSONObject;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.ConfigUtil;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.DrActivityParameterDAO;
+import com.jsjf.dao.activity.DrMemberFavourableDAO;
+import com.jsjf.dao.cpa.DrChannelInfoDAO;
+import com.jsjf.dao.member.DrMemberBankDAO;
+import com.jsjf.dao.member.DrMemberBaseInfoDAO;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberFundsDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.dao.member.DrMemberRecommendedDAO;
+import com.jsjf.dao.system.SysBankDAO;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberBank;
+import com.jsjf.model.member.DrMemberBaseInfo;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.model.member.DrMemberRecommended;
+import com.jsjf.model.system.SysMessageLog;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.SysMessageLogService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import com.jzh.data.WebRspData;
+import com.jzh.service.JZHService;
+
+@Service
+@Transactional
+public class DrMemberServiceImpl implements DrMemberService { 
+	@Autowired
+	public DrMemberDAO drMemberDAO;
+	@Autowired
+	public DrMemberFundsDAO drMemberFundsDAO;
+	@Autowired
+	public DrMemberBaseInfoDAO drMemberBaseInfoDAO;
+	@Autowired
+	private DrActivityParameterDAO drActivityParameterDAO;
+	@Autowired
+	private DrMemberFavourableDAO drMemberFavourableDAO;
+	@Autowired
+	private SysMessageLogService sysMessageLogService;
+	@Autowired
+	private DrMemberRecommendedDAO drMemberRecommendedDAO;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrChannelInfoDAO drChannelInfoDAO;
+	@Autowired
+	private DrMemberMsgDAO drMemberMsgDAO;
+	@Autowired
+	private DrMemberBankDAO drMemberBankDAO;
+	@Autowired
+	private SysBankDAO sysBankDAO;
+
+	@Override
+	public DrMember selectDrMemberByMobilephone(String mobilephone) {
+		return drMemberDAO.selectDrMemberByMobilephone(mobilephone);
+	}
+	
+	@Override
+	public void insertMember(DrMemberBaseInfo baseinfo,DrMember member, Integer rid) throws Exception {
+		String recommCode = getRecommCode();
+		member.setRecommCodes(recommCode);
+		drMemberDAO.insertDrMember(member);
+		//生成会员统计数据
+		BigDecimal defmount = new BigDecimal(0);
+		//生成会员资金数据
+		DrMemberFunds mf = new DrMemberFunds();
+		mf.setUid(member.getUid());
+		mf.setBalance(defmount);
+		mf.setFreeze(defmount);
+		mf.setWprincipal(defmount);
+		mf.setWinterest(defmount);
+		mf.setWpenalty(defmount);
+		mf.setCarryCount(defmount);
+		mf.setCrushCount(defmount);
+		drMemberFundsDAO.insertDrMemberFunds(mf);
+		
+		//个人信息
+		baseinfo.setUid(member.getUid());
+		baseinfo.setSex(null);
+		baseinfo.setAddTime(new Date());
+		drMemberBaseInfoDAO.insertDrMemberBaseInfo(baseinfo);
+		
+		//推荐人
+		DrMemberRecommended recommended = new DrMemberRecommended(member.getUid(), rid, null, null, null, null);
+		drMemberRecommendedDAO.insertMemberRecommended(recommended);
+		
+		//赠送体验金
+//		Map<String, Object> map = new HashMap<String, Object>();
+//		map.put("type", 3);//新手体验金	
+//		map.put("status", 0);
+//		map.put("code", "TYJ-20170919105406");//TODO:XXQ
+//		DrActivityParameter dap = drActivityParameterDAO.getDrActivityParameterByParam(map);
+//		DrMemberFavourable dmf = new DrMemberFavourable(dap.getId(),member.getUid(), dap.getType(), dap.getCode(), dap.getName(), dap.getAmount(), dap.getRaisedRates(),
+//				dap.getEnableAmount(), 0, null, "注册送体验金", 0,0,dap.getProductDeadline(),dap.getMultiple());
+//		drMemberFavourableDAO.insertIntoInfo(dmf);
+//		dap.setGrantQty(dap.getGrantQty()+1);
+//		drActivityParameterDAO.updateActivityParameter(dap);
+		
+//		//赠送翻倍券（不参与的活动不发放翻倍券，当翻倍券剩余数量为0时，此活动自动结束）
+//		boolean flag = true;
+//		map.clear();
+//		map.put("inverted", member.getToFrom());
+//		List<DrChannelInfo> channelList = drChannelInfoDAO.getDrChannelInfoListForMap(map);
+//		if(!Utils.isEmptyList(channelList)){
+//			DrChannelInfo channel = channelList.get(0);
+//			if(channel.getIsParticipation()==1){
+//				flag = false;
+//			}
+//		}
+//		
+//		if(flag){
+//			map.clear();
+//			map.put("type", 4);//注册送翻倍券
+//			map.put("status",0);
+//			map.put("applicableScenarios","1");
+//			DrActivityParameter activity = drActivityParameterDAO.getDrActivityParameterByParam(map);
+//			if(Utils.isObjectNotEmpty(activity) && activity.getSurplusQty()-1>=0){//剩余数量大于0,继续给用户送翻倍券
+//				DrMemberFavourable favourable = new DrMemberFavourable(activity.getId(),member.getUid(), activity.getType(), activity.getCode(), activity.getName(), activity.getAmount(), activity.getRaisedRates(),
+//						activity.getEnableAmount(), 0, Utils.getDayNumOfDate(1-activity.getDeadline()), "注册送翻倍券", 0,0,activity.getProductDeadline(),activity.getMultiple());
+//				drMemberFavourableDAO.insertIntoInfo(favourable);
+////				activity.setSurplusQty(activity.getSurplusQty()-1);
+////				drActivityParameterDAO.updateActivityParameter(activity);
+//			}
+//		}
+		
+		// 发送手机短信
+		String sms = redisClientTemplate.getProperties("receiveCouponSms");
+		if (member.getMobilephone() != null && !member.getMobilephone().equals("")) {
+			SysMessageLog logs = new SysMessageLog(member.getUid(), sms, 2, null, member.getMobilephone());
+			sysMessageLogService.sendMsg(logs,1);
+		}
+//		//发站内信
+//		DrMemberMsg msg = new DrMemberMsg(member.getUid(), 0, 1, "注册成功", new Date(), 0, 0, redisClientTemplate.getProperties("receiveCouponMsg"));
+//		drMemberMsgDAO.insertDrMemberMsg(msg);
+	}
+
+	@Override
+	public void update(DrMember DrMember) throws Exception {
+		drMemberDAO.updateByPrimaryKey(DrMember);
+	}
+	
+	
+
+
+	@Override
+	public DrMember selectDrMemberByMobileOrRecomm(String str) {
+		return drMemberDAO.selectDrMemberByMobileOrRecomm(str);
+	}
+	
+	public String getRecommCode(){
+		String code = "";
+		String[] beforeShuffle = new String[] {
+				"A", "B", "C", "D", "E", "F", "G", "H", "J",  
+               "K", "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V",  
+               "W", "X", "Y", "Z" }; 
+		Random rd = new Random();
+		do {
+			code = beforeShuffle[rd.nextInt(24)]+Utils.getRandomNumber();
+			code = code.substring(0,3)+beforeShuffle[rd.nextInt(24)]+code.substring(3,5);
+			DrMember member = drMemberDAO.selectDrMemberByMobileOrRecomm(code);
+			if(member == null){
+				break;
+			}
+		} while (true);
+		
+		return code;
+	}
+	
+	@Override
+	public List<DrMember> selectMemberIsJoinActivity(Integer uid) {
+		return drMemberDAO.selectMemberIsJoinActivity(uid);
+	}
+
+	@Override
+	public Map<String, Object> selectIndexSummaryData() {
+		return drMemberDAO.selectIndexSummaryData();
+	}
+
+	@Override
+	public boolean isExistsMobilphone(String mobilephone) {
+		Integer count = drMemberDAO.isExistsMobilphone(mobilephone);
+		if(count==0){
+			return false;
+		}else{
+			return true;
+		}
+	}
+
+	@Override
+	public String selectMobilePhoneByRecommCode(String recommCode) {
+		return drMemberDAO.selectMobilePhoneByRecommCode(recommCode);
+	}
+	@Override
+	public int selectFirstPayMent(Integer uid) {
+		return drMemberDAO.selectFirstPayMent(uid);
+	}
+
+	@Override
+	public List<Map<String,Object>> lastRegMember() {
+		return drMemberDAO.lastRegMember();
+	}
+
+	@Override
+	public void openAccountRes(net.sf.json.JSONObject json,HttpServletRequest req) throws Exception {
+		net.sf.json.JSONObject message = json.getJSONObject("message");
+		
+		if(JZHService.verifySignAsynNotice(new WebRspData(message), (String)json.get("signature"))){
+			System.out.println("个人开户验签成功---------------------");
+			boolean lockFlag = false;
+			String  openAccountRes= "openAccountRes_"+(String)message.get("mchnt_txn_ssn");
+			try {
+				if("0000".equals((String)message.get("resp_code"))){
+					lockFlag = redisClientTemplate.tryLock(openAccountRes, 3, TimeUnit.SECONDS,false);
+					if(lockFlag){
+						DrMember m = drMemberDAO.selectDrMemberByMobilePhone((String)message.get("mobile_no"));
+						if(Utils.isObjectNotEmpty(m) && m.getIsFuiou() == 0){
+							//用户表
+							m.setIsFuiou(1);
+							m.setMchnt_txn_ssn((String)message.get("mchnt_txn_ssn"));
+//							m.setFuiou_acnt((String)message.get("fuiou_acnt"));
+//							m.setUser_id((String)message.get("user_id"));
+//							m.setAuth_st((String)message.get("auth_st"));
+//						m.setRealVerify(1);
+							drMemberDAO.updateByPrimaryKey(m);
+							//银行表
+							DrMemberBank bank = new DrMemberBank();
+							bank.setAddTime(new Date());
+							bank.setAddUser(0);
+							String bankname  = (String)message.get("bank_nm");
+							
+							if(bankname !=null){
+								int index = bankname.indexOf("银行");	
+								bankname = index==0?bankname:bankname.substring(0, index+2);
+								bankname = bankname.contains("浦东发展")?"浦发银行":bankname;
+							}
+							bank.setBankName(bankname);
+							bank.setBankNum((String)message.get("capAcntNo"));
+							bank.setStatus(1);
+							bank.setType(3);
+							bank.setUid(m.getUid());				
+							
+							drMemberBankDAO.insertDrMemberBank(bank);
+							
+							//基础表
+							DrMemberBaseInfo info = drMemberBaseInfoDAO.queryMemberBaseInfoByUid(m.getUid());				
+							if(Utils.isObjectNotEmpty(info) && (Utils.isObjectEmpty(info.getRealName())|| Utils.isObjectEmpty(info.getIdCards()))){
+								info.setRealName((String)message.get("cust_nm"));
+								info.setIdCards((String)message.get("certif_id"));
+								
+								// 性别和生日
+								Integer sexNum = Integer.parseInt(info.getIdCards().substring(16, 17));
+								String birthday = info.getIdCards().substring(6, 14);
+								info.setSex(sexNum % 2 != 0 ? 1 : 2);
+								info.setBirthDate(new SimpleDateFormat("yyyyMMdd").parse(birthday));
+								
+								drMemberBaseInfoDAO.updateDrMemberBaseInfoById(info);
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}finally{
+				if(lockFlag){
+					redisClientTemplate.del(openAccountRes);
+				}
+				DrMember m = drMemberDAO.selectDrMemberByMobilePhone((String)message.get("mobile_no"));
+				if(m != null)
+					req.getSession().setAttribute(ConfigUtil.FRONT_LOGIN_USER, drMemberDAO.selectByPrimaryKey(m.getUid()));
+			}
+			
+		}
+		
+	}
+
+	@Override
+	public void openAccount(JSONObject message) throws Exception {
+		System.out.println("个人开户验签成功---------------------");
+		boolean lockFlag = false;
+		String  openAccountRes= "openAccountRes_"+(String)message.get("mchnt_txn_ssn");
+		try {
+			lockFlag = redisClientTemplate.tryLock(openAccountRes, 3, TimeUnit.SECONDS,false);
+			if(lockFlag){
+				DrMember m = drMemberDAO.selectDrMemberByMobilePhone((String)message.get("mobile_no"));
+				if(Utils.isObjectNotEmpty(m) &&  (m.getIsFuiou() == null || m.getIsFuiou() ==0)){
+					//用户表
+					m.setIsFuiou(1);
+					m.setMchnt_txn_ssn((String)message.get("mchnt_txn_ssn"));
+//							m.setFuiou_acnt((String)message.get("fuiou_acnt"));
+//							m.setUser_id((String)message.get("user_id"));
+//							m.setAuth_st((String)message.get("auth_st"));
+//						m.setRealVerify(1);
+					drMemberDAO.updateByPrimaryKey(m);
+					//银行表
+					DrMemberBank bank = new DrMemberBank();
+					bank.setAddTime(new Date());
+					bank.setAddUser(0);
+					String parent_bank_id  = message.optString("parent_bank_id");
+					
+					String bankname = sysBankDAO.selectBankByCode(parent_bank_id+"0000");
+										
+					bank.setBankName(bankname);
+					bank.setBankNum((String)message.get("capAcntNo"));
+					bank.setStatus(1);
+					bank.setChannel(0);
+					bank.setType(3);
+					bank.setUid(m.getUid());				
+					
+					drMemberBankDAO.insertDrMemberBank(bank);
+					
+					//基础表
+					DrMemberBaseInfo info = drMemberBaseInfoDAO.queryMemberBaseInfoByUid(m.getUid());				
+					if(Utils.isObjectNotEmpty(info) && (Utils.isObjectEmpty(info.getRealName())|| Utils.isObjectEmpty(info.getIdCards()))){
+						info.setRealName((String)message.get("cust_nm"));
+						info.setIdCards((String)message.get("certif_id"));
+						
+						// 性别和生日
+						Integer sexNum = Integer.parseInt(info.getIdCards().substring(16, 17));
+						String birthday = info.getIdCards().substring(6, 14);
+						info.setSex(sexNum % 2 != 0 ? 1 : 2);
+						info.setBirthDate(new SimpleDateFormat("yyyyMMdd").parse(birthday));
+						
+						drMemberBaseInfoDAO.updateDrMemberBaseInfoById(info);
+					}
+				}
+			}
+		} catch (Exception e) {
+			throw e;
+		}finally{
+			if(lockFlag){
+				redisClientTemplate.del(openAccountRes);
+			}
+		}
+	}
+
+	@Override
+	public int selectDrmembercount() {
+		
+		return drMemberDAO.selectDrmembercount();
+	}
+
+	@Override
+	public DrMember selectByPrimaryKey(Integer uid) {
+		return drMemberDAO.selectByPrimaryKey(uid);
+	}
+
+	
+}

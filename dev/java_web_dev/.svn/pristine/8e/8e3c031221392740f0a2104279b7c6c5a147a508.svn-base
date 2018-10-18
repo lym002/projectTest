@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.toutiao.TouTiaoMapper">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.toutiao.TTDeviceInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="aid" jdbcType="VARCHAR" property="aid" />
+    <result column="cid" jdbcType="VARCHAR" property="cid" />
+    <result column="csite" jdbcType="VARCHAR" property="csite" />
+    <result column="ctype" jdbcType="VARCHAR" property="ctype" />
+    <result column="mac" jdbcType="VARCHAR" property="mac" />
+    <result column="mac1" jdbcType="VARCHAR" property="mac1" />
+    <result column="ua" jdbcType="VARCHAR" property="ua" />
+    <result column="ua1" jdbcType="VARCHAR" property="ua1" />
+    <result column="idfa" jdbcType="VARCHAR" property="idfa" />
+    <result column="androidid" jdbcType="VARCHAR" property="androidid" />
+    <result column="androidid1" jdbcType="VARCHAR" property="androidid1" />
+    <result column="imei" jdbcType="VARCHAR" property="imei" />
+    <result column="uuid" jdbcType="VARCHAR" property="uuid" />
+    <result column="openudid" jdbcType="VARCHAR" property="openudid" />
+    <result column="udid" jdbcType="VARCHAR" property="udid" />
+    <result column="os" jdbcType="VARCHAR" property="os" />
+    <result column="ip" jdbcType="VARCHAR" property="ip" />
+    <result column="ts" jdbcType="VARCHAR" property="ts" />
+    <result column="convert_id" jdbcType="VARCHAR" property="convertId" />
+    <result column="callback_url" jdbcType="VARCHAR" property="callbackUrl" />
+    <result column="callback_param" jdbcType="VARCHAR" property="callbackParam" />
+    <result column="sign" jdbcType="VARCHAR" property="sign" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    id, aid, cid, csite, ctype, mac, mac1, ua, ua1, idfa, androidid, androidid1, imei, 
+    uuid, openudid, udid, os, ip, ts, convert_id, callback_url, callback_param, sign
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from byp_toutiao
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="getUserDeviceInfoByParams" resultMap="BaseResultMap">
+    select
+    *
+    from byp_toutiao
+    where 1 = 1
+      <if test="aid != null">
+        and aid = #{aid,jdbcType=VARCHAR}
+      </if>
+      <if test="cid != null">
+        and cid = #{cid,jdbcType=VARCHAR}
+      </if>
+      <if test="csite != null">
+        and csite = #{csite,jdbcType=VARCHAR}
+      </if>
+      <if test="ctype != null">
+        and ctype = #{ctype,jdbcType=VARCHAR}
+      </if>
+      <if test="mac != null">
+        and mac = #{mac,jdbcType=VARCHAR}
+      </if>
+      <if test="mac1 != null">
+        and mac1 = #{mac1,jdbcType=VARCHAR}
+      </if>
+      <if test="ua != null">
+        and ua = #{ua,jdbcType=VARCHAR}
+      </if>
+      <if test="ua1 != null">
+        and ua1 = #{ua1,jdbcType=VARCHAR}
+      </if>
+      <if test="idfa != null">
+        and idfa = #{idfa,jdbcType=VARCHAR}
+      </if>
+      <if test="androidid != null">
+        and androidid = #{androidid,jdbcType=VARCHAR}
+      </if>
+      <if test="androidid1 != null">
+        and androidid1 = #{androidid1,jdbcType=VARCHAR}
+      </if>
+      <if test="imei != null">
+        and imei = #{imei,jdbcType=VARCHAR}
+      </if>
+      <if test="uuid != null">
+        and uuid = #{uuid,jdbcType=VARCHAR}
+      </if>
+      <if test="openudid != null">
+        and openudid = #{openudid,jdbcType=VARCHAR}
+      </if>
+      <if test="udid != null">
+        and udid = #{udid,jdbcType=VARCHAR}
+      </if>
+      <if test="os != null">
+        and os = #{os,jdbcType=VARCHAR}
+      </if>
+      <if test="ip != null">
+        and ip = #{ip,jdbcType=VARCHAR}
+      </if>
+      <if test="ts != null">
+        and ts = #{ts,jdbcType=VARCHAR}
+      </if>
+      <if test="convertId != null">
+        and convert_id = #{convertId,jdbcType=VARCHAR}
+      </if>
+      <if test="callbackUrl != null">
+        and callback_url = #{callbackUrl,jdbcType=VARCHAR}
+      </if>
+      <if test="callbackParam != null">
+        and callback_param = #{callbackParam,jdbcType=VARCHAR}
+      </if>
+      <if test="sign != null">
+        and sign = #{sign,jdbcType=VARCHAR}
+      </if>
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from byp_toutiao
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.jsjf.model.toutiao.TTDeviceInfo">
+    insert into byp_toutiao (id, aid, cid, 
+      csite, ctype, mac, 
+      mac1, ua, ua1, idfa, 
+      androidid, androidid1, imei, 
+      uuid, openudid, udid, 
+      os, ip, ts, convert_id, 
+      callback_url, callback_param, sign
+      )
+    values (#{id,jdbcType=INTEGER}, #{aid,jdbcType=VARCHAR}, #{cid,jdbcType=VARCHAR}, 
+      #{csite,jdbcType=VARCHAR}, #{ctype,jdbcType=VARCHAR}, #{mac,jdbcType=VARCHAR}, 
+      #{mac1,jdbcType=VARCHAR}, #{ua,jdbcType=VARCHAR}, #{ua1,jdbcType=VARCHAR}, #{idfa,jdbcType=VARCHAR}, 
+      #{androidid,jdbcType=VARCHAR}, #{androidid1,jdbcType=VARCHAR}, #{imei,jdbcType=VARCHAR}, 
+      #{uuid,jdbcType=VARCHAR}, #{openudid,jdbcType=VARCHAR}, #{udid,jdbcType=VARCHAR}, 
+      #{os,jdbcType=VARCHAR}, #{ip,jdbcType=VARCHAR}, #{ts,jdbcType=VARCHAR}, #{convertId,jdbcType=VARCHAR}, 
+      #{callbackUrl,jdbcType=VARCHAR}, #{callbackParam,jdbcType=VARCHAR}, #{sign,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.jsjf.model.toutiao.TTDeviceInfo">
+    insert into byp_toutiao
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        id,
+      </if>
+      <if test="aid != null">
+        aid,
+      </if>
+      <if test="cid != null">
+        cid,
+      </if>
+      <if test="csite != null">
+        csite,
+      </if>
+      <if test="ctype != null">
+        ctype,
+      </if>
+      <if test="mac != null">
+        mac,
+      </if>
+      <if test="mac1 != null">
+        mac1,
+      </if>
+      <if test="ua != null">
+        ua,
+      </if>
+      <if test="ua1 != null">
+        ua1,
+      </if>
+      <if test="idfa != null">
+        idfa,
+      </if>
+      <if test="androidid != null">
+        androidid,
+      </if>
+      <if test="androidid1 != null">
+        androidid1,
+      </if>
+      <if test="imei != null">
+        imei,
+      </if>
+      <if test="uuid != null">
+        uuid,
+      </if>
+      <if test="openudid != null">
+        openudid,
+      </if>
+      <if test="udid != null">
+        udid,
+      </if>
+      <if test="os != null">
+        os,
+      </if>
+      <if test="ip != null">
+        ip,
+      </if>
+      <if test="ts != null">
+        ts,
+      </if>
+      <if test="convertId != null">
+        convert_id,
+      </if>
+      <if test="callbackUrl != null">
+        callback_url,
+      </if>
+      <if test="callbackParam != null">
+        callback_param,
+      </if>
+      <if test="sign != null">
+        sign,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="aid != null">
+        #{aid,jdbcType=VARCHAR},
+      </if>
+      <if test="cid != null">
+        #{cid,jdbcType=VARCHAR},
+      </if>
+      <if test="csite != null">
+        #{csite,jdbcType=VARCHAR},
+      </if>
+      <if test="ctype != null">
+        #{ctype,jdbcType=VARCHAR},
+      </if>
+      <if test="mac != null">
+        #{mac,jdbcType=VARCHAR},
+      </if>
+      <if test="mac1 != null">
+        #{mac1,jdbcType=VARCHAR},
+      </if>
+      <if test="ua != null">
+        #{ua,jdbcType=VARCHAR},
+      </if>
+      <if test="ua1 != null">
+        #{ua1,jdbcType=VARCHAR},
+      </if>
+      <if test="idfa != null">
+        #{idfa,jdbcType=VARCHAR},
+      </if>
+      <if test="androidid != null">
+        #{androidid,jdbcType=VARCHAR},
+      </if>
+      <if test="androidid1 != null">
+        #{androidid1,jdbcType=VARCHAR},
+      </if>
+      <if test="imei != null">
+        #{imei,jdbcType=VARCHAR},
+      </if>
+      <if test="uuid != null">
+        #{uuid,jdbcType=VARCHAR},
+      </if>
+      <if test="openudid != null">
+        #{openudid,jdbcType=VARCHAR},
+      </if>
+      <if test="udid != null">
+        #{udid,jdbcType=VARCHAR},
+      </if>
+      <if test="os != null">
+        #{os,jdbcType=VARCHAR},
+      </if>
+      <if test="ip != null">
+        #{ip,jdbcType=VARCHAR},
+      </if>
+      <if test="ts != null">
+        #{ts,jdbcType=VARCHAR},
+      </if>
+      <if test="convertId != null">
+        #{convertId,jdbcType=VARCHAR},
+      </if>
+      <if test="callbackUrl != null">
+        #{callbackUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="callbackParam != null">
+        #{callbackParam,jdbcType=VARCHAR},
+      </if>
+      <if test="sign != null">
+        #{sign,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.jsjf.model.toutiao.TTDeviceInfo">
+    update byp_toutiao
+    <set>
+      <if test="aid != null">
+        aid = #{aid,jdbcType=VARCHAR},
+      </if>
+      <if test="cid != null">
+        cid = #{cid,jdbcType=VARCHAR},
+      </if>
+      <if test="csite != null">
+        csite = #{csite,jdbcType=VARCHAR},
+      </if>
+      <if test="ctype != null">
+        ctype = #{ctype,jdbcType=VARCHAR},
+      </if>
+      <if test="mac != null">
+        mac = #{mac,jdbcType=VARCHAR},
+      </if>
+      <if test="mac1 != null">
+        mac1 = #{mac1,jdbcType=VARCHAR},
+      </if>
+      <if test="ua != null">
+        ua = #{ua,jdbcType=VARCHAR},
+      </if>
+      <if test="ua1 != null">
+        ua1 = #{ua1,jdbcType=VARCHAR},
+      </if>
+      <if test="idfa != null">
+        idfa = #{idfa,jdbcType=VARCHAR},
+      </if>
+      <if test="androidid != null">
+        androidid = #{androidid,jdbcType=VARCHAR},
+      </if>
+      <if test="androidid1 != null">
+        androidid1 = #{androidid1,jdbcType=VARCHAR},
+      </if>
+      <if test="imei != null">
+        imei = #{imei,jdbcType=VARCHAR},
+      </if>
+      <if test="uuid != null">
+        uuid = #{uuid,jdbcType=VARCHAR},
+      </if>
+      <if test="openudid != null">
+        openudid = #{openudid,jdbcType=VARCHAR},
+      </if>
+      <if test="udid != null">
+        udid = #{udid,jdbcType=VARCHAR},
+      </if>
+      <if test="os != null">
+        os = #{os,jdbcType=VARCHAR},
+      </if>
+      <if test="ip != null">
+        ip = #{ip,jdbcType=VARCHAR},
+      </if>
+      <if test="ts != null">
+        ts = #{ts,jdbcType=VARCHAR},
+      </if>
+      <if test="convertId != null">
+        convert_id = #{convertId,jdbcType=VARCHAR},
+      </if>
+      <if test="callbackUrl != null">
+        callback_url = #{callbackUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="callbackParam != null">
+        callback_param = #{callbackParam,jdbcType=VARCHAR},
+      </if>
+      <if test="sign != null">
+        sign = #{sign,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.jsjf.model.toutiao.TTDeviceInfo">
+    update byp_toutiao
+    set aid = #{aid,jdbcType=VARCHAR},
+      cid = #{cid,jdbcType=VARCHAR},
+      csite = #{csite,jdbcType=VARCHAR},
+      ctype = #{ctype,jdbcType=VARCHAR},
+      mac = #{mac,jdbcType=VARCHAR},
+      mac1 = #{mac1,jdbcType=VARCHAR},
+      ua = #{ua,jdbcType=VARCHAR},
+      ua1 = #{ua1,jdbcType=VARCHAR},
+      idfa = #{idfa,jdbcType=VARCHAR},
+      androidid = #{androidid,jdbcType=VARCHAR},
+      androidid1 = #{androidid1,jdbcType=VARCHAR},
+      imei = #{imei,jdbcType=VARCHAR},
+      uuid = #{uuid,jdbcType=VARCHAR},
+      openudid = #{openudid,jdbcType=VARCHAR},
+      udid = #{udid,jdbcType=VARCHAR},
+      os = #{os,jdbcType=VARCHAR},
+      ip = #{ip,jdbcType=VARCHAR},
+      ts = #{ts,jdbcType=VARCHAR},
+      convert_id = #{convertId,jdbcType=VARCHAR},
+      callback_url = #{callbackUrl,jdbcType=VARCHAR},
+      callback_param = #{callbackParam,jdbcType=VARCHAR},
+      sign = #{sign,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

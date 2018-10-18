@@ -1,0 +1,1049 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.product.DrProductInvestDAO">
+	<resultMap id="DrProductInvestResult" type="com.jsjf.model.product.DrProductInvest">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="investTime" property="investTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="factAmount" property="factAmount" jdbcType="DECIMAL" />
+		<result column="interest" property="interest" jdbcType="DECIMAL" />
+		<result column="factInterest" property="factInterest" jdbcType="DECIMAL" />
+		<result column="fid" property="fid" jdbcType="INTEGER" />
+		<result column="joinType" property="joinType" jdbcType="INTEGER" />
+		<result column="agreementNo" property="agreementNo" jdbcType="VARCHAR"/>
+		<result column="remark" property="remark" jdbcType="VARCHAR"/>
+		<result column="specialRate" property="specialRate" jdbcType="DECIMAL" />
+		<result column="experience" property="experience" jdbcType="VARCHAR"/>
+		<result column="contract_no" property="contract_no" jdbcType="VARCHAR"/>
+	</resultMap>
+	
+	<!-- 获取投资记录列表 -->
+	<select id="getDrProductInvestList" parameterType="java.util.HashMap" resultType="com.jsjf.model.product.DrProductInvest">
+		select dpi.*,concat(left(mb.realname,1),'**') as realname,concat(left(m.mobilephone,3),'**',right(m.mobilephone,4)) as mobilephone,dpf.code,dpf.type,dpf.deadline,dpf.rate,dpf.repayType as repayType,
+		IF(jncr.newInvestId>0,CONCAT('续投',jncr.period,'天产品'),'') as remark,m.recommCodes
+		from dr_product_invest dpi 
+		left join dr_product_info dpf on dpf.id = dpi.pid
+		left join dr_member m on m.uid = dpi.uid
+		left join dr_member_base_info mb on mb.uid=m.uid
+		LEFT JOIN dr_subject_info dsi ON dpf.sid =dsi.id
+		LEFT JOIN js_novice_continue_record jncr on jncr.newInvestId = dpi.id
+		<where>
+			<if test="realname != null and realname != ''">
+				mb.realname like CONCAT('%','${realname}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes != ''">
+				m.recommCodes like CONCAT('%','${recommCodes}','%' )
+			</if>
+			<if test="code != null and code != ''">
+				and dpf.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="repayType != null and repayType != ''">
+				and dpf.repayType =#{repayType}
+			</if>
+			<if test="mobilephone != null and mobilephone !=''"> and m.mobilephone = #{mobilephone}</if>
+			<if test="pid != null"> and dpi.pid = #{pid}</if>
+			<if test="type != null"> and dpf.type = #{type}</if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="scode != null and scode !=''"> and dsi.code = '${scode}'</if>
+			<if test="statuses != null ">
+				and dpi.status  in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item} 
+				</foreach>
+			</if>
+			<if test="id != null">
+				and dpi.id = #{id}
+			</if>
+		</where>
+		<![CDATA[ order by dpi.id desc ]]>
+		limit #{offset},#{limit}
+	</select>
+	
+	
+	<select id="selectInvestLogByParam" parameterType="java.util.HashMap" resultMap="DrProductInvestResult">
+		select dpi.*,dp.fullName,dp.amount as productAmount, dp.rate, dp.deadline,dp.activityRate,dpi.specialRate,
+		case dp.status when 9 then dpi.factAmount+dpi.factInterest else  0 end as receivedAmount,
+		case when dp.status <![CDATA[ < ]]> 9 then dpi.factAmount+dpi.factInterest else 0 end as collectAmount,dp.status productStatus,
+		IF(jncr.newInvestId>0,CONCAT('续投',jncr.period,'天产品'),'') as remark,
+		case dp.type when 1 then (select max(rep.shouldTime) from dr_product_invest_repayinfo rep where rep.investId = dpi.id)			
+		else dp.expireDate end as expireDate,dp.repayType as repayType	
+		from dr_product_invest dpi
+		left join dr_product_info dp on dpi.pid = dp.id 
+		left join dr_member dm on dpi.uid = dm.uid
+		LEFT JOIN js_novice_continue_record jncr on jncr.newInvestId = dpi.id
+		<trim prefix=" where " prefixOverrides="and">
+			dp.type != 5 
+			<if test="mobilephone != null and mobilephone!=''"> and dm.mobilephone = #{mobilephone}</if>
+			<if test="recommCodes != null and recommCodes!=''"> and dm.recommCodes = #{recommCodes}</if>
+			<if test="pid != null"> and dpi.pid = #{pid}</if>
+			<if test="type != null"> and dp.type = #{type}</if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="statuses != null ">
+				and dpi.status  in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item} 
+				</foreach>
+			</if>
+		</trim>
+		order by dpi.investTime desc
+		limit #{offset},#{limit}
+	</select>
+	
+	<!-- 获取投资记录总数 -->
+	<select id="getDrProductInvestCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_product_invest dpi 
+		left join dr_product_info dpf on dpf.id = dpi.pid
+		left join dr_member m on m.uid = dpi.uid
+		left join dr_member_base_info mb on mb.uid=m.uid		
+		LEFT JOIN dr_subject_info dsi ON dpf.sid =dsi.id
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="realname != null and realname != ''">
+				 and mb.realname like CONCAT('%','${realname}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes != ''">
+				m.recommCodes like CONCAT('%','${recommCodes}','%' )
+			</if>
+			<if test="code != null and code != ''">
+				and dpf.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="repayType != null and repayType != ''">
+				and dpf.repayType =#{repayType}
+			</if>
+			<if test="mobilephone != null and mobilephone !=''"> and m.mobilephone = #{mobilephone}</if>
+			<if test="pid != null"> and dpi.pid = #{pid}</if>
+			<if test="type != null"> and dpf.type = #{type}</if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="scode != null and scode !=''"> and dsi.code = '${scode}'</if>
+			<if test="statuses != null ">
+				and dpi.status  in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item} 
+				</foreach>
+			</if>
+			<if test="id != null">
+				and dpi.id = #{id}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="selectInvestLogByParamCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from dr_product_invest dpi 
+		left join dr_product_info dpf on dpf.id = dpi.pid
+		left join dr_member m on m.uid = dpi.uid
+		left join dr_member_base_info mb on mb.uid=m.uid		
+		LEFT JOIN dr_subject_info dsi ON dpf.sid =dsi.id
+		<trim prefix=" where " prefixOverrides="and">
+			dpf.type != 5 
+			<if test="realname != null and realname != ''">
+				and mb.realname like CONCAT('%','${realname}','%' )
+			</if>
+			<if test="code != null and code != ''">
+				and dpf.code like CONCAT('%','${code}','%' )
+			</if>
+			<if test="mobilephone != null and mobilephone != ''"> and m.mobilephone = #{mobilephone}</if>
+			<if test="recommCodes != null and recommCodes!=''"> and m.recommCodes = #{recommCodes}</if>
+			<if test="pid != null"> and dpi.pid = #{pid}</if>
+			<if test="type != null"> and dpf.type = #{type}</if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(dpi.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="scode != null and scode !=''"> and dsi.code = '${scode}'</if>
+			<if test="statuses != null ">
+				and dpi.status  in
+				<foreach collection="statuses" item="item" open="(" close=")" separator=",">
+					#{item} 
+				</foreach>
+			</if>
+			<if test="id != null">
+				and dpi.id = #{id}
+			</if>
+		</trim>
+	</select>
+	
+	<select id="getDrProductInvestByTime" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select IFNULL(sum(dpi.factAmount),0) as investAmount from dr_product_invest dpi 
+		left join dr_product_info dpf on dpf.id = dpi.pid
+		left join dr_member m on m.uid = dpi.uid
+		WHERE 
+			dpi.uid = #{uid:INTEGER}
+		and dpi.`status` = 1
+		AND <![CDATA[ DATE_FORMAT(dpi.investTime,'%Y-%m-%d') <= DATE_FORMAT(dpi.investTime,'%Y-%m-%d')]]>
+		and <![CDATA[ DATE_FORMAT(dpi.investTime,'%Y-%m-%d') >=DATE_FORMAT(DATE_SUB(dpi.investTime,INTERVAL #{period:INTEGER} day),'%Y-%m-%d')]]>
+	</select>
+	
+	<update id="batchUpdate" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			update dr_product_invest 
+			<trim prefix=" set " suffixOverrides=",">
+				<if test="item.factAmount != null "> factAmount = #{item.factAmount},  </if>
+				<if test="item.interest != null "> interest = #{item.interest},  </if>
+				<if test="item.factInterest != null "> factInterest = #{item.factInterest},  </if>
+				<if test="item.status != null "> status = #{item.status},  </if>
+				<if test="item.agreementNo != null "> agreementNo = #{item.agreementNo} ,</if>
+			</trim>
+			<where>
+				id = #{item.id}
+			</where>
+		</foreach>
+	</update>
+	<select id="getDrProductInvestListByPid" parameterType="java.lang.Integer" resultMap="DrProductInvestResult">
+		select * from dr_product_invest where pid = #{pid} and status = 0 
+		and DATE_FORMAT(investTime,'%Y-%m-%d') <![CDATA[ < ]]> DATE_FORMAT(NOW(),'%Y-%m-%d')
+	</select>
+	<update id="updateStatusByIds">
+		update dr_product_invest set status = #{status}
+		where id in
+		<foreach collection="ids" item="item" open="(" close=")" separator=",">
+			#{item}
+		</foreach>
+	</update>
+	<!-- 新手标投资记录 -->
+	<select id="selectNewhandNormalInvestLog"  resultType="com.jsjf.model.product.DrProductInvest">
+		select dpi.*,dp.deadline,dp.rate from dr_product_invest dpi
+		left join dr_product_info dp on dp.id = dpi.pid 
+		where dpi.status = 0 and dp.type=1
+	</select>
+	
+	<!-- 获取首投用户 (不包含新手标)-->
+	<select id="getForFirstTimeInvestmentMember" resultType="Integer">
+		select DISTINCT invest.uid from dr_product_invest invest
+		inner join dr_product_info dp ON invest.pid=dp.id and dp.type <![CDATA[<>]]> 1 
+		where invest.`status`=1
+		and EXISTS (
+			select 1 from dr_member_recommended dm where invest.uid = dm.uid and dm.investTime is NULL
+		)
+	</select>
+	<!-- 获取用户首投返利记录 -->
+	<select id="getForFirstTimeInvestmentByUid" parameterType="Integer" resultType="com.jsjf.model.product.DrProductInvest">
+		select dpi.*,dp.deadline as deadline,dp.fullName as fullName 
+		from dr_product_invest dpi
+		inner join dr_product_info dp on dpi.pid = dp.id
+		where dpi.uid = #{uid}
+		and dpi.`status`=1
+		and dp.type not in (1)
+		order by investTime ASC
+		limit 0,1
+	</select>
+	<!-- 查询用户投资订单信息 -->
+	<select id="selectInvestMemberInfoListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	select concat(substring(memberinfo.realname,1,1),"**") AS realname,concat(substring(member.mobilePhone,1,3),"****",substring(member.mobilePhone,8)) mobilePhone,
+	DATE_FORMAT(member.regdate,'%Y-%m-%d') regdate,
+	IFNULL(channel.name, '币优铺理财') as chanelName,
+	(select concat(substring(m.mobilePhone,1,3),"***",substring(m.mobilePhone,8)) from dr_member_recommended recom  
+	left JOIN dr_member m on m.uid = recom.referrerId where recom.uid = DI.uid) as recomMobilePhone,
+	(select concat(substring(b.realname,1,1),"**")  from dr_member_recommended recom  
+	LEFT JOIN dr_member_base_info b on b.uid=recom.referrerId where recom.uid = DI.uid) as recomRealName,
+	DI.amount,DATE_FORMAT(DI.investTime,'%Y-%m-%d %H:%i:%s') investTime, CASE DI.joinType WHEN 0 THEN 'PC' WHEN 1 then 'IOS' WHEN 2 THEN 'android' WHEN 3 THEN 'H5' WHEN 5 THEN '微信' ELSE '其它' END  joinType ,
+	case when pinfo.status in(8,9) then DI.factInterest else DI.interest end as interest,
+	pinfo.fullName,pinfo.deadline,DATE_FORMAT(DATE_SUB(repay.shouldTime,INTERVAL pinfo.deadline DAY),'%Y-%m-%d') resultDate,
+	case pinfo.status when 5 then '募集中' when 6 then '募集完成' when 8 then '已计息' when 9 then '已回款' end statusName,
+	DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') shouldTime,
+	DATE_FORMAT(DATE_SUB(repay.shouldTime,INTERVAL pinfo.deadline DAY),'%Y-%m-%d') usedTime,
+	case fa.status when 1 then '已使用' else '' end faStatus,
+	case fa.type when 1 then '返现红包' when 2 then '加息券' when 3 then '体验金' when 4 then '翻倍券' end typeName,
+	case fa.type when 1 then fa.amount end faAmount1 , case fa.type when 3 then fa.amount end faAmount2,fa.raisedRates,
+	if(fa.multiple>1,fa.multiple,'') as multiple,
+	case pinfo.repayType when 1 then '到期一次还本付息' when 2 then '按月付息到期还本' when 3 then '等本等息按周回款' when 4 then '等本等息按月回款' end as repayTypeName,
+	member.recommCodes as recommCodes
+	from 
+	dr_product_invest DI
+	left JOIN dr_member member on DI.uid = member.uid
+	LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+	LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+	LEFT JOIN (SELECT MAX(shouldTime) shouldTime,investId from dr_product_invest_repayinfo GROUP BY investId) repay  on repay.investId = DI.id
+	LEFT JOIN dr_member_favourable fa on fa.id = DI.fid
+	LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+	<trim prefix=" where " prefixOverrides="and">
+		and pinfo.type != 5
+		and DI.status != 2
+		<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+		<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+		<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+		<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+		<if test="startDate != null and startDate != ''"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+		<if test="endDate != null and endDate != ''"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+		<if test="startRegDate != null and startRegDate != ''"><![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]></if>
+		<if test="endRegDate != null and endRegDate != ''"> <![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]></if>
+		<if test="startShouldTime != null and startShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') >= DATE_FORMAT(#{startShouldTime},'%Y-%m-%d') ]]></if>
+		<if test="endShouldTime != null and endShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') <= DATE_FORMAT(#{endShouldTime},'%Y-%m-%d') ]]></if>
+		<if test="cids != null and cids.length>0">
+			and channel.id in
+			<foreach collection="cids" item="item" open="(" close=")" separator=",">
+				#{item}
+			</foreach>
+		</if>
+		<if test="deadline !=null "> and pinfo.deadline = #{deadline}</if>
+		<if test="repayType != null">and pinfo.repayType=#{repayType}</if>
+	</trim>
+	order by DI.investTime desc
+	limit #{offset}, #{limit}
+	</select>
+	
+	<select id="selectInvestPageCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "本页统计" as realname, sum(a.amount) as amount,sum(a.interest) as interest,sum(a.faAmount1) as faAmount1
+		 from
+		 (select DI.amount,DI.interest ,case fa.type when 1 then fa.amount end faAmount1 
+		 from
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN (SELECT MAX(shouldTime) shouldTime,investId from dr_product_invest_repayinfo GROUP BY investId) repay  on repay.investId = DI.id
+		LEFT JOIN dr_member_favourable fa on fa.id = DI.fid
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			and pinfo.type != 5 and DI.status != 2
+			<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+			<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+			<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+			<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="startRegDate != null and startRegDate != ''"><![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]></if>
+			<if test="endRegDate != null and endRegDate != ''"> <![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]></if>
+			<if test="startShouldTime != null and startShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') >= DATE_FORMAT(#{startShouldTime},'%Y-%m-%d') ]]></if>
+			<if test="endShouldTime != null and endShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') <= DATE_FORMAT(#{endShouldTime},'%Y-%m-%d') ]]></if>
+			<if test="cids != null and cids.length>0">
+				and channel.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="deadline !=null "> and pinfo.deadline = #{deadline}</if>
+			<if test="repayType != null">and pinfo.repayType=#{repayType}</if>
+		</trim>
+		order by DI.investTime desc
+		limit #{offset}, #{limit}) as a
+	</select>
+	
+	<select id="selectInvestMemberInfoListCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "总计" as realname, count(DI.id) as total,sum(DI.amount) as amount,sum(DI.interest)as interest ,sum(case fa.type when 1 then fa.amount end) as faAmount1
+		 from 
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN (SELECT MAX(shouldTime) shouldTime,investId from dr_product_invest_repayinfo GROUP BY investId) repay  on repay.investId = DI.id
+		LEFT JOIN dr_member_favourable fa on fa.id = DI.fid
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			and pinfo.type != 5 and DI.status != 2
+			<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+			<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+			<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+			<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="startRegDate != null and startRegDate != ''"><![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]></if>
+			<if test="endRegDate != null and endRegDate != ''"> <![CDATA[ and DATE_FORMAT(member.regDate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]></if>
+			<if test="startShouldTime != null and startShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') >= DATE_FORMAT(#{startShouldTime},'%Y-%m-%d') ]]></if>
+			<if test="endShouldTime != null and endShouldTime != ''"> <![CDATA[ and DATE_FORMAT(repay.shouldTime,'%Y-%m-%d') <= DATE_FORMAT(#{endShouldTime},'%Y-%m-%d') ]]></if>
+			<if test="cids != null and cids.length>0">
+				and channel.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="deadline !=null "> and pinfo.deadline = #{deadline}</if>
+			<if test="repayType != null">and pinfo.repayType=#{repayType}</if>
+		</trim>
+	</select>
+	
+	<select id="selectProductInvestByPid" parameterType="java.lang.Integer" resultMap="DrProductInvestResult">
+		select * from dr_product_invest where pid = #{pid} order by factAmount desc
+	</select>
+	<!-- 查询渠道用户投资订单 -->
+	<select id="QueryChannelInvestList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select bi.realName, pi.id, p.fullName, p.id pid, pi.amount,pi.factAmount,p.rate,pi.investTime,
+		p.fullDate,pi.uid , p.expireDate,p.establish
+		from dr_product_invest pi
+		left join dr_member_base_info bi on bi.uid = pi.uid
+		left join dr_product_info p on p.id = pi.pid
+		left join dr_member m on pi.uid = m.uid
+		<trim prefix=" where " prefixOverrides="and">
+			and p.deadline <![CDATA[ = ]]> 30
+			and p.type <![CDATA[ <> ]]> 1
+			<if test="channel != null "> and instr(m.toFrom, #{channel}) <![CDATA[ > ]]> 0 </if>
+			<if test="startDate != null "> and DATE_FORMAT(pi.investTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ > ]]> DATE_FORMAT(#{startDate},'%Y-%m-%d %H:%i:%s') </if>
+			<if test="endDate != null "> and DATE_FORMAT(pi.investTime,'%Y-%m-%d %H:%i:%s') <![CDATA[ <= ]]> DATE_FORMAT(#{endDate},'%Y-%m-%d %H:%i:%s') </if>
+		</trim>
+	</select>
+	<!-- 查询易瑞特渠道用户投资订单 -->
+	<select id="QueryChannelYRT_InvestList" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT dm.tid,dm.mobilePhone AS uid,DATE_FORMAT(dm.regdate,'%Y-%m-%d') AS registerTime,
+		dm.realverify AS isValidateIdentity,
+		(SELECT DATE_FORMAT(dpi.investTime,'%Y-%m-%d') FROM dr_product_invest dpi 
+				LEFT JOIN dr_product_info dp ON dpi.pid = dp.id where dpi.uid = dm.uid and dp.type = 2 and  if(dp.atid or dp.prizeId,0,1) ORDER BY dpi.id  limit 1 ) AS firstInvestTime,
+		(SELECT dpi.amount FROM dr_product_invest dpi 
+				LEFT JOIN dr_product_info dp ON dpi.pid = dp.id where dpi.uid = dm.uid and dp.type = 2 and if(dp.atid or dp.prizeId,0,1) ORDER BY dpi.id  limit 1 ) as amount		
+		from dr_member  dm 
+		left JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.`code`)=1				
+		where dci.code = 'yrt' 
+			<if test="startday != null and startday !='' ">
+				and  UNIX_TIMESTAMP(#{startday})  <![CDATA[ <= ]]> UNIX_TIMESTAMP(dm.regdate)  
+			</if>
+			<if test="endday != null and endday !='' ">
+				and  UNIX_TIMESTAMP(dm.regdate) <![CDATA[ <= ]]>  UNIX_TIMESTAMP(#{endday}) 
+			</if>
+	</select>
+	<!-- 获取优惠活动相对应的投资订单 -->
+	<select id="selectActivityInvestListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	select memberinfo.realname,concat(substring(member.mobilePhone,1,3),"****",substring(member.mobilePhone,8)) mobilePhone,
+		IFNULL(channel.name, '币优铺理财') as chanelName,pinfo.deadline,
+		DATE_FORMAT(member.regdate,'%Y-%m-%d') regdate,
+		DI.amount,DATE_FORMAT(DI.investTime,'%Y-%m-%d %H:%i:%s') investTime,pinfo.fullName	
+	 from 
+	dr_product_invest DI
+	left JOIN dr_member member on DI.uid = member.uid
+	LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+	LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+	LEFT JOIN dr_member_favourable fa on fa.id = DI.fid
+	LEFT JOIN dr_activity_parameter dap on dap.ID =fa.activityId
+	LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+	<trim prefix=" where " prefixOverrides="and">
+		<if	test="id !=null and id !=''">
+			and activityId = #{id} 
+		</if>
+		and fa.status = 1
+	</trim>
+	order by DI.investTime desc
+	limit #{offset}, #{limit}
+	</select>
+	<!-- 获取优惠活动相对应的分页投资订单 -->
+	<select id="selectActivityInvestListCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select count(DI.id) as total
+		 from 
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN dr_member_favourable fa on fa.id = DI.fid
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			<if	test="id !=null and id !=''">
+			and activityId = #{id} 
+			</if>
+			and fa.status = 1
+		</trim>
+	</select>
+		<!-- 获取优惠活动相对应的投资订单 -->
+	<select id="selectActivityInvestListByParamCensus" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select '合计订单金额' as regdate, IFNULL(SUM(dpi.amount),0) as amount from 
+			dr_product_invest dpi	
+			LEFT JOIN dr_member_favourable fa on fa.id = dpi.fid		
+			where
+				fa.status = 1
+				<if	test="id !=null and id !=''">
+					and fa.activityId = #{id} 
+				</if>			
+			order by dpi.investTime desc
+			limit #{offset}, #{limit}
+	</select>
+	<!-- 查询未来7天回款的投资记录（默认查询首笔投资） -->
+	<select id="selectWillSevenDayRapyInvest" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+		select sum(pay.shouldPrincipal) amount, pay.uid,m.mobilephone, ci.type,COUNT(1) count 
+		from dr_product_invest_repayinfo pay 
+		LEFT JOIN dr_product_info dpi on dpi.id = pay.pid
+		LEFT JOIN dr_member m on m.uid = pay.uid
+		LEFT JOIN dr_channel_info ci on INSTR(m.toFrom,ci.code)=1
+		where 
+		DATEDIFF(pay.shouldTime, #{now}) = 5  and pay.shouldPrincipal>0 and dpi.type = 2 and pay.isgrant = 0
+		and 
+		<if test="isFirst == 1"> not </if>
+		EXISTS 
+		(select DISTINCT pay2.uid from dr_product_invest_repayinfo pay2 
+				LEFT JOIN  dr_product_info dp ON pay2.pid = dp.id
+				where pay2.uid = pay.uid  and dp.type =2  and pay2.shouldTime BETWEEN '2016-11-25' and DATE_ADD(#{now},INTERVAL 5 day) )
+		GROUP BY pay.uid
+		
+	</select>
+	
+	<insert id="insertSelective" parameterType="com.jsjf.model.product.DrProductInvest"  useGeneratedKeys="true" keyProperty="id">
+		insert into dr_product_invest
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="uid != null"> uid,</if>
+			<if test="pid != null"> pid,</if>
+			<if test="amount != null"> amount,</if>
+			<if test="investTime != null"> investTime,</if>
+			<if test="status != null"> status,</if>
+			<if test="factAmount != null"> factAmount,</if>
+			<if test="interest != null"> interest,</if>
+			<if test="factInterest != null"> factInterest,</if>
+			<if test="joinType != null"> joinType,</if>
+			
+			<if test="fid != null"> fid,</if>
+		
+		</trim>
+		<trim prefix=" values ( " suffix=")" suffixOverrides=",">
+			<if test="uid != null"> #{uid},</if>
+			<if test="pid != null"> #{pid},</if>
+			<if test="amount != null"> #{amount},</if>
+			<if test="investTime != null"> #{investTime},</if>
+			<if test="status != null"> #{status},</if>
+			<if test="factAmount != null"> #{factAmount},</if>
+			<if test="interest != null"> #{interest},</if>
+			<if test="factInterest != null"> #{factInterest},</if>
+			<if test="joinType != null"> #{joinType},</if>			
+			<if test="fid != null"> #{fid},</if>
+			
+		</trim>
+	</insert>
+
+	
+	<select id="selectRegNotInvest" resultType="String" parameterType="int">
+		SELECT m.mobilePhone from dr_member m where DATE_FORMAT(m.regdate,'%Y%m%d') = DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') and NOT EXISTS(
+			SELECT dp.deadline from dr_product_invest dpi 
+			LEFT JOIN dr_product_info dp ON dpi.pid = dp.id 
+			where DATE_FORMAT(dpi.investTime,'%Y%m%d') >= DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and m.uid = dpi.uid
+		)
+	</select>
+	<select id="selectRegNotInvests" resultType="java.util.HashMap" parameterType="int">
+		SELECT m.mobilePhone as mobile,coupon.amount as amount from dr_member m 
+			LEFT JOIN (SELECT uid,SUM(amount) amount from dr_member_favourable 
+				where type = 1 and `status` = 0 and DATE_FORMAT(addtime,'%Y%m%d') >= DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') GROUP BY uid
+			  ) coupon ON coupon.uid = m.uid
+		 where DATE_FORMAT(m.regdate,'%Y%m%d') = DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d')and coupon.uid is not NULL and NOT EXISTS(
+					SELECT dp.deadline from dr_product_invest dpi 
+					LEFT JOIN dr_product_info dp ON dpi.pid = dp.id 
+					where DATE_FORMAT(dpi.investTime,'%Y%m%d') >= DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') AND dp.type = 2 AND if(dp.atid or dp.prizeId,0,1) and m.uid = dpi.uid
+		)
+	</select>
+	
+	
+	<select id="selectfirstInvest" resultType="String" parameterType="int">
+		SELECT dm.mobilePhone  from (
+			SELECT dpi.uid,MIN(dpi.investTime) as investTime from dr_product_invest dpi 
+			LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+			where  dp.type = 2 and dpi.status != 2  GROUP BY dpi.uid
+			) a LEFT JOIN dr_member dm ON dm.uid = a.uid 
+			where DATE_FORMAT(DATE_SUB(NOW(),INTERVAL #{day} DAY),'%Y%m%d') = DATE_FORMAT(a.investTime,'%Y%m%d')
+
+
+	</select>
+	
+	
+	<!-- 体验金投资记录查询sql -->
+	<select id="selectExperienceInvestMemberInfoListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select memberinfo.realname,concat(substring(member.mobilePhone,1,3),"****",substring(member.mobilePhone,8)) mobilePhone,
+			DATE_FORMAT(member.regdate,'%Y-%m-%d') regdate,
+			IFNULL(channel.name, '币优铺理财') as chanelName,
+			(select concat(substring(m.mobilePhone,1,3),"***",substring(m.mobilePhone,8)) from dr_member_recommended recom  
+			left JOIN dr_member m on m.uid = recom.referrerId where recom.uid = DI.uid) as recomMobilePhone,
+			(select b.realname from dr_member_recommended recom  
+			LEFT JOIN dr_member_base_info b on b.uid=recom.referrerId where recom.uid = DI.uid) as recomRealName,
+			(SELECT SUM(dap.amount) FROM `dr_member_favourable` dap WHERE dap.uid = DI.uid AND dap.type = 3 AND FIND_IN_SET(dap.id,DI.experience)) amount,
+			DATE_FORMAT(DI.investTime,'%Y-%m-%d %H:%i:%s') investTime, CASE DI.joinType WHEN 0 THEN 'PC' WHEN 1 then 'IOS' WHEN 2 THEN 'android' WHEN 3 THEN 'H5' WHEN 5 THEN '微信' ELSE '其它' END  joinType ,
+			case when pinfo.status in(8,9) then DI.factInterest else DI.interest end as interest,
+			case pinfo.status when 5 then '募集中' when 6 then '募集完成' when 8 then '已计息' when 9 then '已回款' end statusName,pinfo.fullName,pinfo.deadline
+			
+		 from 
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			and pinfo.type = 5
+			<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+			<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+			<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+			<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+			<if test="startDate != null and startDate != ''"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null and endDate != ''"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="cids != null and cids.length>0">
+				and channel.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+		</trim>
+		order by DI.investTime desc
+		limit #{offset}, #{limit}
+	</select>
+	
+	<select id="selectExperienceInvestPageCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "本页统计" as realname, sum(a.amount) as amount,sum(a.interest) as interest
+		 from
+		 (select DI.interest,
+		 (SELECT SUM(dap.amount) FROM `dr_member_favourable` dap WHERE dap.uid = DI.uid AND dap.type = 3 AND FIND_IN_SET(dap.id,DI.experience)) amount  
+		 from
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			and pinfo.type = 5
+			<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+			<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+			<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+			<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="cids != null and cids.length>0">
+				and channel.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+		</trim>
+		order by DI.investTime desc
+		limit #{offset}, #{limit}) as a
+	</select>
+	
+	<select id="selectExperienceInvestMemberInfoListCountByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "总计" as realname, count(DI.id) as total,sum((SELECT SUM(dap.amount) FROM `dr_member_favourable` dap WHERE dap.uid = DI.uid AND dap.type = 3 AND FIND_IN_SET(dap.id,DI.experience))) as amount,sum(DI.interest)as interest 
+		 from 
+		dr_product_invest DI
+		left JOIN dr_member member on DI.uid = member.uid
+		LEFT JOIN dr_member_base_info memberinfo on memberinfo.uid=DI.uid
+		LEFT JOIN dr_product_info pinfo on DI.pid = pinfo.id
+		LEFT JOIN dr_channel_info channel on instr(member.toFrom,channel.code) = 1
+		<trim prefix=" where " prefixOverrides="and">
+			and pinfo.type = 5
+			<if test="code != null and code != ''"> and  INSTR(pinfo.code,#{code}) > 0 </if>
+			<if test="fullName != null and fullName != ''"> and  INSTR(pinfo.fullName,#{fullName}) > 0 </if>
+			<if test="mobilephone != null and mobilephone != ''"> and  INSTR(member.mobilephone,#{mobilephone}) > 0 </if>
+			<if test="realname != null and realname != ''"> and  INSTR(memberinfo.realname,#{realname}) > 0 </if>
+			<if test="startDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]></if>
+			<if test="endDate != null"> <![CDATA[ and DATE_FORMAT(DI.investTime,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]></if>
+			<if test="cids != null and cids.length>0">
+				and channel.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+		</trim>
+	</select>
+	
+	<update id="updateRapyInvestIsgrant">
+		UPDATE dr_product_invest_repayinfo r,dr_product_info i set r.isgrant = 1 
+		where r.pid = i.id and i.type = 2 and r.isgrant = 0  and r.shouldPrincipal > 0 and DATEDIFF(r.shouldTime,NOW() ) = 5 
+	</update>
+
+	<!-- 复投订单查询 -->
+	<select id="getInvestListForFuTou" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select distinct dpi.uid,concat(substring(dmbi.`realname`,1,1),"**") AS realname,concat(substring(dm.`mobilePhone`,1,3),"****",substring(dm.`mobilePhone`,8)) mobilePhone,
+			DATE_FORMAT(dm.`regdate`,'%Y-%m-%d %H:%i:%s') regdate,IFNULL(channel.`name`,'币优铺理财') chanelName,
+			IFNULL(a.count_30,0) count_30,IFNULL(b.count_60,0) count_60,IFNULL(c.count_90,0) count_90,IFNULL(d.count_180,0) count_180,
+			IFNULL(e.count_all,0) count_all,
+			IFNULL(SUM(dpi.`amount`),0) investAmountSUM
+			from `dr_member` dm
+			LEFT JOIN `dr_product_invest` dpi ON dm.`uid` = dpi.`uid`
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`			
+			left join `dr_member_base_info` dmbi on `dmbi`.`uid` = dpi.`uid`
+			LEFT JOIN dr_channel_info channel on instr(dm.toFrom,channel.code) = 1
+			left join (select count(1) as count_30,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline >=30 and 40 >= info.deadline  and info.`type` not in(1,5) and invest.`status` in (0,1,3) 
+							group by invest.uid) a on a.uid = dpi.`uid`  
+			left join (select count(1) as count_60,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline =60 and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) b on b.uid = dpi.`uid` 
+			left join (select count(1) as count_90,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where (info.atid or info.prizeId) and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) c on c.uid = dpi.`uid`
+			left join (select count(1) as count_180,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline = 180 and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) d on d.uid = dpi.`uid`
+			left join (select count(1) as count_all,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where ((info.deadline >=30 and  40 >= info.deadline ) or (info.deadline = 60) or 
+							(info.atid or info.prizeId) or (info.deadline = 180)) and invest.`status` in (0,1,3) and info.`type` not in(1,5)  
+							group by invest.uid) e on e.uid = dpi.`uid`
+			<where>
+				1 = 1 and dp.type not in (1,5)
+				<if test="count_allStart !=null">
+					and e.count_all >= #{count_allStart} 
+				</if>
+				<if test="count_allEnd != null">
+					and #{count_allEnd} >= e.count_all 
+				</if>
+				<if test="cids != null and cids.length>0">
+					and channel.id in
+					<foreach collection="cids" item="item" open="(" close=")" separator=",">
+						#{item}
+					</foreach>
+				</if>
+				<if test="startRegDate != null and startRegDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="endRegDate != null and endRegDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="mobilePhone !=null and mobilePhone != ''">
+					and  INSTR(dm.mobilephone,#{mobilePhone}) > 0
+				</if>
+				<if test="realname != null and realname != ''"> 
+					and  INSTR(dmbi.realname,#{realname}) > 0 
+				</if>
+			</where>
+				GROUP BY dm.uid ORDER BY dm.regdate desc
+					limit #{offset},#{limit}
+	</select>
+	
+	<select id="getInvestListForFuTouCount" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select count(1) as total from (select distinct dpi.uid,dmbi.`realname`,dm.`mobilePhone`,dm.`regdate`,IFNULL(channel.`name`,'币优铺理财') chanelName,
+			IFNULL(a.count_30,0) count_30,IFNULL(b.count_60,0) count_60,IFNULL(c.count_90,0) count_90,IFNULL(d.count_180,0) count_180,IFNULL(e.count_all,0) count_all,
+			IFNULL(SUM(dpi.`amount`),0) investAmountSUM
+			from `dr_member` dm
+			LEFT JOIN `dr_product_invest` dpi ON dm.`uid` = dpi.`uid`
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`			
+			left join `dr_member_base_info` dmbi on `dmbi`.`uid` = dpi.`uid`
+			LEFT JOIN dr_channel_info channel on instr(dm.toFrom,channel.code) = 1
+			left join (select count(1) as count_30,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline >=30 and 40 >= info.deadline  and info.`type` not in(1,5) and invest.`status` in (0,1,3) 
+							group by invest.uid) a on a.uid = dpi.`uid`  
+			left join (select count(1) as count_60,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline =60 and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) b on b.uid = dpi.`uid` 
+			left join (select count(1) as count_90,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where (info.atid or info.prizeId) and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) c on c.uid = dpi.`uid`
+			left join (select count(1) as count_180,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where info.deadline = 180 and info.`type` not in(1,5) and invest.`status` in (0,1,3) group by invest.uid) d on d.uid = dpi.`uid`
+			left join (select count(1) as count_all,invest.uid uid from dr_product_invest invest 
+							left join `dr_product_info` info on invest.pid = info.id
+							where ((info.deadline >=30 and  40 >= info.deadline ) or (info.deadline = 60) or 
+							(info.atid or info.prizeId) or (info.deadline = 180)) and invest.`status` in (0,1,3) and info.`type` not in(1,5)  
+							group by invest.uid) e on e.uid = dpi.`uid`
+			<where>
+				1 = 1 and dp.type not in (1,5)
+				<if test="count_allStart !=null">
+					and e.count_all >= #{count_allStart} 
+				</if>
+				<if test="count_allEnd != null">
+					and #{count_allEnd} >= e.count_all 
+				</if>
+				<if test="cids != null and cids.length>0">
+					and channel.id in
+					<foreach collection="cids" item="item" open="(" close=")" separator=",">
+						#{item}
+					</foreach>
+				</if>
+				<if test="startRegDate != null and startRegDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="endRegDate != null and endRegDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="mobilePhone !=null and mobilePhone != ''">
+					and  INSTR(dm.mobilephone,#{mobilePhone}) > 0
+				</if>
+				<if test="realname != null and realname != ''"> 
+					and  INSTR(dmbi.realname,#{realname}) > 0 
+				</if>
+			</where>
+				GROUP BY dm.uid) m
+	</select>
+	
+	<!-- 本页统计 -->
+	<select id="getInvestListForFuTouSumPage" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "本页统计" as realname,sum(a.count_all) count_all, sum(a.investAmountSUM) investAmountSUM from (SELECT  dpi.uid,IFNULL(e.count_all,0) count_all,
+			IFNULL(SUM(dpi.`amount`),0) investAmountSUM
+			FROM `dr_member` dm
+			LEFT JOIN `dr_product_invest` dpi ON dm.`uid` = dpi.`uid`
+			LEFT JOIN `dr_product_info` dp ON dp.`id` = dpi.`pid`			
+			LEFT JOIN `dr_member_base_info` dmbi ON `dmbi`.`uid` = dpi.`uid`
+			LEFT JOIN dr_channel_info channel ON INSTR(dm.toFrom,channel.code) = 1
+			LEFT JOIN (SELECT COUNT(1) AS count_30,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline >=30 AND 40 >= info.deadline  AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) 
+							GROUP BY invest.uid) a ON a.uid = dpi.`uid`  
+			LEFT JOIN (SELECT COUNT(1) AS count_60,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline =60 AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) b ON b.uid = dpi.`uid` 
+			LEFT JOIN (SELECT COUNT(1) AS count_90,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE (info.atid or info.prizeId) AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) c ON c.uid = dpi.`uid`
+			LEFT JOIN (SELECT COUNT(1) AS count_180,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline = 180 AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) d ON d.uid = dpi.`uid`
+			LEFT JOIN (SELECT COUNT(1) AS count_all,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE ((info.deadline >=30 AND  40 >= info.deadline ) OR (info.deadline = 60) OR 
+							(info.atid or info.prizeId) OR (info.deadline = 180)) AND invest.`status` IN (0,1,3) AND info.`type` NOT IN(1,5)  
+							GROUP BY invest.uid) e ON e.uid = dpi.`uid`
+				<where>
+					1 = 1 and dp.type not in (1,5)
+					<if test="count_allStart !=null">
+						and e.count_all >= #{count_allStart} 
+					</if>
+					<if test="count_allEnd != null">
+						and #{count_allEnd} >= e.count_all 
+					</if>
+					<if test="cids != null and cids.length>0">
+						and channel.id in
+						<foreach collection="cids" item="item" open="(" close=")" separator=",">
+							#{item}
+						</foreach>
+					</if>
+					<if test="startRegDate != null and startRegDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]>
+					</if>
+					<if test="endRegDate != null and endRegDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]>
+					</if>
+					<if test="mobilePhone !=null and mobilePhone != ''">
+						and  INSTR(dm.mobilephone,#{mobilePhone}) > 0
+					</if>
+					<if test="realname != null and realname != ''"> 
+						and  INSTR(dmbi.realname,#{realname}) > 0 
+					</if>
+			</where>		
+			GROUP BY dm.uid ORDER BY dm.regdate desc
+					limit #{offset},#{limit}) a
+	</select>
+	
+	<select id="getInvestListForFuTouSumAll" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "总计" as realname,sum(a.count_all) count_all, sum(a.investAmountSUM) investAmountSUM from (SELECT  dpi.uid,IFNULL(e.count_all,0) count_all,
+			IFNULL(SUM(dpi.`amount`),0) investAmountSUM
+			FROM `dr_member` dm
+			LEFT JOIN `dr_product_invest` dpi ON dm.`uid` = dpi.`uid`
+			LEFT JOIN `dr_product_info` dp ON dp.`id` = dpi.`pid`			
+			LEFT JOIN `dr_member_base_info` dmbi ON `dmbi`.`uid` = dpi.`uid`
+			LEFT JOIN dr_channel_info channel ON INSTR(dm.toFrom,channel.code) = 1
+			LEFT JOIN (SELECT COUNT(1) AS count_30,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline >=30 AND 40 >= info.deadline  AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) 
+							GROUP BY invest.uid) a ON a.uid = dpi.`uid`  
+			LEFT JOIN (SELECT COUNT(1) AS count_60,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline =60 AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) b ON b.uid = dpi.`uid` 
+			LEFT JOIN (SELECT COUNT(1) AS count_90,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE (info.atid or info.prizeId) AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) c ON c.uid = dpi.`uid`
+			LEFT JOIN (SELECT COUNT(1) AS count_180,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE info.deadline = 180 AND info.`type` NOT IN(1,5) AND invest.`status` IN (0,1,3) GROUP BY invest.uid) d ON d.uid = dpi.`uid`
+			LEFT JOIN (SELECT COUNT(1) AS count_all,invest.uid uid FROM dr_product_invest invest 
+							LEFT JOIN `dr_product_info` info ON invest.pid = info.id
+							WHERE ((info.deadline >=30 AND  40 >= info.deadline ) OR (info.deadline = 60) OR 
+							(info.atid or info.prizeId) OR (info.deadline = 180)) AND invest.`status` IN (0,1,3) AND info.`type` NOT IN(1,5)  
+							GROUP BY invest.uid) e ON e.uid = dpi.`uid`
+				<where>
+					1 = 1 and dp.type not in (1,5)
+					<if test="count_allStart !=null">
+						and e.count_all >= #{count_allStart} 
+					</if>
+					<if test="count_allEnd != null">
+						and #{count_allEnd} >= e.count_all 
+					</if>
+					<if test="cids != null and cids.length>0">
+						and channel.id in
+						<foreach collection="cids" item="item" open="(" close=")" separator=",">
+							#{item}
+						</foreach>
+					</if>
+					<if test="startRegDate != null and startRegDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') >= DATE_FORMAT(#{startRegDate},'%Y-%m-%d') ]]>
+					</if>
+					<if test="endRegDate != null and endRegDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <= DATE_FORMAT(#{endRegDate},'%Y-%m-%d') ]]>
+					</if>
+					<if test="mobilePhone !=null and mobilePhone != ''">
+						and  INSTR(dm.mobilephone,#{mobilePhone}) > 0
+					</if>
+					<if test="realname != null and realname != ''"> 
+						and  INSTR(dmbi.realname,#{realname}) > 0 
+					</if>
+			</where>		
+			GROUP BY dm.uid ORDER BY dm.regdate desc) a
+	</select>
+	
+	
+	<!-- 根据uid来查询投资记录 -->
+	<select id="getProductInvestListByUid" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select dp.`fullName`,DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d %H:%i:%s') investTime,dp.`deadline`,dpi.`amount`,dpi.`interest`,dpi.`status` 
+			from `dr_product_invest` dpi 
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+		<where>
+			dpi.`uid` = #{uid} AND dp.`type` NOT IN(1,5)
+			<!-- 订单时间 -->
+			<if test="startDate != null and startDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]>
+			</if>
+			<if test="endDate != null and endDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]>
+			</if>
+			<if test="status != null">
+				and dpi.status = #{status}
+			</if>
+			<if test="deadline !=null and deadline == 30 "> 
+				<![CDATA[ and dp.deadline >=  30 ]]>
+				<![CDATA[ and dp.deadline <=  40 ]]>
+			</if>
+			<if test="deadline != null and deadline !=30">
+				and dp.deadline = #{deadline}
+			</if>
+			<if test="fullName !=null and fullName !=''">
+				and  INSTR(dp.`fullName`,#{fullName}) > 0 
+			</if>
+			group by dpi.`investTime` desc
+			limit #{offset},#{limit}
+		</where>
+	</select>
+	
+		<select id="getProductInvestCountByUid" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select count(1) as total
+			from `dr_product_invest` dpi 
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+		<where>
+			dpi.`uid` = #{uid} AND dp.`type` NOT IN(1,5)
+			<!-- 订单时间 -->
+			<if test="startDate != null and startDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]>
+			</if>
+			<if test="endDate != null and endDate != '' ">
+					<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]>
+			</if>
+			<if test="status != null">
+				and dpi.status = #{status}
+			</if>
+			<if test="deadline !=null and deadline == 30 "> 
+				<![CDATA[ and dp.deadline >=  30 ]]>
+				<![CDATA[ and dp.deadline <=  40 ]]>
+			</if>
+			<if test="deadline != null and deadline !=30 ">
+				and dp.deadline = #{deadline}
+			</if>
+			<if test="fullName !=null and fullName !=''">
+				and  INSTR(dp.`fullName`,#{fullName}) > 0 
+			</if>
+		</where>
+	</select>
+	
+	<!-- 个人投资列表总计 -->
+	<select id="getProductInvestSumByUid" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select "总计" as fullName,ifnull(sum(dpi.`amount`),0.00) amount,ifnull(sum(dpi.`interest`),0.00) `interest`
+			from `dr_product_invest` dpi 
+			left join `dr_product_info` dp on dp.`id` = dpi.`pid`
+			<where>
+				dpi.`uid` = #{uid} AND dp.`type` NOT IN(1,5)
+				<!-- 订单时间 -->
+				<if test="startDate != null and startDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') >= DATE_FORMAT(#{startDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="endDate != null and endDate != '' ">
+						<![CDATA[ and DATE_FORMAT(dpi.`investTime`,'%Y-%m-%d') <= DATE_FORMAT(#{endDate},'%Y-%m-%d') ]]>
+				</if>
+				<if test="status != null">
+					and dpi.status = #{status}
+				</if>
+				<if test="deadline !=null and deadline == 30 "> 
+					<![CDATA[ and dp.deadline >=  30 ]]>
+					<![CDATA[ and dp.deadline <=  40 ]]>
+				</if>
+				<if test="deadline != null and deadline !=30">
+					and dp.deadline = #{deadline}
+				</if>
+				<if test="fullName !=null and fullName !=''">
+					and  INSTR(dp.`fullName`,#{fullName}) > 0 
+				</if>
+			</where>
+	</select>
+	
+	<update id="updateFuiouProductInvest" parameterType="com.jsjf.model.product.DrProductInvest">
+		update dr_product_invest 
+		<set>
+			<if test="status!=null">
+				status=#{status},
+			</if>
+			<if test="message!=null and message!=''">
+				message=#{message},
+			</if>
+			<if test="remitMchntTxnSsn!=null and remitMchntTxnSsn!=''">
+				remitMchntTxnSsn=#{remitMchntTxnSsn},
+			</if>
+		</set>
+		where id=#{id}
+	</update>
+	
+	<update id="updateFuiouProductInvestBatch" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			update dr_product_invest 
+			<set>
+				<if test="item.status!=null">
+					status=#{item.status},
+				</if>
+				<if test="item.message!=null and item.message!=''">
+					message=#{item.message},
+				</if>
+				<if test="item.remitMchntTxnSsn!=null and item.remitMchntTxnSsn!=''">
+					remitMchntTxnSsn=#{item.remitMchntTxnSsn},
+				</if>
+			</set>
+			where id=#{item.id}
+		</foreach>
+	</update>
+	
+	<select id="getFuiouDrProductInvestListByPid" parameterType="java.lang.Integer" resultMap="DrProductInvestResult">
+		select * from dr_product_invest where pid = #{pid}
+		and (status=0 or status=4)
+	</select>
+	<select id="selectIsOldUserById"  resultType="int" parameterType="int">
+		select ifnull(COUNT(1),0) as oldUser from dr_product_invest a
+		left join dr_product_info b on a.pid = b.id
+	 	where a.uid = #{uid} and b.type not in('1','5')
+	</select>
+	
+	<select id="selectInvestNormalInterest" parameterType="java.lang.Integer" resultType="java.math.BigDecimal">
+		SELECT TRUNCATE(dpi.amount*dp.deadline*dp.rate/100/360,2) from dr_product_invest dpi
+		LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+		where dpi.`status` = 1 and dpi.id = #{investId}
+	</select>
+	
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultType="com.jsjf.model.product.DrProductInvest"> 
+		SELECT dpi.*,dp.fullName from dr_product_invest dpi 
+		LEFT JOIN dr_product_info dp ON dpi.pid = dp.id
+		where dpi.id = #{id}
+	</select>
+	
+	<!--获取最近投资的产品 存管编号  -->
+	<select id="selectFuiouProject_no" parameterType="java.lang.Integer" resultType="String">
+		SELECT MAX(dp.project_no)  from dr_product_invest dpi
+			 LEFT JOIN dr_product_info dp on dpi.pid = dp.id
+			where dp.type = 2 and dp.project_no and dpi.uid = #{uid};
+	</select>
+	
+	<update id="updateFileStatus" parameterType="java.util.List">
+		<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update dr_product_invest
+		<set>
+			<if test="item.fileStatus != null">
+				fileStatus = #{item.fileStatus},
+			</if>
+			<if test="item.fuiouMessageNo != null">
+				fuiouMessageNo = #{item.fuiouMessageNo}
+			</if>
+			<if test="item.fullFileStatus != null">
+				fullFileStatus = #{item.fullFileStatus},
+			</if>
+			<if test="item.fullFuiouMessageNo != null">
+				fullFuiouMessageNo = #{item.fullFuiouMessageNo}
+			</if>
+		</set>
+		where id = #{item.id:INTEGER}
+		</foreach>
+	</update>
+	
+	<update id="updateEvid" parameterType="java.util.List">
+			<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update dr_product_invest
+		<set>
+			<if test="item.evId != null">
+				evid = #{item.evId},
+			</if>
+		</set>
+		where id = #{item.proIvId:INTEGER}
+		</foreach>
+	</update>
+	
+</mapper>

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.article.SysArticleDAO">
+	<resultMap id="SysArticleResult" type="com.jsjf.model.article.SysArticle">
+		<result column="arti_id" property="artiId" jdbcType="INTEGER" />
+		<result column="pro_id" property="proId" jdbcType="INTEGER" />
+		<result column="summaryContents" property="summaryContents" jdbcType="VARCHAR" />
+		<result column="sort_rank" property="sortRank" jdbcType="SMALLINT" />
+		<result column="ishead" property="ishead" jdbcType="SMALLINT" />
+		<result column="click_count" property="clickCount" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="short_title" property="shortTitle" jdbcType="VARCHAR" />
+		<result column="writer" property="writer" jdbcType="VARCHAR" />
+		<result column="source" property="source" jdbcType="VARCHAR" />
+		<result column="litpic" property="litpic" jdbcType="VARCHAR" />
+		<result column="active" property="active" jdbcType="SMALLINT" />
+		<result column="keywords" property="keywords" jdbcType="VARCHAR" />
+		<result column="description" property="description" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="SMALLINT" />
+		<result column="create_user" property="createUser" jdbcType="SMALLINT" />
+		<result column="update_user" property="updateUser" jdbcType="SMALLINT" />
+		<result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="metakyword" property="metakyword" jdbcType="VARCHAR" />
+		<result column="metatitle" property="metatitle" jdbcType="VARCHAR" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="UID" property="uid" jdbcType="INTEGER" />
+		<result column="isRecommend" property="isrecommend" jdbcType="INTEGER" />
+		<result column="content" property="content" jdbcType="LONGVARCHAR" />
+		<result property="createName" column="createname" jdbcType="VARCHAR" /><!--创建人姓名 -->
+		<result property="updateName" column="updatename" jdbcType="VARCHAR" />
+		<result property="proName" column="proName" jdbcType="VARCHAR" />
+		<result property="bankName" column="bankName" jdbcType="VARCHAR" />
+		<result column="openDayId" property="openDayId" jdbcType="INTEGER" />
+	</resultMap>
+	
+	<select id="getSysArticleList" resultMap="SysArticleResult" parameterType="java.util.HashMap">
+		SELECT a.*, b. NAME AS createname,
+		c. NAME AS updatename,m.pro_name as proName
+		FROM sys_article a
+		LEFT JOIN sys_users b ON a.CREATE_USER = b.USER_KY
+		LEFT JOIN sys_users c ON a.UPDATE_USER = c.USER_KY
+		left join sys_program m on m.pro_id = a.pro_id
+		<where>
+			<if test="title != null and title !='' ">
+				a.title like CONCAT('%','${title}','%' )
+			</if>
+			<if test="p_status != null">
+				and m.status = #{p_status}
+			</if>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[ and DATE_FORMAT(a.create_time,'%Y-%m-%d') >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate !='' "> 
+				<![CDATA[ and DATE_FORMAT(a.create_time,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="proId != null and proId !=''">
+				and a.pro_id = #{proId}
+			</if>
+			<if test="ishead != null">
+				and a.ishead = #{ishead}
+			</if>
+		</where>
+		order by a.create_time desc
+		limit #{offset},#{limit}
+	</select>
+
+	<select id="getSysArticleCounts" resultType="int" parameterType="java.util.HashMap" >
+		SELECT count(1)
+		FROM sys_article a
+		LEFT JOIN sys_users b ON a.CREATE_USER = b.USER_KY
+		LEFT JOIN sys_users c ON a.UPDATE_USER = c.USER_KY
+		left join sys_program m on m.pro_id = a.pro_id
+		<where> 
+			<if test="title != null and title !='' " > 
+				a.title like CONCAT('%','${title}','%' )
+			</if>
+			<if test="p_status != null">
+				and m.status = #{p_status}
+			</if>
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[ and DATE_FORMAT(a.create_time,'%Y-%m-%d') >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate !='' "> 
+				<![CDATA[ and DATE_FORMAT(a.create_time,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="proId != null and proId !=''" >
+				and a.pro_id = #{proId}
+			</if>
+			<if test="ishead != null" >
+				and a.ishead = #{ishead}
+			</if>
+		</where>
+  	</select>
+  	
+	<select id="selectSysArticleById" resultMap="SysArticleResult"
+		parameterType="com.jsjf.model.article.SysArticle">
+		select arti_id, pro_id, openDayId,summaryContents, sort_rank, ishead, click_count,
+		title, short_title, writer, source,
+		litpic, active, keywords, description, remark, create_time, type,
+		create_user, update_user,
+		update_time, metakyword, metatitle, status, UID, isRecommend, content,bankName
+		from sys_article
+		where arti_id = #{artiId:INTEGER}
+	</select>
+
+	<insert id="insertSysArticle" parameterType="com.jsjf.model.article.SysArticle">
+		insert into sys_article (pro_id, summaryContents, sort_rank, ishead,
+		click_count, title, short_title,
+		writer, source, litpic, active, keywords, description, remark, create_time,
+		type, create_user,
+		update_user, update_time, metakyword, metatitle, status, UID, content,bankName,openDayId)
+		values (#{proId:VARCHAR}, #{summaryContents:VARCHAR}, #{sortRank:SMALLINT},
+		#{ishead:SMALLINT},
+		#{clickCount:INTEGER}, #{title:VARCHAR}, #{shortTitle:VARCHAR}, #{writer:VARCHAR},
+		#{source:VARCHAR}, #{litpic:VARCHAR}, #{active:SMALLINT},
+		#{keywords:VARCHAR},
+		#{description:VARCHAR}, #{remark:VARCHAR}, #{createTime:TIMESTAMP}, #{type:SMALLINT},
+		#{createUser:SMALLINT}, #{updateUser:SMALLINT},
+		#{updateTime:TIMESTAMP}, #{metakyword:VARCHAR},
+		#{metatitle:VARCHAR}, #{status:INTEGER}, #{uid:INTEGER}, #{content:LONGVARCHAR},#{bankName:VARCHAR},#{openDayId:INTEGER})
+	</insert>
+	
+	<update id="updateSysArticleById" parameterType="com.jsjf.model.article.SysArticle">
+		update sys_article
+		<set>
+			<if test="proId != null">
+				create_time = #{createTime:TIMESTAMP},
+			</if>
+			<if test="proId != null">
+				pro_id = #{proId:VARCHAR},
+			</if>
+			<if test="sortRank != null">
+				sort_rank = #{sortRank:SMALLINT},
+			</if>
+			<if test="ishead != null">
+				ishead = #{ishead:SMALLINT},
+			</if>
+			<if test="summaryContents != null">
+				summaryContents = #{summaryContents:VARCHAR},
+			</if>
+			<if test="clickCount != null">
+				click_count = #{clickCount:INTEGER},
+			</if>
+			<if test="title != null">
+				title = #{title:VARCHAR},
+			</if>
+			<if test="shortTitle != null">
+				short_title = #{shortTitle:VARCHAR},
+			</if>
+			<if test="writer != null">
+				writer = #{writer:VARCHAR},
+			</if>
+			<if test="source != null">
+				source = #{source:VARCHAR},
+			</if>
+			<if test="litpic != null">
+				litpic = #{litpic:VARCHAR},
+			</if>
+			<if test="active != null">
+				active = #{active:SMALLINT},
+			</if>
+			<if test="keywords != null">
+				keywords = #{keywords:VARCHAR},
+			</if>
+			<if test="description != null">
+				description = #{description:VARCHAR},
+			</if>
+			<if test="remark != null">
+				remark = #{remark:VARCHAR},
+			</if>
+			<if test="type != null">
+				type = #{type:SMALLINT},
+			</if>
+			<if test="updateUser != null">
+				update_user = #{updateUser:SMALLINT},
+			</if>
+			update_time = sysdate(),
+			<if test="metakyword != null">
+				metakyword = #{metakyword:VARCHAR},
+			</if>
+			<if test="metatitle != null">
+				metatitle = #{metatitle:VARCHAR},
+			</if>
+			<if test="status != null">
+				status = #{status:INTEGER},
+			</if>
+			<if test="uid != null">
+				UID = #{uid:INTEGER},
+			</if>
+			<if test="isrecommend != null">
+				isRecommend = #{isrecommend:INTEGER},
+			</if>
+			<if test="content != null">
+				content = #{content:LONGVARCHAR},
+			</if>
+			<if test="bankName != null">
+				bankName = #{bankName:VARCHAR},
+			</if>
+			<if test="openDayId != null">
+				openDayId = #{openDayId:INTEGER}
+			</if>
+		</set>
+		<where>
+			arti_id = #{artiId:INTEGER}
+		</where>
+	</update>
+
+</mapper>

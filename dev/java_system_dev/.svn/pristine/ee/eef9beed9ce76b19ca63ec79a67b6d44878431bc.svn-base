@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFundsLogDAO">
+	<resultMap id="DrMemberFundsLogResult" type="com.jsjf.model.member.DrMemberFundsLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="fundType" property="fundType" jdbcType="SMALLINT" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="rid" property="rid" jdbcType="INTEGER" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<!-- 插入日志数据 -->
+	<insert id="insertDrMemberFundsLog" parameterType="com.jsjf.model.member.DrMemberFundsLog"
+		useGeneratedKeys="true" keyProperty="id">
+		insert into dr_member_funds_log
+		(fundType, uid, rid, amount, type,remark, addTime)
+		values (#{fundType:SMALLINT}, #{uid:INTEGER},
+		#{rid:INTEGER},#{amount:DECIMAL},
+		#{type:INTEGER}, #{remark:VARCHAR},SYSDATE())
+	</insert>
+	
+	<!-- 客户收支记录列表 CONCAT(LEFT(m.mobilephone,3),'****',RIGHT(m.mobilephone,4)),CONCAT(LEFT(mb.realname,1),'**')  as -->
+	<select id="getDrMemberFundsLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberFundsLog">
+		select c.*,CONCAT(LEFT(m.mobilephone,3),'****',RIGHT(m.mobilephone,4))  as mobilephone,CONCAT(LEFT(mb.realname,1),'**')  as realName,
+		CONCAT(LEFT(mb.idcards,4),'****',RIGHT(mb.idcards,4)) as idCards,m.recommCodes
+		from dr_member_funds_log c
+		left join dr_member m on c.uid =m.uid
+		left join dr_member_base_info mb on m.uid=mb.uid
+		<where>
+			c.amount
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="mobilephone != null and mobilephone !='' ">
+				and m.mobilephone like CONCAT('%','${mobilephone}','%' )
+			</if>
+			<if test="realName != null and realName !='' ">
+				and mb.realname like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+				and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="idCards != null and idCards !='' ">
+				and mb.idcards like CONCAT('%','${idCards}','%' )
+			</if>
+			<if test="type != null">
+				and c.type = #{type:INTEGER}
+			</if>
+			<if test="uid != null">
+				and c.uid = #{uid:INTEGER}
+			</if>
+			<if test="fundTypes != null and fundsTypes !='' ">
+				and c.fundtype in
+				<foreach item="item" index="index" collection="fundTypes"
+					open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+		order by c.addtime desc,c.id desc
+		<if test="offset != null and limit != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	<!-- 获得客户收支记录总数 -->
+	<select id="getDrMemberFundsLogCounts" parameterType="java.util.HashMap"
+		resultType="int">
+		select count(*) from dr_member_funds_log c
+		left join dr_member m on c.uid =m.uid
+		left join dr_member_base_info mb on m.uid=mb.uid
+		<where>
+			c.amount 
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="mobilephone != null and mobilephone !='' ">
+				and m.mobilephone like CONCAT('%','${mobilephone}','%' )
+			</if>
+			<if test="realName != null and realName !='' ">
+				and mb.realname like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+				and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="idCards != null and idCards !='' ">
+				and mb.idcards like CONCAT('%','${idCards}','%' )
+			</if>
+			<if test="type != null">
+				and c.type = #{type:INTEGER}
+			</if>
+			<if test="uid != null">
+				and c.uid = #{uid:INTEGER}
+			</if>
+			<if test="fundTypes != null and fundsTypes !='' ">
+				and c.fundtype in
+				<foreach item="item" index="index" collection="fundTypes"
+					open="(" separator="," close=")">
+					#{item}
+				</foreach>
+			</if>
+		</where>
+	</select>
+	
+	<!-- 统计收入支出  -->
+	<select id="getDrMemberFundsLogSum" parameterType="java.util.HashMap" resultType="java.math.BigDecimal">
+		select if(sum(c.amount) is null,0,sum(c.amount)) from dr_member_funds_log c 
+			left join dr_member m on c.uid =m.uid 
+			left join dr_member_base_info mb on m.uid=mb.uid 
+			<where>
+				c.amount
+			<if test="startDate != null and startDate !='' "> 
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate !='' ">
+				<![CDATA[and DATE_FORMAT(c.addtime,'%Y-%m-%d') <= #{endDate} ]]>
+			</if>
+			<if test="(type != null and type != '') or type==0"> 
+			and c.type = #{type}
+			</if>
+			<if test="mobilephone != null and mobilephone !='' "> 
+				and m.mobilephone like CONCAT('%','${mobilephone}','%' )
+			</if>
+			<if test="recommCodes != null and recommCodes !='' ">
+				and m.recommCodes = trim('${recommCodes}')
+			</if>
+			<if test="uid != null "> 
+			and c.uid = #{uid:INTEGER}
+			</if>
+			<if test="realName != null and realName !='' "> 
+			and mb.realname like CONCAT('%','${realName}','%' )
+			</if>
+			<if test="idCards != null and idCards !='' ">
+			 and mb.idcards like CONCAT('%','${idCards}','%' )
+			</if>
+			<if test="fundTypes != null and fundTypes !='' "> 
+			and c.fundType in
+			<foreach item="item" index="index" collection="fundTypes" open="(" separator="," close=")">  
+			 #{item}  
+			</foreach> 
+			</if>
+		</where>
+	</select>
+	<insert id="batchInsert" parameterType="java.util.List">
+		<foreach collection="list" item="item" separator=";">
+			insert into dr_member_funds_log (fundType, uid, rid, amount, type,remark, addTime)
+			values
+			(#{item.fundType},#{item.uid},#{item.rid},#{item.amount},#{item.type},#{item.remark},SYSDATE())
+		</foreach>
+	</insert>
+	
+	<select id="queryCouponAmount" parameterType="Integer" resultType="Integer">
+		select ifnull(sum(dap.amount),0) from dr_product_invest dpv LEFT JOIN dr_product_info dpi on dpv.pid=dpi.id 
+			LEFT JOIN dr_activity_parameter dap on dpv.fid = dap.ID
+			<where>
+			<if test="id != null and id !='' "> 
+				dpi.id=#{id}
+			</if>
+			group by dpv.pid
+		</where>
+	</select>
+</mapper>

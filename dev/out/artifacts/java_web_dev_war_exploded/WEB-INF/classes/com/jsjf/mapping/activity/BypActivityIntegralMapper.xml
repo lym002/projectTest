@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.activity.BypActivityIntegralDAO">
+  <resultMap id="BaseResultMap" type="com.jsjf.model.activity.BypActivityIntegral">
+    <id column="ID" jdbcType="INTEGER" property="id" />
+    <result column="activityId" jdbcType="INTEGER" property="activityid" />
+    <result column="type" jdbcType="INTEGER" property="type" />
+    <result column="status" jdbcType="TINYINT" property="status" />
+    <result column="details" jdbcType="VARCHAR" property="details" />
+    <result column="addtime" jdbcType="TIMESTAMP" property="addtime" />
+    <result column="updatetime" jdbcType="TIMESTAMP" property="updatetime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    ID, activityId, type, status, details, addtime, updatetime
+  </sql>
+  <select id="selectBypActivityIntegral"  resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from byp_activity_integral
+  </select>
+</mapper>

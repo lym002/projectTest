@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysChooseOptionDAO">
+	<resultMap id="BaseResultMap" type="com.jsjf.model.system.SysChooseOption">
+		<id column="id" property="id" jdbcType="INTEGER" />
+		<result column="category" property="category" jdbcType="VARCHAR" />
+		<result column="cnvalue" property="cnvalue" jdbcType="VARCHAR" />
+		<result column="code" property="code" jdbcType="TINYINT" />
+		<result column="sortno" property="sortno" jdbcType="TINYINT" />
+		<result column="valid" property="valid" jdbcType="BIT" />
+	</resultMap>
+
+	<select id="selectByCategory" resultMap="BaseResultMap" parameterType="String">
+		select * from sys_chooseoption
+		<where>
+			<if test="category != null ">
+			category = #{category,jdbcType=VARCHAR}
+			</if>
+			and valid = 1
+		</where>
+		
+	</select>
+	
+	
+	<select id="select" resultMap="BaseResultMap">
+		select * from sys_chooseoption where category ='wincallType' and valid = 1		
+	</select>
+</mapper>

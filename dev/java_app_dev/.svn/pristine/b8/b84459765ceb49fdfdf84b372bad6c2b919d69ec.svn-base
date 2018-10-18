@@ -1,0 +1,244 @@
+package com.jsjf.service.activity.impl;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.dao.activity.DrActivityParameterDAO;
+import com.jsjf.dao.activity.DrMemberFavourableDAO;
+import com.jsjf.dao.activity.JsActivityRewardDAO;
+import com.jsjf.dao.member.DrMemberDAO;
+import com.jsjf.dao.member.DrMemberLotteryLogDAO;
+import com.jsjf.dao.member.DrMemberMsgDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.model.activity.DrActivityParameter;
+import com.jsjf.model.activity.DrMemberFavourable;
+import com.jsjf.model.activity.JsActivityReward;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberLotteryLog;
+import com.jsjf.model.member.DrMemberMsg;
+import com.jsjf.service.activity.JsActivityRewardService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+@Service
+@Transactional
+public class JsActivityRewardServiceImpl implements JsActivityRewardService {
+	private Logger log = Logger.getLogger(this.getClass());
+
+    @Autowired
+    private BypCommodityDAO bypCommodityDAO;
+	@Autowired
+	private JsActivityRewardDAO JsActivityRewardDao;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrMemberFavourableDAO drMemberFavourableDAO;
+	@Autowired
+	private DrActivityParameterDAO drActivityParameterDAO;
+	@Autowired
+	private DrMemberLotteryLogDAO drMemberLotteryLogDAO;
+	@Autowired
+	public DrMemberDAO drMemberDAO;
+	@Autowired
+	public DrMemberMsgDAO drMemberMsgDAO;
+	@Override
+	public BaseResult getJsActivityRewardByAid(Map<String, Object> map) {
+		
+		BaseResult br = new BaseResult();
+		Map<String,Object> result = new HashMap<String,Object>();
+		try {
+			boolean lockFlag = redisClientTemplate.tryLock("tearOpen."+map.get("uid"), 3, TimeUnit.SECONDS,true);
+			if(lockFlag){
+				//先来查询奖品的列表
+				result.put("atid", map.get("atid"));
+				result.put("classes", 1);
+				List<JsActivityReward> rewardList = JsActivityRewardDao.getJsActivityRewardByAid(result);
+				double lotterFirst = 0;
+				double lotterEnd = 0;
+				double lotter = 0;
+				lotter = Math.random();//获取随机数
+				for(int i=0;i<rewardList.size();i++){
+					if(i!=0){
+						lotterFirst += rewardList.get(i-1).getProbability(); 
+					}
+					lotterEnd += rewardList.get(i).getProbability();
+					if(lotter >lotterFirst && lotter <=lotterEnd){
+						//当走到这里的时候表示已经中奖了，这个时候需要在获取对应的概率的优惠券的id并插到用户红包表然后在中奖记录表插入记录
+						JsActivityReward jsActivityReward = rewardList.get(i);
+						DrActivityParameter dap = drActivityParameterDAO.getActivityParameterById(jsActivityReward.getCouponId());
+						DrMemberFavourable dmf = new DrMemberFavourable(jsActivityReward.getCouponId(),(Integer)map.get("uid"), dap.getType(), dap.getCode(), dap.getName(), dap.getAmount(), dap.getRaisedRates(),
+								dap.getEnableAmount(), 0, Utils.getDayNumOfDate(1-dap.getDeadline()), "元宵节吃元宵奖品", 0,3,dap.getProductDeadline(),dap.getMultiple(),null);
+						drMemberFavourableDAO.insertIntoInfo(dmf);
+						Date date = new Date();
+						DrMemberLotteryLog dmfLog = new DrMemberLotteryLog(jsActivityReward.getAtid(), (Integer)map.get("uid"),date, jsActivityReward.getId());
+						dmfLog.setUpdateTime(date);
+						drMemberLotteryLogDAO.insert(dmfLog);
+						result.clear();
+						result.put("type", dap.getType());
+						if(dap.getType() == 1 || dap.getType() == 3){
+							result.put("num", dap.getAmount());
+						}
+						if(dap.getType()==2){
+							result.put("num", dap.getRaisedRates());
+						}
+						if(dap.getType() == 4){
+							result.put("num", dap.getMultiple());
+						}
+						br.setSuccess(true);
+						br.setMap(result);
+					}
+				}
+			}else{
+				br.setErrorCode("1002");
+				br.setErrorMsg("系统繁忙稍后重试");	
+				log.error("用户"+map.get("uid")+"：存在强刷的操作，马上禁用此用户");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return br;
+		}
+		return br;
+	}
+	@Override
+	public BaseResult againDoubleeggRewardByAid(Map<String, Object> map) {
+		
+		BaseResult br = new BaseResult();
+		Map<String,Object> result = new HashMap<String,Object>();
+		try {
+			boolean lockFlag = redisClientTemplate.tryLock("tearOpen."+map.get("uid"), 3, TimeUnit.SECONDS,true);
+			if(lockFlag){
+				//先来查询奖品的列表
+				result.put("atid", map.get("atid"));
+				result.put("classes", 1);
+				List<JsActivityReward> rewardList = JsActivityRewardDao.getJsActivityRewardByAid(result);
+				double lotterFirst = 0;
+				double lotterEnd = 0;
+				double lotter = 0;
+				lotter = Math.random();//获取随机数
+				for(int i=0;i<rewardList.size();i++){
+					if(i!=0){
+						lotterFirst += rewardList.get(i-1).getProbability(); 
+					}
+					lotterEnd += rewardList.get(i).getProbability();
+					if(lotter >lotterFirst && lotter <=lotterEnd){
+						//当走到这里的时候表示已经中奖了，这个时候需要在获取对应的概率的优惠券的id并插到用户红包表然后在中奖记录表插入记录
+						JsActivityReward jsActivityReward = rewardList.get(i);
+						DrActivityParameter dap = drActivityParameterDAO.getActivityParameterById(jsActivityReward.getCouponId());
+						//判断是否是再来一次如果是再来一次的话下面的就不要做了.直接返回前端代码 且不扣除次数
+						DrMemberFavourable dmf = new DrMemberFavourable(jsActivityReward.getCouponId(),(Integer)map.get("uid"), dap.getType(), dap.getCode(), dap.getName(), dap.getAmount(), dap.getRaisedRates(),
+								dap.getEnableAmount(), 0, Utils.getDayNumOfDate(1-dap.getDeadline()), "捕鱼活动", 0,3,dap.getProductDeadline(),dap.getMultiple(),null);
+						drMemberFavourableDAO.insertIntoInfo(dmf);
+						/**
+						 * 插入扣除抽奖次数的逻辑start
+						 */
+						Date date = new Date();
+						DrMemberLotteryLog doubleAGGByUid = drMemberLotteryLogDAO.getDoubleAGGByUid(map);
+						if (Utils.isObjectNotEmpty(doubleAGGByUid)) {
+							doubleAGGByUid.setGiftId(Integer.parseInt(jsActivityReward.getRemark()));
+							doubleAGGByUid.setUpdateTime(date);
+							drMemberLotteryLogDAO.update(doubleAGGByUid);
+							JsActivityReward jar=JsActivityRewardDao.getProNameById(Integer.parseInt(jsActivityReward.getRemark()));
+							// 发送站内信
+							DrMemberMsg msg = new DrMemberMsg((Integer)map.get("uid"), 0, 1, "恭喜您捕鱼抽中"+jar.getName()+"奖励！", new Date(), 0,0, "恭喜您在“捕鱼达人活动-捕鱼中大奖”活动抽中"+
+									jar.getName()+"，" +"已发送至【我的账户】，快去使用吧！再来一次，还能中大奖！无人机、熊本熊相机，将伴你一起出游！");
+							drMemberMsgDAO.insertDrMemberMsg(msg);
+						}else {
+							br.setErrorCode("10010");
+							br.setErrorMsg("没有抽奖次数了");	
+							log.error("用户"+map.get("uid")+"不存在抽奖次数确进入了抽奖环节");
+							return br;
+						}
+						/*DrMemberLotteryLog dmfLog = new DrMemberLotteryLog(jsActivityReward.getAtid(), (Integer)map.get("uid"),date, jsActivityReward.getId());
+						dmfLog.setUpdateTime(date);
+						drMemberLotteryLogDAO.insert(dmfLog);*/
+						//end
+						result.clear();
+						result.put("type", dap.getType());
+						if(dap.getType() == 1 || dap.getType() == 3){
+							result.put("num", dap.getAmount());
+							result.put("remark", Integer.parseInt(jsActivityReward.getRemark()));
+						}
+						if(dap.getType()==2){
+							result.put("num", dap.getRaisedRates());
+							result.put("remark", Integer.parseInt(jsActivityReward.getRemark()));
+						}
+						if(dap.getType() == 4){
+							result.put("num", dap.getMultiple());
+							result.put("remark", Integer.parseInt(jsActivityReward.getRemark()));
+						}
+						br.setSuccess(true);
+						br.setMap(result);
+						return br;
+					}else {
+						result.clear();
+						result.put("remark", 8);
+						result.put("num", 0);
+						result.put("type", 5);
+						br.setSuccess(true);
+						br.setMap(result);
+					}
+				}
+			}else{
+				br.setErrorCode("1002");
+				br.setErrorMsg("系统繁忙稍后重试");	
+				log.error("用户"+map.get("uid")+"：存在强刷的操作，马上禁用此用户");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return br;
+		}
+		return br;
+	}
+	@Override
+	public BaseResult getIntegralByUser(Integer uid) {
+		BaseResult br = new BaseResult();
+		Map<String,Object> result = new HashMap<String,Object>();
+		try {
+			DrMember selectByPrimaryKey = drMemberDAO.selectByPrimaryKey(uid);
+			BigDecimal user_integral = selectByPrimaryKey.getUser_integral();
+			result.put("user_integral", user_integral);
+			br.setSuccess(true);
+			br.setMap(result);
+		} catch (Exception e) {
+			e.printStackTrace();
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+			return br;
+		}
+		return br;
+	}
+
+    @Override
+    public BaseResult getFishingProduct(Map<String, Object> map) {
+        BaseResult br = new BaseResult();
+        Map<String,Object> result = new HashMap<String,Object>();
+        try {
+            List<BypCommodity> bypCommodities = bypCommodityDAO.selectCommodityList(map);
+            result.put("bypCommodities", bypCommodities);
+            br.setSuccess(true);
+            br.setMap(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            br.setSuccess(false);
+            br.setErrorCode("9999");
+            return br;
+        }
+        return br;
+    }
+
+
+}

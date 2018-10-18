@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberFourElementsLogDAO">
+	<resultMap id="DrMemberFourElementsLogResult" type="com.jsjf.model.member.DrMemberFourElementsLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="realName" property="realName" jdbcType="VARCHAR" />
+		<result column="idCards" property="idCards" jdbcType="VARCHAR" />	
+		<result column="bankNum" property="bankNum" jdbcType="VARCHAR" />
+		<result column="bankName" property="bankName" jdbcType="VARCHAR" />
+		<result column="mobilePhone" property="mobilePhone" jdbcType="CHAR" />
+		<result column="flag" property="flag" jdbcType="INTEGER" />
+		<result column="sendTime" property="sendTime" jdbcType="TIMESTAMP" />
+		<result column="reasonStatus" property="reasonStatus" jdbcType="VARCHAR" />
+		<result column="reason" property="reason" jdbcType="VARCHAR" />
+		<result column="orderNo" property="orderNo" jdbcType="VARCHAR" />
+		<result column="count" property="count" jdbcType="INTEGER" />
+		<result column="isAuth" property="isAuth" jdbcType="INTEGER" />
+	</resultMap>
+	<insert id="insertMemberFourElementsLog" parameterType="com.jsjf.model.member.DrMemberFourElementsLog">
+		insert into dr_member_fourelements_log (uid,
+		realName,idCards,bankNum,bankName,mobilePhone,flag, sendTime,
+		reasonStatus,reason,orderNo)
+		values (#{uid:INTEGER},#{realName:VARCHAR},#{idCards:VARCHAR},#{bankNum:VARCHAR},
+		#{bankName:VARCHAR},#{mobilePhone:VARCHAR},
+		#{flag:INTEGER}, SYSDATE(),
+		#{reasonStatus:VARCHAR},#{reason:VARCHAR},#{orderNo:VARCHAR})
+	</insert>
+	<select id="queryMemberFourElementsLogList" parameterType="java.lang.Integer"
+		resultMap="DrMemberFourElementsLogResult">
+		select * from dr_member_fourelements_log
+		where abs(uid) = #{uid:INTEGER}
+	</select>
+
+	<!-- 查询未认证的 -->
+	<select id="getMemberFourElementsLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberFourElementsLog">
+ 		select distinct abs(dmfl.uid) as uid,count(1) as count,CONCAT(LEFT(m.mobilephone,3),'****',RIGHT(m.mobilephone,4)) as phone,'' as realName,'' as idCards,
+		 '' as mobilePhone,'' as bankNum,<![CDATA[CASE WHEN dmfl.uid<0 THEN 1 ELSE 0 END as isAuth]]>
+		 from dr_member_fourelements_log dmfl
+		 left join dr_member m on abs(dmfl.uid) = m.uid 
+		 where m.realverify=0
+		<if test="mobilePhone != null and mobilePhone !=''"> and m.mobilephone= #{mobilePhone} </if>
+		<![CDATA[GROUP BY abs(dmfl.uid) having count(abs(dmfl.uid))>0]]>
+		limit #{offset},#{limit}
+	</select>
+
+	<!--通过获取未认证信息总数 -->
+	<select id="getMemberFourElementsLogCounts" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from (
+	 		select distinct abs(dmfl.uid) from dr_member_fourelements_log dmfl 
+		 	left join dr_member m on abs(dmfl.uid) = m.uid 
+			where m.realverify=0 
+		<if test="mobilePhone != null and mobilePhone !=''"> and m.mobilephone= #{mobilePhone} </if>
+		<![CDATA[GROUP BY abs(dmfl.uid) having count(abs(dmfl.uid))>0]]>
+		 ) a
+	</select>
+	
+	<!-- 修改认证日志 -->
+	<update id="updateMemberFourElementsLog" parameterType="com.jsjf.model.member.DrMemberFourElementsLog">
+		update dr_member_fourelements_log
+		<set>
+			<if test="uid != null">
+				uid = -#{uid}
+			</if>
+		</set>
+		<where>
+			id =#{id:INTEGER}
+		</where> 
+	</update>
+	
+	<!-- 查询銀行认证失敗信息列表 -->
+	<select id="getMemberIdentificationLogList" parameterType="java.util.HashMap" resultType="com.jsjf.model.member.DrMemberFourElementsLog">
+ 		select dmfl.id,CONCAT(LEFT(dmfl.mobilePhone ,3),'****',RIGHT(dmfl.mobilePhone ,4)) AS mobilePhone ,
+	 		concat(substring(idCards,1,3),"***",substring(idCards,15)) idCards,
+	 		concat(substring(bankNum,1,3),"***",substring(bankNum,12)) bankNum,
+	 		dmfl.uid,CONCAT(LEFT(dmfl.realName,1),'**') AS realName,sendTime,reason
+ 		from dr_member_fourelements_log dmfl
+		left join dr_member m on abs(dmfl.uid) = m.uid
+		where m.mobilephone= #{mobilePhone}
+		<if test="limit != null"> limit #{offset},#{limit} </if>
+	</select>
+	<!--通过获取銀行认证信息总数 -->
+	<select id="getMemberIdentificationLogCounts" parameterType="java.util.HashMap" resultType="int">
+		select count(1)
+ 		from dr_member_fourelements_log dmfl
+		left join dr_member m on abs(dmfl.uid) = m.uid
+		where m.mobilephone= #{mobilePhone}
+	</select>
+	
+	<update id="updateFourelementsLog" parameterType="java.util.Map">
+		update dr_member_fourelements_log SET reasonStatus = 'ER000028',reason = #{reason}
+		where reasonStatus = 'S0000000' AND uid =#{uid};
+	</update>
+	
+	<insert id="insertFourelementsLog" parameterType="java.util.Map">
+		INSERT INTO dr_member_fourelements_log (uid, realName, idCards, bankNum, bankName, mobilePhone, flag, sendTime, reasonStatus, reason) 
+		VALUES (#{uid}, #{realName}, #{idCards}, #{bankNum}, #{bankName}, #{mobilePhone}, '0', now(), 'S0000000', '实名认证成功');
+	</insert>
+</mapper>

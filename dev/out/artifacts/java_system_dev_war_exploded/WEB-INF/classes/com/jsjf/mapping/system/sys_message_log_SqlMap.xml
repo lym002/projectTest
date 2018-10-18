@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.system.SysMessageLogDAO" >
+	<resultMap id="SysMessageLogResult" type="com.jsjf.model.system.SysMessageLog" >
+		<result column="msgId" property="msgId" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="message" property="message" jdbcType="VARCHAR" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="sendtime" property="sendTime" jdbcType="TIMESTAMP" />
+		<result column="results" property="results" jdbcType="INTEGER" />
+		<result column="phone" property="phone" jdbcType="VARCHAR" />
+		<result column="typeName" property="typeName" jdbcType="VARCHAR" />
+	</resultMap>
+  <!-- 插入一条短信日志 -->
+  <insert id="insertSysMessageLog" useGeneratedKeys="true" keyProperty="msgId" parameterType="com.jsjf.model.system.SysMessageLog">
+     insert into sys_message_log(uid,message,type,sendtime,results,phone)
+          values(#{uid:INTEGER},#{message:VARCHAR},#{type:INTEGER},
+          #{sendTime:TIMESTAMP},#{results:INTEGER},#{phone:VARCHAR})
+  </insert>
+  <select id="selectByProperty" parameterType="com.jsjf.model.system.SysMessageLog" resultMap="SysMessageLogResult">
+  		select msgId,uid, message, type, sendtime, results, phone from sys_message_log
+  		<where>
+  			<if test="uid != null"> and uid = #{uid:INTEGER}</if>
+  			<if test="type != null"> and type = #{type:INTEGER}</if>
+  			<if test="phone != null"> and phone = #{phone:INTEGER}</if>
+  			<if test="message != null"> and message LIKE CONCAT(CONCAT('%',#{message:VARCHAR}),'%')</if>
+  		</where>
+  		order by sendtime desc
+  		limit 0,1
+  </select>
+  <select id="selectByType" parameterType="java.util.HashMap"  resultMap="SysMessageLogResult">
+		select msgId, uid, message, type, sendtime, results,CONCAT(LEFT(phone,3),'****',RIGHT(phone,4)) as phone,
+			(SELECT sc.cnvalue from sys_chooseoption sc where sc.category='smsType' and sml.type=sc.code) as typeName 
+		from sys_message_log sml
+  		<where>
+  			<if test="type != null and type != ''"> and sml.type = #{type:INTEGER}</if>
+  			<if test="results != null "> and sml.results = #{results:INTEGER}</if>
+  			<if test="phone != null  and phone != '' "> and sml.phone = #{phone:VARCHAR}</if>
+  			<if test="sendTime != null "> and sml.sendTime like  CONCAT(CONCAT(#{sendTime:VARCHAR}),'%')</if>
+  			<if test="startDate !=null and startDate !='' and endDate !=null and endDate !='' ">
+  					and sml.sendtime BETWEEN #{startDate} AND #{endDate} 
+  			</if>
+  		</where>
+  		order by sml.msgId desc
+  		<if test="offset != null">
+  			limit #{offset},#{limit}
+  		</if>
+  		
+  </select>
+  <select id="selectByTypeCounts" parameterType="java.util.HashMap"  resultType="int">
+  		select count(1) from sys_message_log sml
+  		<where>
+  			<if test="type != null and type != ''"> and sml.type = #{type:INTEGER}</if>
+  			<if test="results != null "> and sml.results = #{results:INTEGER}</if>
+  			<if test="phone != null  and phone != '' "> and sml.phone = #{phone:VARCHAR}</if>
+  			<if test="sendTime != null "> and sml.sendTime like  CONCAT(CONCAT(#{sendTime:VARCHAR}),'%')</if>
+  			<if test="startDate !=null and startDate !='' and endDate !=null and endDate !='' ">
+  					and sml.sendtime BETWEEN #{startDate} AND #{endDate} 
+  			</if>
+  		</where>
+  </select>
+  
+  <!-- 注册短信总条数  -->
+	<select id="selectByTypecount" parameterType="com.jsjf.model.system.SysMessageLog" resultType="int">
+		select count(1) from sys_message_log sml
+  		<where>
+  			<if test="type != null and type != ''"> and sml.type = #{type:INTEGER}</if>
+  			<if test="phone != null and phone != '' "> and sml.phone = #{phone:INTEGER}</if>
+  			<if test="sendTime != null "> and sml.sendTime like  CONCAT(CONCAT(#{sendTime:VARCHAR}),'%')</if>
+  			<if test="results != null "> and sml.results = #{results:INTEGER}</if>
+  		</where>
+	</select>
+	<update id="update" parameterType="java.util.HashMap">
+		update sys_message_log set results = #{results}
+		where msgId in 
+				<foreach item="item" index="index" collection="ids" open="(" separator="," close=")">  
+				 	#{item}  
+				</foreach>
+	</update>
+	<!-- 获取fuiouRspCode -->
+	<select id="getFuiouRspCode" resultType="java.util.HashMap">
+		SELECT code,tips from js_fuiou_code 
+	</select>
+	
+</mapper>

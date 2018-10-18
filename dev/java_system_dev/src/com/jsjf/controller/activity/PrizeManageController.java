@@ -1,0 +1,144 @@
+package com.jsjf.controller.activity;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.model.activity.BypCommodityBean;
+import com.jsjf.service.activity.PrizeManageService;
+
+
+/**
+ * 奖品管理
+ * @author cece
+ *
+ */
+@Controller
+@RequestMapping("/prizemanage")
+public class PrizeManageController {
+
+	private Logger log = Logger.getLogger(PrizeManageController.class);
+	
+	@Autowired
+	private PrizeManageService prizeManageService;
+	
+	@RequestMapping("/queryPrizeManageList")
+	@ResponseBody
+	public PageInfo queryPrizeManageList(@RequestParam Map<String,Object> param,Integer page,Integer rows){
+		if(page == null){
+			page = PageInfo.DEFAULT_PAGE_ON;
+		}
+		if(rows == null){
+			rows = PageInfo.CRM_DEFAULT_PAGE_SIZE;
+		}
+		PageInfo pi = new PageInfo(page,rows);
+		BaseResult result = prizeManageService.queryPrizeManageList(param, pi);
+		return (PageInfo)result.getMap().get("page");
+	}
+	
+	@RequestMapping("/addDrPrizeManage")
+	@ResponseBody
+	public BaseResult addDrPrizeManage(HttpServletRequest request,BypCommodityBean bypCommodityBean){
+		BaseResult br = new BaseResult();
+		br = prizeManageService.addDrPrizeManage(bypCommodityBean);
+		return br;
+	}
+	
+	@RequestMapping("/toUpdateDrPrizeManage")
+	public void toUpdateDrPrizeManage(@RequestParam Integer prId, Map<String, Object> model){
+		BypCommodityBean bypBean = new BypCommodityBean();
+		bypBean = prizeManageService.getDrPrizeManage(prId);
+		model.put("bypBean", bypBean);
+	}
+	
+	@RequestMapping("/updateDrPrizeManage")
+	@ResponseBody
+	public BaseResult updateDrPrizeManage(BypCommodityBean bypCommodityBean){
+		BaseResult br = new BaseResult();
+		br = prizeManageService.updateDrPrizeManage(bypCommodityBean);
+		return br;
+	}
+	
+/*	@RequestMapping("/queryPrize")
+	@ResponseBody
+	public BaseResult queryPrize(Map<String,Object> model){
+		BaseResult result = new BaseResult();
+		try{
+			List<BypCommodityBean> pridList = prizeManageService.queryPrize();  
+			model.put("pridList", pridList);
+			result.setSuccess(true);
+			result.setMsg("成功！");
+		}catch(Exception e){
+			result.setMsg("下拉框加载失败！");
+			e.printStackTrace();
+		}
+		return result;
+	}*/
+	
+	@RequestMapping(value="/importImg",produces = "text/html; charset=utf-8")
+	@ResponseBody
+	public String importImg(HttpServletRequest request,@RequestParam(value="filename",required=false)MultipartFile appPicFile,
+			@RequestParam(value="prId",required=false) String prid,HttpServletResponse response){
+		BaseResult result = new BaseResult();
+		String reg = ".+(.JPEG|.jpeg|.JPG|.jpg|.GIF|.gif|.BMP|.bmp|.PNG|.png)$";
+        Pattern pattern = Pattern.compile(reg);
+        Map<String,Object> fileMap = new HashMap<String,Object>();
+		List<MultipartFile> list = new ArrayList<MultipartFile>();
+		if(appPicFile != null){
+			fileMap.put("picFile", appPicFile);
+			list.add(appPicFile);
+		}
+		for(int i=0;i<list.size();i++){
+			Matcher matcher = pattern.matcher(list.get(i).getOriginalFilename().toLowerCase());
+			if(!matcher.find()){
+				result.setSuccess(false);
+				result.setMsg("请上传正确的图片格式!");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+			
+			long fileSize = list.get(i).getSize();
+			if(fileSize>1024*5000){
+				result.setSuccess(false);
+				result.setMsg("图片不能大于5M！");
+				JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+				return jsonObject.toString();
+			}
+		}
+		try {
+			prizeManageService.updateProductUrl(prid,appPicFile);
+			result.setSuccess(true);
+			result.setMsg("保存成功！");
+		} catch (Exception e) {
+			result.setMsg("保存失败！");
+			e.printStackTrace();
+		}
+
+		JSONObject jsonObject = (JSONObject) JSONObject.toJSON(result);
+		return jsonObject.toString();
+	}
+	
+	@RequestMapping("/prizeManageList")
+	public String prizeManageList(Map<String,Object> model){
+		List<BypCommodityBean> list = prizeManageService.queryHb();
+		model.put("hb", list);
+		return "system/activity/bypPrizeManageList";
+	}
+}

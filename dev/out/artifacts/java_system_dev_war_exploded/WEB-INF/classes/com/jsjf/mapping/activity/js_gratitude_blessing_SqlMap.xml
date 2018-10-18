@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsGratitudeBlessingDAO">
+
+	 <select id="selectGratitudeBlessing" parameterType="java.util.Map" resultType="java.util.Map">
+	 	select jgb.id as id,concat(substring(dm.mobilePhone,1,3),"***",substring(dm.mobilePhone,8)) AS mobilePhone,
+		jgb.blessing as blessing,jgb.status as status,jgb.addtime as addtime from js_gratitude_blessing jgb
+		left join dr_member dm on dm.uid=jgb.uid
+		<where>
+			and jgb.status is not null
+	 		<if test="status != null and status != ''">
+	 			and jgb.status=#{status}
+	 		</if>
+	 		<if test="mobilePhone != null and mobilePhone != ''">
+	 			and dm.mobilePhone=#{mobilePhone}
+	 		</if>
+	 		<if test="startaddtime != null and startaddtime != ''">
+	 			and <![CDATA[ date_format(jgb.addtime,'%Y-%m-%d') >= #{startaddtime}]]>
+	 		</if>
+	 		<if test="endaddtime != null and endaddtime != ''">
+	 			and <![CDATA[ date_format(jgb.addtime,'%Y-%m-%d') <= #{endaddtime}]]>
+	 		</if>
+	 	</where>
+		order by jgb.status asc,jgb.addtime desc
+		limit #{offset},#{limit} 
+	 </select>
+	 
+	 <select id="selectGratitudeBlessingCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+	 	select count(1) from js_gratitude_blessing jgb
+		left join dr_member dm on dm.uid=jgb.uid
+		<where>
+			and jgb.status is not null
+	 		<if test="status != null and status != ''">
+	 			and jgb.status=#{status}
+	 		</if>
+	 		<if test="mobilePhone != null and mobilePhone != ''">
+	 			and dm.mobilePhone=#{mobilePhone}
+	 		</if>
+	 		<if test="startaddtime != null and startaddtime != ''">
+	 			and <![CDATA[ date_format(jgb.addtime,'%Y-%m-%d') >= #{startaddtime}]]>
+	 		</if>
+	 		<if test="endaddtime != null and endaddtime != ''">
+	 			and <![CDATA[ date_format(jgb.addtime,'%Y-%m-%d') <= #{endaddtime}]]>
+	 		</if>
+	 	</where>
+	 </select>
+	 
+	 <update id="updateGratitudeBlessing" parameterType="java.util.HashMap">
+	 	update js_gratitude_blessing set status=#{status},updatetime=now() where id=#{id}
+	 </update>
+	 
+	 <select id="selectObjectOneByUid" parameterType="Integer" resultType="com.jsjf.model.activity.JsGratitudeBlessing">
+	 		select * from js_gratitude_blessing where uid = #{uid} order by split desc limit 1
+	 </select>
+	 
+	 <update id="update"  parameterType="com.jsjf.model.activity.JsGratitudeBlessing" >
+	 	update js_gratitude_blessing 
+	 	<trim prefix="set" suffixOverrides=",">
+	 		<if test="split != null">
+	 			split = #{split},	 			
+	 		</if>
+	 		<if test="splitaddtime != null and splitaddtime !='' ">
+	 			splitaddtime = #{splitaddtime},	 			
+	 		</if>
+	 	</trim>
+	 	  where id = #{id}
+	 </update>
+	 
+	 <insert id="insert" parameterType="com.jsjf.model.activity.JsGratitudeBlessing" >
+	 	insert into js_gratitude_blessing (uid,split,splitaddtime)
+	 	values (#{uid},#{split},now())
+	 </insert>
+	 
+</mapper>

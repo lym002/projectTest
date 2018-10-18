@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jsjf.dao.system.SysFuiouNoticeLogDAO">
+	<resultMap id="sysRoleVoResult" type="com.jsjf.model.system.SysFuiouNoticeLog">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="addtime" property="addtime" jdbcType="TIMESTAMP" />
+		<result column="message" property="message" jdbcType="VARCHAR" />
+		<result column="icd" property="icd" jdbcType="VARCHAR" />
+		<result column="mchnt_txn_ssn" property="mchnt_txn_ssn"	jdbcType="VARCHAR" />
+		<result column="resp_code" property="resp_code" jdbcType="VARCHAR" />
+		<result column="resp_desc" property="resp_desc" jdbcType="VARCHAR" />
+		<result column="mchnt_cd" property="mchnt_cd" jdbcType="VARCHAR" />
+		
+		
+		<result column="icd_name" property="icd_name" jdbcType="VARCHAR" />
+		<result column="req_message" property="req_message" jdbcType="VARCHAR" />
+		<result column="user_id" property="user_id" jdbcType="VARCHAR" />
+		<result column="fuiou_acnt" property="fuiou_acnt" jdbcType="VARCHAR" />
+		<result column="project_no" property="project_no" jdbcType="VARCHAR" />
+		<result column="amt" property="amt" jdbcType="VARCHAR" />
+		<result column="message" property="message" jdbcType="VARCHAR" />
+		<result column="update_time" property="update_time" jdbcType="TIMESTAMP" />
+
+	</resultMap>
+
+
+		<!--  
+	<insert id="insert">
+		INSERT INTO sys_fuiou_notice_log ( addtime,message, icd, mchnt_txn_ssn, resp_code, resp_desc,mchnt_cd)
+		VALUES (sysDate(), #{message}, #{icd}, #{mchnt_txn_ssn}, #{resp_code}, #{resp_desc},#{mchnt_cd});
+	</insert>
+	-->
+	
+	<insert id="insert" parameterType="com.jsjf.model.system.SysFuiouNoticeLog" useGeneratedKeys="true" keyProperty="id">
+		insert into sys_fuiou_notice_log (id,mchnt_cd,addtime,icd,icd_name,mchnt_txn_ssn,req_message,user_id,fuiou_acnt,
+			project_no,amt,resp_code,resp_desc,message,mf_id,join_type,invest_id,channel)
+		values(#{id},#{mchnt_cd},now(),#{icd},#{icd_name},#{mchnt_txn_ssn},#{req_message},#{user_id},#{fuiou_acnt},
+			#{project_no},#{amt},#{resp_code},#{resp_desc},#{message},#{mf_id},#{join_type},#{invest_id},#{channel})
+	</insert> 
+
+	
+	<select id="selectObjectBy_txn_ssn" resultType="com.jsjf.model.system.SysFuiouNoticeLog" parameterType="String">
+		select * from sys_fuiou_notice_log where mchnt_txn_ssn = #{mchnt_txn_ssn}
+	</select>
+	
+	<update id="update" parameterType="com.jsjf.model.system.SysFuiouNoticeLog">
+		update sys_fuiou_notice_log 
+		<trim prefix="set" suffixOverrides=",">
+			update_time =  now(),
+			<if test=" mchnt_cd !=null and mchnt_cd !=''"> mchnt_cd = #{mchnt_cd},</if>
+			<if test=" addtime !=null "> addtime = #{addtime},</if>
+			<if test=" icd !=null and icd !=''"> icd = #{icd},</if>
+			<if test=" icd_name !=null and icd_name !=''"> icd_name = #{icd_name},</if>
+			<if test=" mchnt_txn_ssn !=null and mchnt_txn_ssn !=''"> mchnt_txn_ssn = #{mchnt_txn_ssn},</if>
+			<if test=" req_message !=null and req_message !=''"> req_message = #{req_message},</if>
+			<if test=" user_id !=null and user_id !=''"> user_id = #{user_id},</if>
+			<if test=" fuiou_acnt !=null and fuiou_acnt !=''"> fuiou_acnt = #{fuiou_acnt},</if>
+			<if test=" project_no !=null and project_no !=''"> project_no = #{project_no},</if>
+			<if test=" amt !=null and amt !=''"> amt = #{amt},</if>
+			<if test=" resp_code !=null and resp_code !=''"> resp_code = #{resp_code},</if>
+			<if test=" resp_desc !=null and resp_desc !=''"> resp_desc = #{resp_desc},</if>
+			<if test=" message !=null and message !=''"> message = #{message},</if>
+			<if test=" status !=null "> status = #{status},</if>
+			<if test=" invest_id !=null "> invest_id = #{invest_id},</if>
+			<if test=" contract_no !=null and contract_no !='' "> contract_no = #{contract_no},</if>
+		</trim>         
+		where id = #{id}
+	</update>
+	
+	<select id = "getSysFuiouNoticeLogByParam" resultType="com.jsjf.model.system.SysFuiouNoticeLog" parameterType="java.util.HashMap">
+		select * from sys_fuiou_notice_log 
+		<where>
+			<if test = "mchnt_txn_ssn != null and mchnt_txn_ssn != ''">
+				 and mchnt_txn_ssn = #{mchnt_txn_ssn}
+			</if>
+		</where>
+	</select>
+</mapper>

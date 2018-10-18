@@ -1,0 +1,431 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrMemberFavourableDAO">
+	<resultMap id="DrMemberFavourableResult" type="com.jsjf.model.activity.DrMemberFavourable">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="activityId" property="activityId" jdbcType="INTEGER" />
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="code" property="code" jdbcType="VARCHAR" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="profitAmount" property="profitAmount" jdbcType="DECIMAL" />
+		<result column="raisedRates" property="raisedRates" jdbcType="DECIMAL" />
+		<result column="enableAmount" property="enableAmount" jdbcType="DECIMAL" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+		<result column="expireDate" property="expireDate" jdbcType="TIMESTAMP" />
+		<result column="user_key" property="userKey" jdbcType="INTEGER" />
+		<result property="usedTime" column="usedTime" jdbcType="TIMESTAMP" />
+		<result property="addtime" column="addtime" jdbcType="TIMESTAMP" />
+		<result property="source" column="source" jdbcType="INTEGER" />
+		<result column="productDeadline" property="productDeadline"
+			jdbcType="INTEGER" />
+		<result column="multiple" property="multiple" jdbcType="DECIMAL" />
+		<result column="pid" property="pid" jdbcType="INTEGER" />
+		<result column="fullName" property="fullName" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<!-- 添加活动 -->
+	<insert id="insertIntoInfo" parameterType="com.jsjf.model.activity.DrMemberFavourable">
+		insert into
+		dr_member_favourable
+		(activityId,uid,type,code,name,amount,raisedRates,enableAmount,
+		status,expireDate,remark,user_key,addtime,source,productDeadline,multiple,pid)
+		values
+		(#{activityId},#{uid},#{type},#{code},#{name},#{amount},#{raisedRates},#{enableAmount},
+		#{status},#{expireDate},#{remark},#{userKey},sysdate(),#{source},#{productDeadline},#{multiple},#{pid})
+	</insert>
+
+	<select id="getMemberFavourableByParam" parameterType="java.util.HashMap"
+		resultMap="DrMemberFavourableResult">
+		SELECT mf.*,dpi.fullName from dr_member_favourable mf
+		LEFT JOIN dr_product_info dpi ON mf.pid = dpi.id
+		<where>
+			<if test="id != null"> and mf.id = #{id}</if>
+			<if test="status != null"> and mf.status = #{status}</if>
+			<if test="uid != null"> and mf.uid = #{uid} </if>
+			<if test="type != null">
+				and mf.type in
+				<foreach collection="type" item="item" open="(" close=")"
+					separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="amount != null">
+				and <![CDATA[ #{amount} >= mf.enableAmount ]]>
+			</if>
+			<if test="time != null">
+				and <![CDATA[ DATE_FORMAT(#{time}, '%Y-%m-%d') <= DATE_FORMAT(mf.expireDate, '%Y-%m-%d') ]]>
+			</if>
+			<if test="deadline != null ">
+				and <![CDATA[ #{deadline} >= mf.productDeadline ]]></if>
+			<if test="source != null "> and mf.source=#{source}</if>
+		</where>
+		order by mf.type desc,mf.status,mf.amount desc,mf.expireDate
+	</select>
+
+	<select id="selectFirstPayMent" resultType="int" parameterType="int">
+		select count(1) from dr_product_invest_repayinfo
+		WHERE uid = #{uid} AND shouldTime &gt;= '2016-11-25' AND shouldTime &lt;
+		DATE_FORMAT(DATE_ADD(NOW(),INTERVAL 7 DAY),'%Y-%m-%d')
+	</select>
+
+	<select id="getMemberFavourableTotal" parameterType="java.util.HashMap"
+		resultType="Integer">
+		select count(1) from dr_member_favourable mf
+		left join dr_member dm ON
+		mf.uid = dm.uid
+		<where>
+			<if test="mobilephone != null">
+				and dm.mobliephone=#{mobilephone}
+			</if>
+			<if test="type != null">
+				and mf.type = #{type}
+			</if>
+			<if test="status != null">
+				and mf.status = #{status}
+			</if>
+			<if test="source != null">
+				and mf.source = #{source}
+			</if>
+			<if test="uid != null">
+				and mf.uid = #{uid}
+			</if>
+		</where>
+	</select>
+	<update id="updateFavourableStatus" parameterType="com.jsjf.model.activity.DrMemberFavourable">
+		update dr_member_favourable set status = #{status}
+		<if test="usedTime != null">
+			,usedTime=#{usedTime}
+		</if>
+		<where>
+			<if test="id != null"> and id = #{id}</if>
+			<if test="uid != null and id ==null"> and uid = #{uid}</if>
+			<if test="type != null and id ==null"> and type = #{type}</if>
+			<if test="pid != null and id ==null"> and pid = #{pid}</if>
+		</where>
+	</update>
+
+	<select id="getMemberFavourableByValentine" parameterType="java.util.HashMap"
+		resultMap="DrMemberFavourableResult">
+		select dap.id as activityId,dap.type as type,dap.code as code,dap.name
+		as name,dap.amount as amount,dap.raisedRates as
+		raisedRates,dap.enableAmount as enableAmount,
+		0 as status,DATE_ADD(NOW(),INTERVAL dap.deadline DAY) as
+		expireDate,dap.productDeadline as productDeadline,dap.multiple as
+		multiple,#{uid} as uid,#{remark} as remark,
+		0 as userKey,3 as source
+		from dr_activity_parameter dap
+		where dap.ID in
+		<foreach collection="fids" item="item" open="(" separator=","
+			close=")">
+			#{item}
+		</foreach>
+		and NOT EXISTS
+		(
+		select 1 from dr_member_favourable dmf where dmf.uid =#{uid} and dap.ID =
+		dmf.activityId
+		)
+	</select>
+
+
+	<insert id="batchInsert">
+		<foreach collection="list" item="item" separator=";">
+			insert
+			into dr_member_favourable
+			(activityId,uid,type,code,name,amount,raisedRates,enableAmount,
+			status,expireDate,remark,user_key,addtime,source,productDeadline,multiple,pid)
+			values
+			(#{item.activityId},#{item.uid},#{item.type},#{item.code},#{item.name},#{item.amount},#{item.raisedRates},#{item.enableAmount},
+			#{item.status},#{item.expireDate},#{item.remark},#{item.userKey},sysdate(),#{item.source},#{item.productDeadline},#{item.multiple},#{item.pid})
+
+		</foreach>
+	</insert>
+
+
+	<select id="getParticipationActivityTotal" parameterType="java.util.HashMap"
+		resultType="Integer">
+		select count(dmf.id) from dr_member_favourable dmf,
+		dr_coupons_issued_rules cir
+		where dmf.uid = #{uid}
+		and cir.type=#{type}
+		<if test="statuses != null">
+			and cir.`status` in
+			<foreach collection="statuses" item="item" open="("
+				separator="," close=")">
+				#{item}
+			</foreach>
+		</if>
+		AND FIND_IN_SET(dmf.activityId,cir.coupons)
+	</select>
+
+	<select id="selectByPrimaryKey" parameterType="java.lang.Integer"
+		resultMap="DrMemberFavourableResult">
+		select * from dr_member_favourable where id = #{id}
+	</select>
+	<!-- 查询用户 pid 不为空 未过期利率最高的加息券 -->
+	<select id="selectRaisedRatesAndPid" parameterType="java.lang.Integer"
+		resultType="java.util.HashMap">
+		SELECT cast(if(b.raisedRates is
+		NULL,MAX(a.raisedRates),b.raisedRates) as decimal(7,1)) as
+		maxActivityCoupon,
+		a.pid,
+		SUM(if(b.pid is NULL,0,1)) isEgg
+		from
+		(SELECT MAX(dap.raisedRates) as raisedRates,jpr.pid from
+		js_product_reward jpr
+		LEFT JOIN dr_activity_parameter dap ON dap.id = jpr.apid
+		GROUP BY jpr.pid) a
+		LEFT JOIN
+		( SELECT dmf.pid,dmf.raisedRates from dr_member_favourable dmf where
+		dmf.uid = #{uid} and dmf.status != 2)b
+		ON a.pid = b.pid GROUP BY a.pid
+	</select>
+	<!-- 查询用户在次产品上获得的加息券 -->
+	<select id="selectDrMemberFavourableByPid" parameterType="java.util.HashMap"
+		resultMap="DrMemberFavourableResult">
+		SELECT * from dr_member_favourable
+		<where>
+			1=1
+			<if test="pid != null and pid !='' "> and pid = #{pid}</if>
+			<if test="uid != null and uid !='' "> and uid = #{uid}</if>
+		</where>
+	</select>
+
+	<update id="updateFavourableStatusByMap" parameterType="java.util.HashMap">
+		update dr_member_favourable set
+		<if test="status != null">status = #{status},</if>
+		usedTime = now()
+		<if test="source != null">,source = #{source}</if>
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="id != null"> and id = #{id}</if>
+			<if test="uid != null "> and uid = #{uid}</if>
+			<if test="type != null "> and type = #{type}</if>
+			<if test="eStatus != null "> and status = #{eStatus }</if>
+			<if test="pid != null and id ==null"> and pid = #{pid}</if>
+			<if test="ids != null and ids !=''">
+				and id in
+				<foreach collection="ids" item="item" open="(" separator=","
+					close=")">
+					#{item}
+				</foreach>
+			</if>
+			<if test="esource != null "> and source = #{esource}</if>
+		</trim>
+	</update>
+
+	<select id="selectFavourableOrderByAmountExpireDate" resultMap="DrMemberFavourableResult"
+		parameterType="Integer">
+		SELECT
+		id,expireDate,name,code,enableAmount,amount,remark,productDeadline,uid
+		from dr_member_favourable
+		where uid = #{uid} and type = 1 and `status` = 0
+		ORDER BY amount
+		DESC,expireDate
+		limit 0,2
+	</select>
+
+	<select id="selectRedMsg" resultType="com.jsjf.model.activity.DrMemberFavourable"
+		parameterType="Integer">
+		select
+		f.`amount`,f.`addtime`,f.`status`,concat(substring(m.`mobilePhone`,1,3),"****",substring(mobilePhone,8))
+		as mobilePhone,'' from dr_member_favourable f
+		left join dr_member m on f.`uid` = m.`uid`
+		where f.`amount`&lt;=#{amount}
+		and f.`type` = 1
+		AND f.`status` =1
+		order by f.`addtime` desc
+		limit 0,20
+	</select>
+
+	<select id="selectExperSumAmountId" resultType="java.util.HashMap"
+		parameterType="Integer">
+		SELECT SUM(amount) as experAmount,GROUP_CONCAT(id) as
+		ids from dr_member_favourable WHERE uid = #{uid} and status = 0 and
+		type = 3 and source != 100
+	</select>
+	<select id="selectExperSumAmountIdByMap" resultType="java.util.HashMap"
+		parameterType="java.util.HashMap">
+		SELECT SUM(amount) as experAmount,GROUP_CONCAT(id) as ids from
+		dr_member_favourable WHERE type = 3
+		<if test="uid !=null">and uid = #{uid}</if>
+		<if test="status !=null">and status = #{status}</if>
+		<if test="ids != null and ids !=''">
+			and id in
+			<foreach collection="ids" item="item" open="(" separator=","
+				close=")">
+				#{item}
+			</foreach>
+		</if>
+	</select>
+
+	<select id="selectRedCountByUid" parameterType="Integer"
+		resultType="int">
+		select count(1) from dr_member_favourable where uid =
+		#{uid} and `status` = 0 and type = 1 order by `addtime` DESC
+	</select>
+
+
+
+	<!-- 根据uid查询个数 -->
+	<select id="selectDrMemberFavourableCountByUid" resultType="Integer"
+		parameterType="java.util.HashMap">
+		select count(1) from `dr_member_favourable` dmf where 1=1
+		<if test="uid != null">
+			and dmf.`uid` = #{uid}
+		</if>
+		<if test="type != null">
+			and dmf.`type` = #{type}
+		</if>
+		<if test="status != null">
+			and dmf.`status` = #{status}
+		</if>
+	</select>
+
+
+	<select id="selectExperienceSumByUid" parameterType="java.lang.Integer"
+		resultType="DECIMAL">
+		SELECT IFNULL(SUM(dmf.`amount`),0) FROM
+		`dr_member_favourable` dmf WHERE dmf.`uid`= #{uid} AND dmf.`type` = 3
+		AND dmf.`status` = 0
+	</select>
+	<select id="selectRegSendCount" resultType="java.lang.Integer">
+		SELECT COUNT(DISTINCT uid) FROM `dr_member_favourable` WHERE TYPE =3 AND
+		source = 100
+	</select>
+	<select id="selectRegSendExperienceGold" resultType="java.math.BigDecimal"
+		parameterType="java.lang.Integer">
+		select IFNULL(SUM(amount),0) amount from dr_member_favourable where type = 3
+		and uid = #{uid} AND STATUS = 0
+	</select>
+	<select id="selectIsShowCountByUid" parameterType="Integer"
+		resultType="int">
+		select count(1) from dr_member_favourable where uid =
+		#{uid} and source = 100 and status = 0
+	</select>
+
+	<!-- 获取用户未失效的88元红包对象 -->
+	<select id="selectNotExpiredAndNotUseByUid" resultType="com.jsjf.model.activity.DrMemberFavourable"
+			parameterType="java.util.HashMap">
+		SELECT
+		id,
+		uid,
+		activityId,
+		type,
+		CODE,
+		NAME,
+		amount,
+		profitAmount,
+		raisedRates,
+		productDeadline,
+		multiple,
+		enableAmount,
+		source,
+		remark,
+		STATUS,
+		expireDate,
+		usedTime,
+		user_key,
+		addtime,
+		pid,
+		iSSplit
+		FROM
+		dr_member_favourable
+		WHERE
+		uid = #{uid}
+		AND expireDate &gt; CURRENT_TIMESTAMP ()
+		AND amount = #{amount};
+	</select>
+
+
+	<select id="selectBidPrize" resultType="com.jsjf.model.activity.DrMemberFavourable">
+		SELECT
+		f.`amount`,
+		f.`addtime`,
+		f.`status`,
+		concat(
+		substring(m.`mobilePhone`, 1, 3),
+		"****",
+		substring(mobilePhone, 8)
+		) AS mobilePhone,
+		''
+		FROM
+		dr_member_favourable f
+		LEFT JOIN dr_member m ON f.`uid` = m.`uid`
+		WHERE
+		f.activityId in(25,26,27)
+		AND f.`status` = 1
+		ORDER BY
+		f.`addtime` DESC
+		LIMIT 0,
+		20
+	</select>
+	<select id="selectBidPrizeByUid" resultType="java.util.Map" parameterType="java.lang.Integer">
+		SELECT
+		*
+		FROM
+		dr_member_favourable f
+		LEFT JOIN dr_product_invest i ON f.uid = i.uid
+		WHERE
+		f.uid = #{uid}
+		AND f.activityId IN (25, 26, 27)
+	</select>
+	<select id="selectUserCount" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select COUNT(0) from dr_member_favourable where
+		1=1
+		<if test="uid!=null">and uid =#{uid} </if>
+		<if test="ids!=null">
+			and code in (SELECT code from dr_activity_parameter where ID in
+			<foreach collection="ids" item="item" open="(" close=")" separator="," >
+				#{item}
+			</foreach>
+			)
+		</if>
+		and date_format(addtime,'%Y-%m-%d')=date_format(now(),'%Y-%m-%d')
+	</select>
+	<!--拦截重复兑换-->
+	<select id="selectByParameterId" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select COUNT(0) from dr_member_favourable where
+		1=1
+		<if test="uid!=null">and uid =#{uid} </if>
+		<if test="fid!=null">
+			and code in (SELECT code from dr_activity_parameter where ID in (#{fid}))
+		</if>
+		and date_format(addtime,'%Y-%m-%d')=date_format(now(),'%Y-%m-%d')
+	</select>
+	<select id="getMemberFavourableByCode" parameterType="java.util.HashMap" resultMap="DrMemberFavourableResult">
+		select dap.id as activityId,dap.type as type,dap.code as code,dap.name as name,dap.amount as amount,dap.raisedRates as raisedRates,dap.enableAmount as enableAmount,
+		0 as status,DATE_ADD(NOW(),INTERVAL dap.deadline DAY) as expireDate,dap.productDeadline as productDeadline,dap.multiple as multiple,#{uid} as uid,#{remark} as remark,
+		0 as userKey,if(dap.type = 3,100,3) as source
+		from dr_activity_parameter dap
+		where dap.code = #{code}
+		<!--
+		and NOT EXISTS
+		(
+			select 1 from dr_member_favourable dmf where dmf.uid =#{uid} and dap.ID = dmf.activityId
+		)-->
+	</select>
+    <!--查询5880红包id-->
+    <select id="selectByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        select id,code,name,amount,raisedRates
+        from
+        dr_activity_parameter
+        <where>
+            `name` LIKE CONCAT('%','5880','%' )
+            ORDER BY ID
+        </where>
+    </select>
+    <!--用户拥有的5880红包-->
+    <select id="selectUserByAid" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+        select *
+        from
+        dr_member_favourable
+        <where>
+            1=1
+            <if test="activityId!=null">and activityId = #{activityId}</if>
+            <if test="uid!=null">and uid=#{uid}</if>
+        </where>
+        LIMIT 1
+    </select>
+</mapper>

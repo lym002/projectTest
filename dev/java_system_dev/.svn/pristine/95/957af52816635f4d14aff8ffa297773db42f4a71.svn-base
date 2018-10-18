@@ -1,0 +1,94 @@
+package com.jsjf.controller.task;
+
+import com.jsjf.common.SerializeUtil;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberCarry;
+import com.jsjf.service.member.DrMemberCarryService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import com.jsjf.service.activity.ActivityReversalService;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 邀请好友红包返现 定时任务
+ *
+ * @author xxq
+ */
+@Component
+public class ActivityReversalTask {
+    private static Logger log = Logger.getLogger(ActivityReversalTask.class);
+    @Autowired
+    DrMemberService drMemberService;
+    @Autowired
+    DrMemberCarryService drMemberCarryService;
+    @Autowired
+    public ActivityReversalService activityReversalService;
+    @Autowired
+    private RedisClientTemplate redisClientTemplate;
+
+    /**
+     * 定义每半小时执行一次好友邀请返现任务
+     */
+    @Scheduled(cron = "0 0/30 * * * ?")
+    public void insertFriendMemberActivityAmount() {
+        try {
+            log.info("=============================开始邀请好友红包返现");
+            //activityReversalService.reversal();
+            activityReversalService.reversals();
+            //落地页：定时查询好友邀请返现总额的排名
+            activityReversalService.selectReversal();
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
+        }
+        log.info("=============================邀请好友红包返现完成");
+    }
+
+    /**
+     * 定义每半小时执行一次好友邀请返现任务
+     */
+
+    @Scheduled(cron = "0 25 16 * * ?")
+    public void transferToClient() {
+        String msg = "复投返现活动";
+        try {
+            activityReversalService.transferToClient(4744, new BigDecimal(14.83), msg);
+            activityReversalService.transferToClient(6412, new BigDecimal(8.33), msg);
+            activityReversalService.transferToClient(6678, new BigDecimal(84.83), msg);
+            activityReversalService.transferToClient(3889, new BigDecimal(16.67), msg);
+        } catch (Exception e) {
+            log.error("复投返现失败" + e.getMessage());
+        }
+     /*
+        String msg = "抢标活动返现";
+        try {
+            activityReversalService.transferToClient(4147, new BigDecimal(58), msg);
+        } catch (Exception e) {
+            log.error("抢标活动返现" + e.getMessage());
+        }*/
+
+       /* try {
+            Map<String, Object> backMap = new HashMap<String, Object>(); // 返回参数的map
+            // 放到 redis 缓存
+            Map<String, Object> crushBackMap = new HashMap<String, Object>();
+            crushBackMap.put("type", 52);
+            crushBackMap.put("uid", 2232);
+            crushBackMap.put("investId", 3082);
+            crushBackMap.put("project_no", "CP-20180117202139594237");
+            backMap.put("crushBackMap", crushBackMap);
+            redisClientTemplate.lpush("regAndVerifySendRedUidList".getBytes(),
+                    SerializeUtil.serialize(backMap.get("crushBackMap")));
+        } catch (Exception e) {
+            log.error("抢标活动返现" + e.getMessage());
+        }*/
+    }
+
+}

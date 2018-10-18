@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.FestivaiActivityDao">
+
+	<sql id="colNameStr">
+		bcd.id as id , bcd.code as code , bcd.prid as prid , bcd.uid as uid ,bcd.status as status , 
+		bc.type as type  ,bcd.addtime as addtime , bcd.starttime as starttime , bcd.endtime as endtime , 
+		bcd.provide as provide , bcd.address as address,dm.mobilePhone as mobilePhone,bc.price as price
+	</sql>
+	
+	<sql id="colNameStrRealname">
+		bcd.id as id , bcd.code as code , bcd.prid as prid , bcd.uid as uid ,bcd.status as status , 
+		bc.type as type  ,bcd.addtime as addtime , bcd.starttime as starttime , bcd.endtime as endtime , 
+		bcd.provide as provide , bcd.address as address,dm.mobilePhone as mobilePhone,bc.price as price,dmbinfo.realName,
+		bc.prizeName as prizeName
+	</sql>
+	
+	<sql id="coltjStr">
+		dpi.uid as uid, 
+		dpinfo.deadline as deadline,sum(case WHEN dpinfo.deadline =30 THEN dpi.amount ELSE 0 end) as amount
+	</sql>
+	
+	 <select id="queryFestivaIActivityList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+	 	select  
+	 		<include refid="colNameStrRealname"/>
+	 	from byp_commodity_detail bcd,byp_commodity bc,dr_member dm,dr_member_base_info dmbinfo where 1=1
+	 	and bcd.prid=bc.prid and bcd.uid=dm.uid and dm.uid = dmbinfo.uid
+	 	<if test="status != null and status != ''">
+				and bcd.status = #{status}
+		</if>
+	 	<if test="code != null and code != '' ">
+				and bcd.code=#{code}
+		</if>
+		<if test="type != null and type != ''">
+				and bc.type=#{type}
+		</if>
+		<if test="starttime != null and starttime != ''">
+				and bcd.starttime <![CDATA[ <= ]]> #{starttime} 
+		</if>
+		<if test="endtime != null and endtime != ''">
+				and bcd.endtime <![CDATA[ >= ]]>#{endtime}
+		</if>
+		<if test="provide != null and provide != ''">
+				and bcd.provide=#{provide}
+		</if>
+		<if test="mobilePhone != null and mobilePhone != ''">
+				and dm.mobilePhone=#{mobilePhone}
+		</if>
+		<if test="tjType != null and tjType != ''">
+				and bc.type=#{tjType}
+		</if>
+		<if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>
+	 </select>
+	 
+	 <select id="queryFestivaIActivityListCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(0)
+	 	from byp_commodity_detail bcd,byp_commodity bc,dr_member dm where 1=1
+	 	and bcd.prid=bc.prid and bcd.uid=dm.uid
+	 	<if test="code != null and code != '' ">
+				and bcd.code=#{code}
+		</if>
+		<if test="status != null and status != ''">
+				and bcd.status = #{status}
+		</if>
+		<if test="type != null and type != ''">
+				and bc.type=#{type}
+		</if>
+		<if test="starttime != null and starttime != ''">
+				and bcd.starttime <![CDATA[ <= ]]> #{starttime} 
+		</if>
+		<if test="endtime != null and endtime != ''">
+				and bcd.endtime <![CDATA[ >= ]]>#{endtime}
+		</if>
+		<if test="provide != null and provide != ''">
+				and bcd.provide=#{provide}
+		</if>
+		<if test="mobilePhone != null and mobilePhone != ''">
+				and dm.mobilePhone=#{mobilePhone}
+		</if>
+	</select>
+	
+	<!-- 单个兑换码录入 -->
+	<update id="updateFestivaIActivity" parameterType="com.jsjf.model.activity.BypCommodityDetailBean">
+	 	update byp_commodity_detail
+	 		<set>
+		 		<if test="code !=null and code !=''">
+		 			 code = #{code}
+		 		</if>
+		 	</set>
+	 	where id = #{id:INTEGER}
+	</update>
+	
+	 <select id="getSendPrizeSms"  resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		select 
+			bcd.id as id , bcd.code as code,bc.price,dm.mobilePhone as mobilePhone , bcd.uid as uid
+	 	from byp_commodity_detail bcd,byp_commodity bc,dr_member dm where 1=1
+	 	and bcd.prid=bc.prid and bcd.uid=dm.uid
+	 	and bcd.status=1
+	</select>
+	 
+	 <!-- 修改奖品记录表里的记录为不可用 -->
+	 <update id="updateSendPrizeSms" parameterType="java.util.HashMap">
+	 	update byp_commodity_detail
+	 		set status=0,
+	 		provide=now()
+			where id in
+			<foreach collection="array" item="item" index="index" open="(" separator="," close=")" >  
+		        #{item}  
+		    </foreach>  
+	</update>
+	
+	<!-- 下载明细 -->
+	 <select id="queryDownloadDetail" parameterType="java.util.Map" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+	 	select  
+	 		<include refid="colNameStr"/>
+	 	from byp_commodity_detail bcd,byp_commodity bc,dr_member dm where 1=1
+	 	and bcd.prid=bc.prid and bcd.uid=dm.uid
+	 	and bcd.status = 1
+	 </select>
+	
+	 
+	 <!-- 查询能参与活动的用户的所有投资产品 -->
+	  <select id="queryPrizeStatistics" parameterType="java.util.Map" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		<!-- select 
+			<include refid="coltjStr"/> 
+		from dr_product_invest dpi 
+			LEFT JOIN dr_member dm on dpi.uid=dm.uid
+			LEFT JOIN dr_product_info dpinfo on dpinfo.id=dpi.pid
+			inner JOIN (select
+				concat_ws('',ch.code,cpa.activityCode) as acode from
+				dr_cpa_info cpa
+				LEFT JOIN dr_channel_info ch on cpa.cid = ch.id where
+				ch.type = 1) cha
+				on dm.toFrom <![CDATA[!=]]> cha.acode
+			where dm.uid in(select dpi.uid as uid from dr_product_invest dpi
+						LEFT JOIN dr_member dm on dpi.uid=dm.uid
+						LEFT JOIN dr_product_info dpinfo on dpinfo.id=dpi.pid
+						LEFT JOIN (select
+								concat_ws('',ch.code,cpa.activityCode) as acode from
+								dr_cpa_info cpa
+								LEFT JOIN dr_channel_info ch on cpa.cid = ch.id where
+								ch.type = 0) cha
+								on dm.toFrom = cha.acode
+						where dpinfo.deadline <![CDATA[>=]]> #{deadline} and investTime<![CDATA[>=]]>#{tjStartTime} and investTime<![CDATA[<=]]>#{tjEndTime}
+						group by dpi.uid
+						having  sum(dpi.amount)<![CDATA[>=]]>#{amount}
+			) -->
+			select 
+				dpi.uid as uid, 
+				dpinfo.deadline as deadline,sum(dpi.amount) as amount,dm.toFrom as toFrom
+				from dr_product_invest dpi 
+					LEFT JOIN dr_member dm on dpi.uid=dm.uid
+					LEFT JOIN dr_product_info dpinfo on dpinfo.id=dpi.pid
+				where  investTime<![CDATA[>=]]>#{tjStartTime} and investTime<![CDATA[<]]>#{tjEndTime}
+				group by dpi.uid, dpinfo.deadline
+				having  sum(case WHEN dpinfo.deadline= 30 THEN dpi.amount ELSE 0 end) <![CDATA[>=]]>#{amount}
+						or sum(case WHEN dpinfo.deadline= 60 THEN dpi.amount ELSE 0 end) <![CDATA[>=]]>#{amount}
+						or sum(case WHEN dpinfo.deadline= 180 THEN dpi.amount ELSE 0 end) <![CDATA[>=]]>#{amount}
+							
+	 </select>
+	 
+	 <!-- 查询奖品id和金额 -->
+	 <select id="queryPrid" parameterType="Integer" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		select prid as prid, price as price 
+			from byp_commodity bc 
+		where status = 1 and type=#{type}
+	 </select>
+	 
+	 <!-- 新增产品记录 -->
+	  <insert id="addPrizeStatistics" keyProperty="id" useGeneratedKeys="true" parameterType="com.jsjf.model.activity.BypCommodityDetailBean">
+		insert into byp_commodity_detail(prid,uid,status,addtime,starttime,endtime)
+			values
+		(#{prid},#{uid},#{status},#{addtime},#{starttime},#{endtime})
+	 </insert>
+	 
+	 <!-- 奖品记录表批量导入 -->
+	 <update id="addBatchCode" parameterType="java.util.List">
+	 	<foreach collection="list" item="item" index="index" open="" close="" separator=";" >  
+		       update byp_commodity_detail
+		       <set>
+					code = #{item.code},
+					address = #{item.address}
+				</set>
+					where id = #{item.id}
+		    </foreach>  
+	 </update>
+	 
+	 <!-- 查询已统计的就不再统计了 -->
+	 <select id="queryIsNotTj" parameterType="java.util.Map" resultType="Integer">
+			select count(0) from byp_commodity_detail  bcd left join byp_commodity bc
+			on bc.prid = bcd.prid
+				where bc.type=#{tjType}
+				group by bc.type
+		having max(provide)<![CDATA[>]]> #{tjStartTime}
+	 </select>
+	 
+	 <!-- 查询是否为渠道用户 -->
+	  <select id="queryIsNotCps" parameterType="java.util.HashMap" resultType="Integer">
+			select type from dr_channel_info
+			<where>
+				<if test="code != null and code != ''"> 
+					 and instr(#{code:VARCHAR}, code  ) =1
+				</if>
+				<if test="inverted != null and inverted != ''">
+					and  LOCATE(code,#{code}) =1 
+				</if>
+			</where>
+	 </select>
+
+	<!-- 5880年化投资信息查询 -->
+	<select id="queryYearInvestList" parameterType="java.util.Map" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		SELECT concat(substring(dm.mobilePhone,1,3),"****",substring(dm.mobilePhone,8)) as mobilePhone,
+		       dpi.uid,
+		       SUM((dpi.amount*dpf.deadline)/360) AS yearAmount,MAX(dpi.investTime) as tjStartTime,
+		       SUM(dpi.amount) as amount,bb.price
+		       FROM
+					dr_product_invest dpi
+		       LEFT JOIN dr_member dm on dm.uid=dpi.uid
+		       LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+		       left join(
+						select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+							left join byp_commodity bc on bc.prid = bcd.prid
+							where  bc.activity_id = 'tz'
+										and bcd.status = '1'
+							GROUP BY bcd.uid
+						) as bb on bb.uid=dpi.uid
+		       WHERE dpf.deadline in (30,35,60,180)
+		       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+		       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+		        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+		         and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+      			 and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+		       AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+		       GROUP BY
+		       dpi.uid
+		       ORDER BY price DESC
+		       <if test="limit !=null">
+					limit #{offset},#{limit}
+				</if>
+	</select>
+	
+	 <select id="queryYearInvestListCount" parameterType="java.util.Map"
+           resultType="INTEGER">
+       select count(0) from(
+	      SELECT count(0)
+		       FROM
+					dr_product_invest dpi
+		       LEFT JOIN dr_member dm on dm.uid=dpi.uid
+		       LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+		       left join(
+						select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+							left join byp_commodity bc on bc.prid = bcd.prid
+							where  bc.activity_id = 'tz'
+										and bcd.status = '1'
+							GROUP BY bcd.uid
+						) as bb on bb.uid=dpi.uid
+	       WHERE dpf.deadline in (30,35,60,180)
+	       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+	       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+	        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+	        and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+       		and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+		      AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+	       GROUP BY
+	       dpi.uid
+	       ) a
+   </select>
+	
+	<!-- 5880用户投资每日排行信息查询 -->
+    <select id="queryTodayRankingList" parameterType="java.util.Map"
+           resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+       SELECT concat(substring(dm.mobilePhone,1,3),"****",substring(dm.mobilePhone,8)) as mobilePhone,
+		       dpi.uid,
+		       SUM((dpi.amount*dpf.deadline)/360) AS yearAmount,MAX(dpi.investTime) as tjStartTime,
+		       SUM(dpi.amount) as amount,bb.price
+		       FROM
+					dr_product_invest dpi
+		       LEFT JOIN dr_member dm on dm.uid=dpi.uid
+		       LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+		       left join(
+						select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+							left join byp_commodity bc on bc.prid = bcd.prid
+							where  bc.activity_id = 'ph'
+										and bcd.status = '1'
+							GROUP BY bcd.uid
+						) as bb on bb.uid=dpi.uid
+       WHERE dpf.deadline in (30,35,60,180)
+       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+         and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+       and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+      AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+       GROUP BY
+       dpi.uid
+       ORDER BY price DESC
+       <if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>
+   </select>
+   
+    <select id="queryTodayRankingListCount" parameterType="java.util.Map"
+           resultType="INTEGER">
+       select count(0) from(
+	      SELECT count(0)
+		       FROM
+					dr_product_invest dpi
+		       LEFT JOIN dr_member dm on dm.uid=dpi.uid
+		       LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+		       left join(
+						select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+							left join byp_commodity bc on bc.prid = bcd.prid
+							where  bc.activity_id = 'ph'
+										and bcd.status = '1'
+							GROUP BY bcd.uid
+						) as bb on bb.uid=dpi.uid
+	       WHERE dpf.deadline in (30,35,60,180)
+	       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+	       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+	        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+	        and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+       		and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+       		AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+	       GROUP BY
+	       dpi.uid
+	       ) a
+   </select>
+   
+   <!-- 查询年化投资达到要求能获取京东卡的用户 -->
+   <select id="queryUserInvest" parameterType="java.util.Map"
+           resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+      SELECT
+			dpi.uid,
+			SUM(
+				(dpi.amount * dpf.deadline) / 360
+			) AS yearAmount
+		FROM
+			dr_product_invest dpi
+		LEFT JOIN dr_member dm ON dm.uid = dpi.uid
+		LEFT JOIN dr_product_info dpf ON dpi.pid = dpf.id
+		WHERE
+			dpf.deadline IN (30, 35, 60, 180)
+		AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+		AND dpi.investTime <![CDATA[ >= ]]> #{starttime}
+		AND dpi.investTime <![CDATA[ > ]]> (
+			SELECT
+				addtime
+			FROM
+				byp_commodity_detail bcd
+			LEFT JOIN byp_commodity bc ON bcd.prid = bc.prid
+			WHERE
+				bc.activity_id <![CDATA[ = ]]> 'tz'
+			ORDER BY
+				addtime DESC
+			LIMIT 0,1
+		)
+		AND dpi.investTime <![CDATA[ <= ]]> #{endtime}
+		GROUP BY dpi.uid
+   </select>
+   
+   <!-- 5580活动用户投资统计 -->
+   <insert id="addUserInvest" parameterType="com.jsjf.model.activity.BypCommodityDetailBean"
+		keyProperty="prId" useGeneratedKeys="true">
+		insert into byp_commodity_detail (
+		uid,
+		prid,
+		status,
+		addtime,
+		starttime,
+		endtime
+		)
+		values
+		(
+		#{uid},
+		#{prid},
+		1,
+		now(),
+		'2018-02-08 23:59:59',
+		'2021-02-08 23:59:59'
+		)
+	</insert>
+	
+	 <select id="queryYearInvestPrid" parameterType="INTEGER" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		select prid as prid, price as price ,need_points as needPoints
+					from byp_commodity bc 
+				where status = 1 and type=1 and activity_id='tz' and prid 
+					not in(select prid from byp_commodity_detail where  uid=#{uid})
+				order by need_points asc
+	 </select>
+	 
+	 <!-- 5880总榜 -->
+	 <select id="queryUserTotalList" parameterType="java.util.Map"
+           resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+       SELECT dm.mobilePhone as mobilePhone,
+       dpi.uid,
+       SUM(dpi.amount) AS amount,bb.price as price,
+       (CASE when SUM((dpi.amount*dpf.deadline)/360) > 300000 then '观影券' else '' end) as otherAward
+       FROM
+		dr_product_invest dpi
+      LEFT JOIN dr_member dm on dm.uid=dpi.uid
+      LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+      left join(
+			select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+				left join byp_commodity bc on bc.prid = bcd.prid
+				where (bc.activity_id = 'ph' or bc.activity_id = 'tz') and bcd.status = '1'
+				GROUP BY bcd.uid
+			) as bb on bb.uid=dpi.uid
+       WHERE dpf.deadline in (30,35,60,180)
+       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+       and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+       and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+       AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+       GROUP BY
+       dpi.uid
+       ORDER BY price DESC
+       <if test="limit !=null">
+			limit #{offset},#{limit}
+		</if>
+   </select>
+   
+    <select id="queryUserTotalListCount" parameterType="java.util.Map"
+           resultType="INTEGER">
+       select count(0) from(
+	       SELECT count(0)
+		       FROM
+					dr_product_invest dpi
+		       LEFT JOIN dr_member dm on dm.uid=dpi.uid
+		       LEFT JOIN dr_product_info dpf on dpi.pid=dpf.id
+		       left join(
+						select bcd.uid as uid,sum(bc.price) as price from byp_commodity_detail bcd
+							left join byp_commodity bc on bc.prid = bcd.prid
+							where  (bc.activity_id = 'ph' or bc.activity_id = 'tz')
+										and bcd.status = '1'
+							GROUP BY bcd.uid
+						) as bb on bb.uid=dpi.uid
+	       WHERE dpf.deadline in (30,35,60,180)
+	       <if test="starttime!=null and starttime!=''">AND dpi.investTime <![CDATA[ >= ]]> #{starttime}</if>
+	       <if test="endtime!=null and endtime!=''">AND dpi.investTime <![CDATA[ <= ]]> #{endtime}</if>
+	        <if test="mobilePhone!=null and mobilePhone!=''">AND dm.mobilePhone <![CDATA[ = ]]> #{mobilePhone}</if>
+	       and dpi.investTime <![CDATA[ >= ]]> '2018-01-24 00:00:00'
+       		and dpi.investTime <![CDATA[ <= ]]> '2018-02-08 23:59:59'
+	       AND INSTR(dm.toFrom,(SELECT GROUP_CONCAT(CODE) FROM dr_channel_info WHERE type = 1)) <![CDATA[ != ]]> 1
+	       GROUP BY
+	       dpi.uid
+	       ) a
+   </select>
+   
+   <!-- 查询5880活动每个用户获得的所有京东卡奖励 -->
+    <select id="queryUserCommodityDetail" resultType="com.jsjf.model.activity.BypCommodityDetailBean">
+		select  bc.price as price ,uid as uid
+			from byp_commodity_detail bcd 
+			left join  byp_commodity bc on bc.prid = bcd.prid
+		where bcd.status = 1 and type=1 and activity_id='tz' and activity_id='ph'
+		order by need_points asc
+	 </select>
+   
+   <!-- 获取5580活动1000额度的京东卡id -->
+   <select id="queryJdPrid" resultType="INTEGER">
+		select bc.prid as prid
+		from byp_commodity bc
+		where status = 1 and type=1 and activity_id='5880'
+	 </select>
+	 
+	 <!-- 5880修改老京东卡为不可用 -->
+	 <update id="updateUserCommodityDetail" parameterType="INTEGER">
+	 	update byp_commodity_detail
+	 		set status = 0
+	 	where uid = #{id:INTEGER}
+	</update>
+	
+	<!-- 查询定制京东卡id -->
+	  <select id="queryJdCardSmall" parameterType="com.jsjf.model.activity.BypCommodityBean" resultType="INTEGER">
+		select bc.prid as prid
+		from byp_commodity bc
+		where status = 1 and type=1 and activity_id='5880-small' and prizeName=#{prizeName}
+	 </select>
+	
+</mapper>

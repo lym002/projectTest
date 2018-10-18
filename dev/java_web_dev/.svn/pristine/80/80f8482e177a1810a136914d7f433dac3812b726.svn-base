@@ -1,0 +1,155 @@
+package com.jsjf.service.activity.impl;
+
+import com.alibaba.fastjson.JSONObject;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.Utils;
+import com.jsjf.model.integral.UserDetailIntegralBean;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.service.integral.UserDetailIntegralService;
+import com.jsjf.service.member.DrMemberService;
+import com.jytpay.utils.StringUtil;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.jsjf.dao.activity.BypCommodityDAO;
+import com.jsjf.model.activity.BypCommodity;
+import com.jsjf.service.activity.BypCommodityService;
+
+import java.util.*;
+
+@Service
+public class BypCommodityServiceImpl implements BypCommodityService {
+
+	private Logger log = Logger.getLogger(BypCommodityServiceImpl.class);
+
+	@Autowired
+	private BypCommodityDAO bypCommodityDAO;
+	@Autowired
+	private DrMemberService drMemberService;
+	@Autowired
+	private UserDetailIntegralService userDetailIntegralService;
+
+	@Override
+	public BypCommodity selectIntegralByPid(String pid) {
+		return bypCommodityDAO.selectIntegralByPid(pid);
+	}
+
+	/**
+	 * \积分商城首页数据
+	 * @param m
+	 * @param type
+	 * @return
+	 */
+	@Override
+	public BaseResult selectIntegralShopping(DrMember m, int type) {
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		List<JSONObject> list = new ArrayList<>();
+		try {
+			map.put("status", 1);
+			map.put("activity_id", "shop");
+			map.put("type", type);
+			List<BypCommodity> integralCommodity = bypCommodityDAO.selectCommodityList(map);
+			map.clear();
+			for (BypCommodity entity : integralCommodity) {
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("pid",entity.getPrid());
+				jsonObject.put("price", entity.getPrice());
+				jsonObject.put("productUrl",entity.getProductUrl());
+				jsonObject.put("needPoints",entity.getNeedPoints());
+				jsonObject.put("prizeName",entity.getPrizeName());
+				list.add(jsonObject);
+			}
+			map.put("commodityList", list);
+			if (m.getUid() != null) {
+				m = drMemberService.selectForUpDateByPrimaryKey(m.getUid());
+				map.put("userIntegral", m.getUserIntegralUse() == null ? 0 : m.getUserIntegralUse());
+				//失效积分
+				//获取一个月后的日期
+				String expirationDate = DateUtil.formatDate(setExpioationDate(), "yyyy-MM-dd");
+				UserDetailIntegralBean bean = userDetailIntegralService.queryExpirationDate(expirationDate);
+				if (Utils.isObjectEmpty(bean)) {
+					expirationDate = DateUtil.formatDate(bean.getExpirationTime(), "yyyy-MM-dd");
+				} else {
+					expirationDate = "";
+				}
+				map.put("expirationDate", expirationDate); //失效时间，提前一个月提醒
+			}else{
+				map.put("userIntegral","");
+			}
+			br.setMap(map);
+		}catch (Exception e){
+			log.error(e.getMessage());
+		}
+		return br;
+	}
+
+	/**
+	 * 获取积分商品列表/红包列表
+	 * @param type
+	 * @return
+	 */
+	@Override
+	public List<BypCommodity> selectCommodityList(int type){
+		Map<String, Object> map = new HashMap<>();
+		List<BypCommodity> integralCommodity = new ArrayList<>();
+		try {
+			map.put("status", 1);
+			map.put("type", type);
+			integralCommodity = bypCommodityDAO.selectCommodityList(map);
+			map.clear();
+		}catch (Exception e){
+			log.error(e.getMessage());
+		}
+		return integralCommodity;
+	}
+
+	/**
+	 * 获取积分商品详情
+	 * @param uid
+	 * @param pid
+	 * @return
+	 */
+	@Override
+	public BaseResult selectCommodityInfo(Integer uid, String pid){
+		BaseResult br = new BaseResult();
+		Map<String, Object> map = new HashMap<>();
+		BypCommodity integralCommodity = null;
+		try {
+			integralCommodity = bypCommodityDAO.selectCommodityByPid(Integer.parseInt(pid));
+			JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
+			jsonObject.put("pid",integralCommodity.getPrid());
+			jsonObject.put("price", integralCommodity.getPrice());
+			jsonObject.put("productUrl",integralCommodity.getProductUrl());
+			jsonObject.put("needPoints",integralCommodity.getNeedPoints());
+			jsonObject.put("prizeName",integralCommodity.getPrizeName());
+			jsonObject.put("details",integralCommodity.getDetails());
+			map.put("commodity", jsonObject);
+			if (uid != null && uid != 0) {
+				DrMember dm = drMemberService.selectForUpDateByPrimaryKey(uid);
+				map.put("userIntegral", dm.getUserIntegralUse());
+			}
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e){
+			br.setErrorCode("9999");
+			br.setErrorMsg("详情查询错误");
+			br.setSuccess(false);
+			log.error("详情查询错误",e);
+		}
+		return br;
+	}
+
+	/**
+	 * 查询提前一个月的时间
+	 * @return
+	 */
+	public Date setExpioationDate(){
+		Calendar calendar=Calendar.getInstance();
+		calendar.setTime(new Date());
+		calendar.set(Calendar.DAY_OF_MONTH,calendar.get(Calendar.DAY_OF_MONTH)+31);//让日期加1
+		return calendar.getTime();
+	}
+}

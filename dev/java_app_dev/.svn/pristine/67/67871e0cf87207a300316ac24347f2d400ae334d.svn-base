@@ -1,0 +1,559 @@
+package com.jsjf.controller.index;
+
+import java.util.*;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.alibaba.fastjson.JSON;
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.Utils;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.product.DrProductInfo;
+import com.jsjf.model.system.SysBanner;
+import com.jsjf.service.activity.JsProductReservationService;
+import com.jsjf.service.member.DrMemberService;
+import com.jsjf.service.product.DrProductInfoService;
+import com.jsjf.service.product.DrProductInvestService;
+import com.jsjf.service.product.JsActivityProductInvestInfoService;
+import com.jsjf.service.system.SysArticleService;
+import com.jsjf.service.system.SysBannerService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+
+@RequestMapping("/index")
+@Controller
+public class IndexController {
+	private Logger log = Logger.getLogger(this.getClass());
+	@Autowired
+	private SysBannerService sysBannerService;
+	@Autowired
+	private DrProductInfoService drProductInfoService;
+	@Autowired
+	private SysArticleService sysArticleService;
+	@Autowired
+	private DrProductInvestService drProductInvestService;
+	@Autowired
+	private JsActivityProductInvestInfoService jsActivityProductInvestInfoService;
+	@Autowired
+	private JsProductReservationService jsProductReservationService;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private DrMemberService drMemberService;
+	
+	@RequestMapping(value="/index", method = RequestMethod.POST)
+	@ResponseBody
+	public String index(HttpServletRequest req,Integer uid,String toFrom){
+		BaseResult br = new BaseResult();
+		try {
+			String version = req.getParameter("version");
+			String channel = req.getParameter("channel")==null?"":req.getParameter("channel").toString();
+			Map<String,Object> map = new HashMap<String, Object>();
+			Map<String,Object> param = new HashMap<String, Object>();
+			if(!"".equals(channel) && channel.equals("1")){
+				map.put("code", 5);
+			}else{
+				map.put("code", 4);
+			}
+			//首页banner*****
+			List<SysBanner>  sbList = sysBannerService.indexBanner(map);
+			List<SysBanner> list = new ArrayList<SysBanner>();
+			DiscoverController dsc=new DiscoverController();
+			dsc.getBanner(version, sbList, list);
+			map.clear();
+			if(Utils.isObjectNotEmpty(uid)){
+				map.put("uid",uid);
+				map.put("statuses", new Integer[] { 0,1,3 }); //2是投资失败的，可以继续投
+				String version_1 = redisClientTemplate.getProperties("version_1");
+				String version_2 = redisClientTemplate.getProperties("version_2");
+				int compare1 = Utils.compareVersion(version,version_1);
+				int compare2 = Utils.compareVersion(version,version_2);
+				//ios
+				if(channel.equals("1") && compare1 >= 0){
+					map.put("notType", 5);
+				}
+				//android
+				else if(channel.equals("2") && compare2 >= 0){
+					map.put("notType", 5);
+				}
+				else{
+					map.put("type", 1);
+				}
+				int investTotal = drProductInvestService.selectInvestLogCountByParam(map);
+				map.clear();
+				if(investTotal<=0){
+					//新手标
+//					map.put("newHand", drProductInfoService.selectNewHandInfo());
+				}
+				param.put("uid", uid);
+				param.put("type", 1);
+				String properties = redisClientTemplate.getProperties("newHandPhone");
+				String[] phones = properties.split(",");
+				map.put("phones", phones);
+				map.put("newHandInvested", drProductInvestService.checkProductType(param));
+				param.clear();
+				//判断是否有新手标其他标 isOther
+				param.put("uid", uid);
+				param.put("type", 2);
+				map.put("isInvested", drProductInvestService.checkProductType(param));
+			}else{
+				//新手标
+//				map.put("newHand", drProductInfoService.selectNewHandInfo());
+				map.put("newHandInvested", false);
+				map.put("isInvested", false);
+			}
+			
+			map.put("isExperience", false);
+			map.put("banner", list);
+            String doubleDanStart = redisClientTemplate
+                    .getProperties("doubleDanStartDate");
+            String doubleDanEnd = redisClientTemplate
+                    .getProperties("doubleDanEndDate");
+            Date nowDate = new Date();
+            Map<String,Object> isShow=new HashMap<>();
+            String imgUrl=null;
+            String h5URL=null;
+            String title=null;
+            if (nowDate.after(Utils.parseDate(doubleDanStart,
+                    "yyyy-MM-dd HH:mm:ss"))
+                    && nowDate.before(Utils.parseDate(doubleDanEnd,
+                    "yyyy-MM-dd HH:mm:ss"))) {
+                imgUrl = redisClientTemplate.getProperties("imgUrl");
+                h5URL = redisClientTemplate.getProperties("h5URL");
+                title = redisClientTemplate.getProperties("title");
+                isShow.put("imgUrl",imgUrl);
+                isShow.put("h5URL",h5URL);
+                isShow.put("title",title);
+                map.put("isShow", isShow);
+            }
+
+			/*String activityStartDate = redisClientTemplate.getProperties("activityStartDate");
+			String activityEndDate = redisClientTemplate.getProperties("activityEndDate");
+			Date nowDate = new Date();
+			Date startDate = Utils.parse(activityStartDate, "yyyy-MM-dd HH:mm:ss");
+			Date endDate = Utils.parse(activityEndDate, "yyyy-MM-dd HH:mm:ss");
+			if(nowDate.after(startDate)&&nowDate.before(endDate)){
+				map.put("activityImgUrl", activityImgUrl);
+			}else{
+				map.put("activityUrl", "");
+				map.put("activityImgUrl", "");
+			}
+			//压岁钱活动
+			String luckyMoneyStartDate = redisClientTemplate.getProperties("luckyMoneyStartDate");
+			String luckyMoneyEndDate = redisClientTemplate.getProperties("luckyMoneyEndDate");
+			Date start = Utils.parse(luckyMoneyStartDate, "yyyy-MM-dd HH:mm:ss");
+			Date end = Utils.parse(luckyMoneyEndDate, "yyyy-MM-dd HH:mm:ss");
+			if(nowDate.after(start)&&nowDate.before(end)){
+				map.put("activityUrl", activityUrl);
+				map.put("activityImgUrl", activityImgUrl);
+			}else{
+				map.put("activityUrl", "");
+				map.put("activityImgUrl", "");
+				map.put("isNative", false);
+			}*/
+			//优选理财
+			map.put("preferredInvest", getPreferredInvestMap());
+			//新手标标签
+			map.put("newHandLabel",redisClientTemplate.getProperties("newHandLabel"));
+			//存管新手标标签
+			map.put("fuiouNewHandLabel",redisClientTemplate.getProperties("fuiouNewHandLabel"));
+			
+			//存管新手标
+			map.putAll(getFuiouNewHand(uid));
+			/**
+			 * 2.1业务逻辑加入三个标地查询
+			 */
+			//查看小于30天的标地信息
+			Map<String,Object> indexMap=new HashMap<>();
+			indexMap.put("lessThirtyInvest",getLessThirtyInvest());
+			//查看30天的标地信息
+			indexMap.put("thirtyInvest",getThirtyInvest());
+			//查看60天的标地信息
+			indexMap.put("sixtyInvest",getSixtyInvest());
+			//加入返回值
+			map.put("indexMap",indexMap);
+			/**
+			 * 加入新版本ico    redisClientTemplate.getProperties("shuang")  dm != null ? dm.getIs_Byp_Old_User() : 0;
+			 */
+			if (Utils.isObjectNotEmpty(redisClientTemplate.getProperties("shuang"))&&
+					Utils.isObjectNotEmpty(redisClientTemplate.getProperties("dan"))
+					&&Utils.isObjectNotEmpty(redisClientTemplate.getProperties("kuai"))
+					&&Utils.isObjectNotEmpty(redisClientTemplate.getProperties("le"))){
+				StringBuilder shuang = new StringBuilder(redisClientTemplate.getProperties("shuang"));
+				StringBuilder dan = new StringBuilder(redisClientTemplate.getProperties("dan"));
+				StringBuilder kuai = new StringBuilder(redisClientTemplate.getProperties("kuai"));
+				StringBuilder le = new StringBuilder(redisClientTemplate.getProperties("le"));
+				List<StringBuilder> icoList=new LinkedList<>();
+				icoList.add(shuang);
+				icoList.add(dan);
+				icoList.add(kuai);
+				icoList.add(le);
+				Map<String,Object> icoMap=new HashMap<>();
+				icoMap.put("shuang3x",shuang);
+				icoMap.put("dan3x",dan);
+				icoMap.put("kuai3x",kuai);
+				icoMap.put("le3x",le);
+				map.put("icoMap",icoMap);
+			}
+			//视频图片及链接
+			String videoImgUrl1 = redisClientTemplate.getProperties("videoImgUrl1");
+			String videoImgUrl2 = redisClientTemplate.getProperties("videoImgUrl2");
+			String videoUrl1 = redisClientTemplate.getProperties("videoUrl1");
+			String videoUrl2 = redisClientTemplate.getProperties("videoUrl2");
+			map.put("videoImgUrl1", videoImgUrl1);
+			map.put("videoImgUrl2", videoImgUrl2);
+			map.put("videoUrl1", videoUrl1);
+			map.put("videoUrl2", videoUrl2);
+			//banner下方两个图片
+			map.put("bannerDownPic1", redisClientTemplate.getProperties("bannerDownPic1"));
+			map.put("bannerDownTitle1", redisClientTemplate.getProperties("bannerDownTitle1"));
+			map.put("bannerDownDescribe1", redisClientTemplate.getProperties("bannerDownDescribe1"));
+			map.put("bannerDownUrl1", redisClientTemplate.getProperties("bannerDownUrl1"));
+			map.put("bannerDownPic2", redisClientTemplate.getProperties("bannerDownPic2"));
+			map.put("bannerDownTitle2", redisClientTemplate.getProperties("bannerDownTitle2"));
+			map.put("bannerDownDescribe2", redisClientTemplate.getProperties("bannerDownDescribe2"));
+			map.put("bannerDownUrl2", redisClientTemplate.getProperties("bannerDownUrl2"));
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error("获取数据失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+
+	private Map<String, Object> getFuiouNewHand(Integer uid) {
+		Map<String, Object> map;
+		map = new HashMap<String, Object>();
+		try {
+			Map<String, Object> param = new HashMap<String, Object>();
+			param.put("type", 3);
+			DrProductInfo newHandInfo = drProductInfoService.selectNewHandInfo(param);
+			if (Utils.isObjectNotEmpty(uid)) {
+				DrMember m = drMemberService.selectByPrimaryKey(uid);
+				param.put("uid", uid);
+				param.put("statuses", new Integer[] { 0, 1, 3, 4 }); // 2是投资失败的，可以继续投
+				param.put("phones",redisClientTemplate.getProperties("newHandPhone").split(","));
+				int investTotal = drProductInvestService.selectInvestLogCountByParam(param);
+				param.clear();
+				//判断用户是不是新新手标以前注册的
+				String fuiouNehHand = redisClientTemplate.getProperties("fuiouNewHand");
+				Date fuiouNewHandTime = Utils.parse(fuiouNehHand, "yyyy-MM-dd HH:mm:ss");
+				boolean isNewHand = m.getRegDate().after(fuiouNewHandTime)?true:false;
+				if(isNewHand){
+					if (investTotal <= 0) {
+						// 新手标
+						map.put("fuiouNewHand", newHandInfo);
+					}
+					map.put("fuiouNewHandInvested", investTotal > 0?true:false);
+				}else{
+					map.put("fuiouNewHandInvested", true);
+				}
+			} else {
+				// 新手标
+				map.put("fuiouNewHand", newHandInfo);
+				map.put("fuiouNewHandInvested", false);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+		return map;
+	}
+	
+	private Map<String,Object> getPeriodProMap(){
+		Map<String,Object> param = new HashMap<String, Object>();
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {		
+			//聚划算 等本等息
+			param.clear();			
+			param.put("repayTypes", new Integer[]{3,4});//3等本等息按周回款4等本等息按月回款
+			param.put("statuses", new Integer[]{5});//
+			param.put("orderStr", "ORDER BY status asc,fullDate DESC,startDate asc ");
+			param.put("offset", 0);
+			param.put("limit", 1);
+			List<DrProductInfo> periodProList = drProductInfoService.selectProductbyMap(param);		
+		
+			if(!Utils.isEmptyList(periodProList)){
+				map.put("maxRate", "7.5");
+				map.put("periodProInvestCount", 0);
+				//聚划算利息区间
+				param.clear();
+				param.put("repayTypes", new Integer[]{3,4});//3等本等息按周回款4等本等息按月回款
+				Map<String,Object> perMapRate = drProductInfoService.getProductRateInterval(param);
+				map.put("maxRate", perMapRate.get("maxRate"));
+				map.put("minRate", perMapRate.get("minRate"));
+				map.put("minDeadline", perMapRate.get("minDeadline")); //最小投资期限
+				
+				map.put("isCash", periodProList.get(0).getIsCash()); //是否可用加红包
+				map.put("isInterest", periodProList.get(0).getIsInterest());//是否可用加息券
+				map.put("isDouble", periodProList.get(0).getIsDouble());//是否可用翻倍劵
+				map.put("pert", periodProList.get(0).getPert());//百分比				
+				map.put("status", periodProList.get(0).getStatus()==5?2:3);//				
+				
+				param.clear();
+				param.put("pid", periodProList.get(0).getId());
+				map.put("periodProInvestCount", drProductInvestService.selectInvestCountByMap(param));
+			}			
+	
+			
+			//###################
+		} catch (Exception e) {
+			log.error(e.getMessage(),e);
+		}
+		return map;
+	}
+	private Map<String,Object> getActivityMap(){
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {		
+			
+			//投即送活动
+			if(Utils.isObjectNotEmpty(redisClientTemplate.getProperties("investSendPrizeRate"))){
+				map.put("indexUrl", redisClientTemplate.getProperties("investSendUrl"));//跳转链接
+				map.put("deadLine", redisClientTemplate.getProperties("investSendPrizeDeadLine"));//期现
+				map.put("rate", redisClientTemplate.getProperties("investSendPrizeRate"));//利率
+				map.put("activityRate", redisClientTemplate.getProperties("investSendPrizeActivityRate"));//利率
+				map.put("name", redisClientTemplate.getProperties("investSendPrizeName"));//利率
+				map.put("investSendLabel", redisClientTemplate.getProperties("investSendLabel"));//标签
+				map.put("investSendPicUrl", redisClientTemplate.getProperties("investSendPicUrl"));
+			}
+			//###################
+		} catch (Exception e) {
+			log.error(e.getMessage(),e);
+		}
+		return map;
+	}
+	//优选理财
+	private Map<String,Object> getPreferredInvestMap(){
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {
+			DrProductInfo drProductInfo = drProductInfoService.selectPreferredInvest();
+			map.put("preferredInvestUrl", redisClientTemplate.getProperties("preferredInvestUrl"));// 跳转链接
+			map.put("preferredName", redisClientTemplate.getProperties("preferredName"));// 标题
+			map.put("minRate", drProductInfo.getMinRate()); //最小年利率
+			map.put("maxRate", drProductInfo.getMaxRate()); //最大年利率
+			map.put("minDeadline", drProductInfo.getMinDeadline()); //最小投资期限
+			map.put("isCash", drProductInfo.getIsCash()); //是否可用加红包
+			map.put("isInterest", drProductInfo.getIsInterest());//是否可用加息券
+			map.put("isDouble", drProductInfo.getIsDouble());//是否可用翻倍劵
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return map;
+	}
+	//低于30的标地
+	private Map<String,Object> getLessThirtyInvest(){
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {
+			DrProductInfo drProductInfo = drProductInfoService.selectLessThirtyInvest();
+			DrProductInfo maxRateInvest =drProductInfoService.selectMaxRateInvestByLess();
+			map.put("preferredName", redisClientTemplate.getProperties("preferredName"));// 标题
+			map.put("minRate", drProductInfo.getMinRate()); //最小年利率
+			map.put("maxRate", drProductInfo.getMaxRate()); //最大年利率
+            map.put("activityRate", drProductInfo.getActivityRate()); //活动利率
+			map.put("minDeadline", drProductInfo.getMinDeadline()); //最小投资期限
+			map.put("isCash", drProductInfo.getIsCash()); //是否可用加红包
+			map.put("isInterest", drProductInfo.getIsInterest());//是否可用加息券
+			map.put("isDouble", drProductInfo.getIsDouble());//是否可用翻倍劵
+			map.put("maxInvestId", maxRateInvest==null?0:maxRateInvest.getId());//跳转对于的产品id
+			map.put("maxRateName", maxRateInvest==null?"":maxRateInvest.getFullName()+"");//跳转对于的产品名字
+            map.put("type", maxRateInvest==null?0:maxRateInvest.getType());//产品类型
+            map.put("status", maxRateInvest==null?0:maxRateInvest.getStatus());//产品状态
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return map;
+	}
+	//30的标地
+	private Map<String,Object> getThirtyInvest(){
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {
+			DrProductInfo drProductInfo = drProductInfoService.selectThirtyInvest();
+			DrProductInfo maxRateInvest =drProductInfoService.selectMaxRateInvest(30);
+			map.put("minRate", drProductInfo.getMinRate()); //最小年利率
+			map.put("maxRate", drProductInfo.getMaxRate()); //最大年利率
+            map.put("activityRate", drProductInfo.getActivityRate()); //活动利率
+			map.put("minDeadline", drProductInfo.getMinDeadline()); //最小投资期限
+			map.put("isCash", drProductInfo.getIsCash()); //是否可用加红包
+			map.put("isInterest", drProductInfo.getIsInterest());//是否可用加息券
+			map.put("isDouble", drProductInfo.getIsDouble());//是否可用翻倍劵
+            map.put("maxInvestId", maxRateInvest==null?0:maxRateInvest.getId());//跳转对于的产品id
+            map.put("maxRateName", maxRateInvest==null?"":maxRateInvest.getFullName()+"");//跳转对于的产品名字
+            map.put("type", maxRateInvest==null?0:maxRateInvest.getType());//产品类型
+            map.put("status", maxRateInvest==null?0:maxRateInvest.getStatus());//产品状态
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return map;
+	}
+	//60的标地
+	private Map<String,Object> getSixtyInvest(){
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {
+			DrProductInfo drProductInfo = drProductInfoService.selectSixtyInvest();
+			DrProductInfo maxRateInvest =drProductInfoService.selectMaxRateInvest(60);
+			map.put("minRate", drProductInfo.getMinRate()); //最小年利率
+			map.put("maxRate", drProductInfo.getMaxRate()); //最大年利率
+            map.put("activityRate", drProductInfo.getActivityRate()); //活动利率
+			map.put("minDeadline", drProductInfo.getMinDeadline()); //最小投资期限
+			map.put("isCash", drProductInfo.getIsCash()); //是否可用加红包
+			map.put("isInterest", drProductInfo.getIsInterest());//是否可用加息券
+			map.put("isDouble", drProductInfo.getIsDouble());//是否可用翻倍劵
+            map.put("maxInvestId", maxRateInvest==null?0:maxRateInvest.getId());//跳转对于的产品id
+            map.put("maxRateName", maxRateInvest==null?"":maxRateInvest.getFullName()+"");//跳转对于的产品名字
+            map.put("type", maxRateInvest==null?0:maxRateInvest.getType());//产品类型
+            map.put("status", maxRateInvest==null?0:maxRateInvest.getStatus());//产品状态
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		return map;
+	}
+
+	
+	
+	@RequestMapping(value="/urgentNotice", method = RequestMethod.POST)
+	@ResponseBody
+	public String urgentNotice(HttpServletRequest req,Integer limit,Integer proId){
+		BaseResult br = new BaseResult();
+		if(limit == null || limit ==0){
+			limit = 4;
+		}
+		try {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("offset", 0);
+			map.put("limit", limit);
+			map.put("proId",proId == null ? 14 : proId);//紧急公告
+			List<Map<String,Object>> urgentNoticeList = sysArticleService.getIndexArticle(map);
+			map.clear();
+			if(!Utils.isEmptyList(urgentNoticeList)){
+				map.put("urgentNotice", urgentNoticeList);
+			}else{
+				map.put("urgentNotice", null);
+			}
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("获取紧急公告失败", e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	@RequestMapping(value="/isNewHeadExpire", method = RequestMethod.POST)
+	@ResponseBody
+	public String isNewHeadExpire(HttpServletRequest req,Integer uid){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		String url = "";
+		try {		
+			if(Utils.isObjectNotEmpty(uid)){
+				Map<String,Object> brMap = drProductInvestService.selectUserLastInvestmentInfo(uid);
+				if(Utils.isObjectNotEmpty(brMap.get("type")) && brMap.get("type").toString().equals("1")
+						&& Utils.isObjectNotEmpty(brMap.get("expireDate")) && brMap.get("flag").toString().equals("1")){
+					url = "https://www.byp.cn/images/app/translate.png";
+				}
+			}
+			map.put("url", url);
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("获取失败", e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		return JSON.toJSONString(br);
+		
+	}
+	
+	/**
+	 * 启动页广告
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping(value="/startAdvertisement", method = RequestMethod.POST)
+	@ResponseBody
+	public String startAdvertisement(HttpServletRequest req){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		try {	
+			map.put("code", 8);
+			List<SysBanner> sysBannerList = sysBannerService.indexBanner(map);
+			map.clear();
+			map.put("sysBanner", sysBannerList.size()==0?null:sysBannerList.get(0));
+			br.setMap(map);
+			br.setSuccess(true);
+		} catch (Exception e) {
+			log.error("获取失败", e);
+			br.setErrorCode("9999");
+			br.setSuccess(false);
+		}
+		return JSON.toJSONString(br);
+		
+	}
+	
+	@RequestMapping(value = "/isFuiou", method = RequestMethod.POST)
+	@ResponseBody
+	public String isFuiou(HttpServletRequest req,Integer uid){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		DrMember member = drMemberService.selectByPrimaryKey(uid);
+		try {
+			if(Utils.isObjectEmpty(member)){
+				br.setSuccess(false);
+				br.setErrorCode("9999");
+				return JSON.toJSONString(br);
+			}
+			map.put("isFuiou", member.getIsFuiou());
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e) {
+			log.error("我(uid="+uid+")的信息读取失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+	/**
+	 * 注册人数、累计投资金额、累计收益
+	 * @return regCount, investCumulative , profitCumulative
+	 */
+	@RequestMapping("/regAndInvestCount")
+	@ResponseBody
+	public String regAndInvestCount(){
+		BaseResult br = new BaseResult();
+		Map<String,Object> map = new HashMap<String, Object>();
+		try{
+			String regCount = redisClientTemplate.get("regCount");
+			String investCumulative = redisClientTemplate.get("investCumulative");
+			String profitCumulative = redisClientTemplate.get("profitCumulative");
+			if(!StringUtils.isNotEmpty(regCount)){
+				map = drMemberService.selectIndexSummaryData();
+				redisClientTemplate.setex("regCount",7200 ,map.get("regCount").toString());
+				redisClientTemplate.set("investCumulative",map.get("investCumulative").toString());
+				redisClientTemplate.set("profitCumulative",map.get("profitCumulative").toString());
+			}else{
+				map.put("regCount", regCount);
+				map.put("investCumulative", investCumulative);
+				map.put("profitCumulative", profitCumulative);
+			}
+			br.setMap(map);
+			br.setSuccess(true);
+		}catch (Exception e) {
+			log.error("获取统计数据失败", e);
+			br.setSuccess(false);
+			br.setErrorCode("9999");
+		}
+		return JSON.toJSONString(br);
+	}
+	
+}

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.JsActivityAggregationPageDAO">
+	<resultMap id="JsActivityAggregationPageResult" type="com.jsjf.model.activity.JsActivityAggregationPage">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="activityDate" property="activityDate" jdbcType="VARCHAR" />
+		<result column="pcUrl" property="pcUrl" jdbcType="VARCHAR" />
+		<result column="pcPic" property="pcPic" jdbcType="VARCHAR" />
+		<result column="appUrl" property="appUrl" jdbcType="VARCHAR" />
+		<result column="appPic" property="appPic" jdbcType="VARCHAR" />
+		<result column="isTop" property="isTop" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="VARCHAR" />
+		<result column="addTime" property="addTime" jdbcType="VARCHAR" />
+		<result column="updateUser" property="updateUser" jdbcType="INTEGER" />
+		<result column="updateTime" property="updateTime" jdbcType="TIMESTAMP" />
+		<result column="terminalTypePC" property="terminalTypePC" jdbcType="INTEGER" />
+		<result column="terminalTypeH5" property="terminalTypeH5" jdbcType="INTEGER" />
+		<result column="terminalTypeIOS" property="terminalTypeIOS" jdbcType="INTEGER" />
+		<result column="terminalTypeAndroid" property="terminalTypeAndroid" jdbcType="INTEGER" />
+	</resultMap>
+	<select id="selectJsActivityAggregationPageList" resultMap="JsActivityAggregationPageResult">
+		select * from js_activity_aggregation_page
+		 where 1 = 1
+			<if test="title != null and title != ''">
+				and title like CONCAT('%','${title}','%' )
+			</if>
+			<if test="status != 0 and status != null">
+				and status = #{status}
+			</if>
+				order by addTime
+		 LIMIT #{offset},#{limit}
+	</select>
+	
+	<!-- 获取产品信息总数 -->
+	<select id="getJsActivityAggregationPageCounts" parameterType="java.util.HashMap" resultType="java.lang.Integer">
+		select count(1) from js_activity_aggregation_page
+		<where>
+			<if test="title != null and title != ''">
+				and title like CONCAT('%','${title}','%' )
+			</if>
+			<if test="status != 0 and status != null">
+				and status = #{status}
+			</if>
+		</where>
+	
+	</select>
+	
+	<insert id = "insert" parameterType = "com.jsjf.model.activity.JsActivityAggregationPage">
+		insert into js_activity_aggregation_page (title,activityDate,pcUrl,pcPic,appUrl,appPic,isTop,status,addUser,addTime,terminalTypePC,
+			terminalTypeH5,terminalTypeIOS,terminalTypeAndroid)
+		values(#{title},#{activityDate},#{pcUrl},#{pcPic},#{appUrl},#{appPic},#{isTop},#{status},#{addUser},sysdate(),
+			#{terminalTypePC},#{terminalTypeH5},#{terminalTypeIOS},#{terminalTypeAndroid})
+	</insert>
+	
+	<update id = "update" parameterType="com.jsjf.model.activity.JsActivityAggregationPage">
+		update js_activity_aggregation_page
+		<set>
+			<if test="title != null"> title = #{title:VARCHAR},</if>
+			<if test="activityDate != null"> activityDate = #{activityDate:VARCHAR},</if>
+			<if test="pcUrl != null"> pcUrl = #{pcUrl:VARCHAR},</if>
+			<if test="pcPic != null"> pcPic = #{pcPic:VARCHAR},</if>
+			<if test="appUrl != null"> appUrl = #{appUrl:VARCHAR},</if>
+			<if test="appPic != null"> appPic = #{appPic:VARCHAR},</if>
+			<if test="isTop != null"> isTop = #{isTop:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="updateUser != null"> updateUser = #{updateUser:INTEGER},</if>
+			<if test="terminalTypePC != null"> terminalTypePC = #{terminalTypePC:INTEGER},</if>
+			<if test="terminalTypeH5 != null"> terminalTypeH5 = #{terminalTypeH5:INTEGER},</if>
+			<if test="terminalTypeIOS != null"> terminalTypeIOS = #{terminalTypeIOS:INTEGER},</if>
+			<if test="terminalTypeAndroid != null"> terminalTypeAndroid = #{terminalTypeAndroid:INTEGER},</if>
+			updateTime = sysdate()
+		</set>
+		where id = #{id:INTEGER}
+	</update>
+	
+	<select id = "selectJsActivityAggregationPageById" resultType="com.jsjf.model.activity.JsActivityAggregationPage" parameterType="int">
+		select * from js_activity_aggregation_page where id =#{id}
+	</select>
+</mapper>

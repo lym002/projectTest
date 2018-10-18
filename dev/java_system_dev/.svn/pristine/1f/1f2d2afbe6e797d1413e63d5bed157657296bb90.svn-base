@@ -1,0 +1,81 @@
+package com.jsjf.service.activity;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.model.activity.BypCommodityDetailBean;
+
+public interface FestivaiActivityService {
+
+	public BaseResult queryFestivaIActivityList(Map<String, Object> param, PageInfo pi);
+
+	/**
+	 * 单个兑换码录入
+	 */
+	public BaseResult updateFestivaIActivity(BypCommodityDetailBean bypCommodityBean);
+
+	/**
+	 * 先修改所有奖品详情状态为不可用
+	 */
+	public BaseResult updateSendPrizeSms();
+
+	/**
+	 * 发送短信
+	 */
+	public BaseResult sendPrizeSms(List<BypCommodityDetailBean> idList);
+
+	/**
+	 * 对参与活动的用户进行统计并存储到奖品记录表
+	 * @return
+	 */
+	public BaseResult prizeStatistics(Map<String,Object> param);
+
+	/**
+	 * 明细导出
+	 */
+	public void queryDownloadDetail(Map<String,Object> bypBean,PageInfo pi);
+
+	/**
+	 * 将上传的excel数据导入到数据库
+	 * @param name
+	 * @param bannerAddPicFile
+	 * @throws Exception 
+	 */
+	public void addBatchCode(String name, MultipartFile bannerAddPicFile) throws Exception;
+
+	/**
+	 * 查询5880活动期间用户年化奖励的信息
+	 * @param param
+	 * @param pi
+	 * @return
+	 */
+	public BaseResult queryYearInvestList(Map<String, Object> param, PageInfo pi);
+
+	/**
+	 * 查询5880活动期间用户排名奖励的信息
+	 * @param param
+	 * @param pi
+	 * @return
+	 */
+	public BaseResult queryTodayRankingList(Map<String, Object> param,
+			PageInfo pi);
+
+	/**
+	 * 查询用户总榜
+	 * @param param
+	 * @param pi
+	 * @return
+	 */
+	public BaseResult queryUserTotalList(Map<String, Object> param, PageInfo pi);
+
+	/**
+	 * 统计5880用户所获京东卡并拆分成1000元一张
+	 * @return
+	 */
+	public BaseResult updateUserCommodityDetail();
+
+}

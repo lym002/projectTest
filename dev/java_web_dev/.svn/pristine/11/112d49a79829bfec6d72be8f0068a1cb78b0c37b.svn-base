@@ -1,0 +1,13 @@
+package com.jsjf.service.activity;
+
+import com.jsjf.model.activity.BypCommodity;
+
+public interface BypCommodityService {
+
+	/**
+	 * @param pid
+	 * @return
+	 */
+	BypCommodity selectIntegralByPid(String pid);
+
+}

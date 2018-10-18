@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.claims.DrClaimsBillDAO">
+	<resultMap id="DrClaimsBillResult" type="com.jsjf.model.claims.DrClaimsBill">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="lid" property="lid" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="drawer" property="drawer" jdbcType="VARCHAR" />
+		<result column="payee" property="payee" jdbcType="VARCHAR" />
+		<result column="acceptor" property="acceptor" jdbcType="VARCHAR" />
+		<result column="amount" property="amount" jdbcType="DECIMAL" />
+		<result column="number" property="number" jdbcType="VARCHAR" />
+		<result column="endorsee" property="endorsee" jdbcType="VARCHAR" />
+		<result column="startDate" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endDate" property="endTime" jdbcType="TIMESTAMP" />				
+	</resultMap>
+	
+	<!-- 获取票据信息 -->
+	<select id="getDrClaimsBillByLid" parameterType="java.lang.Integer" resultType="com.jsjf.model.claims.DrClaimsBill">
+		SELECT id,lid,type,drawer,payee,acceptor,amount/10000 as amount,number,endorsee,
+		startDate,endDate FROM dr_claims_bill
+		<where>
+			lid = #{lid}
+		</where>
+	</select>
+	
+	<!-- 添加票据信息 -->
+	<insert id="insertDrClaimsBill" parameterType="com.jsjf.model.claims.DrClaimsBill">
+		insert dr_claims_bill (lid,type,drawer,payee,acceptor,amount,number,endorsee,startDate,endDate)
+		values (#{lid:INTEGER},#{type:INTEGER},#{drawer:VARCHAR},#{payee:VARCHAR},#{acceptor:VARCHAR},#{amount:DECIMAL},
+		#{number:VARCHAR},#{endorsee:VARCHAR},#{startDate:TIMESTAMP},#{endDate:TIMESTAMP})
+	</insert>
+	
+	<!-- 修改票据信息 -->
+	<update id="updateDrClaimsBill" parameterType="com.jsjf.model.claims.DrClaimsBill">
+		update dr_claims_bill
+		<set>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="drawer != null"> drawer = #{drawer:VARCHAR},</if>
+			<if test="payee != null"> payee = #{payee:VARCHAR},</if>
+			<if test="acceptor != null"> acceptor = #{acceptor:VARCHAR},</if>
+			<if test="amount != null"> amount = #{amount:DECIMAL},</if>
+			<if test="number != null"> number = #{number:VARCHAR},</if>
+			<if test="endorsee != null"> endorsee = #{endorsee:VARCHAR},</if>
+			<if test="startDate != null"> startDate = #{startDate:TIMESTAMP},</if>
+			<if test="endDate != null"> endDate = #{endDate:TIMESTAMP}</if>
+		</set>
+		where lid = #{lid:INTEGER}
+	</update>
+</mapper>

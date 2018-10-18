@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.activity.DrRecommendedSettingsDAO">
+	<resultMap id="DrRecommendedSettingsResult" type="com.jsjf.model.activity.DrRecommendedSettings">
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="norm" property="norm" jdbcType="INTEGER" />
+		<result column="period" property="period" jdbcType="INTEGER" />
+		<result column="modality" property="modality" jdbcType="INTEGER" />
+		<result column="standard" property="standard" jdbcType="INTEGER" />
+		<result column="products" property="products" jdbcType="VARCHAR"/>
+		<result column="startTime" property="startTime" jdbcType="TIMESTAMP" />
+		<result column="endTime" property="endTime" jdbcType="TIMESTAMP" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="addUser" property="addUser" jdbcType="INTEGER" />
+		<result column="addTime" property="addTime" jdbcType="TIMESTAMP" />
+	</resultMap>
+	
+	<select id="getReCommendedSettingsList"  parameterType="java.util.HashMap" resultMap="DrRecommendedSettingsResult">
+		select a.id,norm,period,modality,standard,startTime,endTime,products,a.status,a.addUser,a.addTime,u.name as addName
+		from dr_recommended_settings a
+		left join sys_users u ON a.addUser=u.user_ky
+		order by a.status asc
+		LIMIT #{offset},#{limit}
+	</select>
+	
+	<select id="getReCommendedSettingsCount"  parameterType="java.util.HashMap" resultType="INTEGER">
+		select count(1) from dr_recommended_settings 
+	</select>
+	
+	<insert id="insertReCommendedSettings" parameterType="com.jsjf.model.activity.DrRecommendedSettings" keyProperty="id" useGeneratedKeys="true">
+		insert into dr_recommended_settings(norm,period,modality,standard,products,startTime,endTime,status,addUser,addTime)
+		values(#{norm},#{period},#{modality},#{standard},#{products},#{startTime},#{endTime},#{status},#{addUser},#{addTime})
+	</insert>
+	
+	<select id="getReCommendedSettingsById" parameterType="java.util.HashMap"  resultType="com.jsjf.model.activity.DrRecommendedSettings">
+		select a.id,norm,period,modality,standard,products,startTime,endTime,a.status,a.addUser,a.addTime,u.name
+		from dr_recommended_settings a
+		left join sys_users u ON a.addUser=u.user_ky
+		<where>
+			<if test="id != null and id != ''">
+				and a.id = #{id:INTEGER}
+			</if>
+			<if test="status != null ">
+				and a.status = #{status:INTEGER}
+			</if>
+			<if test="investTime != null">
+				<![CDATA[ and DATE_FORMAT(a.startTime,'%Y-%m-%d') <= DATE_FORMAT(#{investTime},'%Y-%m-%d') ]]>
+				<![CDATA[ and DATE_FORMAT(a.endTime,'%Y-%m-%d') >= DATE_FORMAT(#{investTime},'%Y-%m-%d') ]]>
+			</if>
+		</where>
+		LIMIT 0,1
+	</select>
+	
+	<update id="updateStatus" parameterType="java.lang.Integer">
+		update dr_recommended_settings set status=1
+		<where>
+			 id=#{id:INTEGER}
+		</where>
+	</update>
+</mapper>

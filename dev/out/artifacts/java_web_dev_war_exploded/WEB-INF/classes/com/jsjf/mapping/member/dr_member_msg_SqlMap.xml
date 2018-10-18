@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberMsgDAO" >
+	<resultMap id="DrMemberMsgResult" type="com.jsjf.model.member.DrMemberMsg" >
+		<result column="id" property="id" jdbcType="INTEGER" />
+		<result column="ruid" property="ruId" jdbcType="INTEGER" />
+		<result column="puid" property="puId" jdbcType="INTEGER" />
+		<result column="type" property="type" jdbcType="BIT" />
+		<result column="title" property="title" jdbcType="VARCHAR" />
+		<result column="content" property="content" jdbcType="VARCHAR" />
+		<result column="addtime" property="addTime" jdbcType="TIMESTAMP" />
+		<result column="isread" property="isRead" jdbcType="BIT" />
+		<result column="status" property="status" jdbcType="BIT" />
+	</resultMap>
+	<update id="updateMsgToRead" parameterType="com.jsjf.model.member.DrMemberMsg">
+		update dr_member_msg set isread = 1 
+		where 1=1 
+		<if test="id != null"> and id = #{id} </if>
+		<if test="ruId != null"> and ruid = #{ruId} </if>
+	</update>
+  	<insert id="insertDrMemberMsg" useGeneratedKeys="true" keyProperty="id" parameterType="com.jsjf.model.member.DrMemberMsg">
+		insert into dr_member_msg (ruid,puid,type,title,content,addtime,isread,status)
+		values (#{ruId:INTEGER},#{puId:INTEGER},#{type:INTEGER},#{title:VARCHAR},#{content:VARCHAR},
+		#{addTime:TIMESTAMP},#{isRead:INTEGER},#{status:INTEGER})
+	</insert>
+	
+	<select id="getDrMemberListByParam" parameterType="java.util.HashMap" resultMap="DrMemberMsgResult">
+		select id, type, title, content, addtime, isread from dr_member_msg
+		<trim prefix=" where " prefixOverrides="and">
+			and status = 0
+			<if test="uid != null">  and ruid = #{uid} </if>
+			<if test="type != null">  and type = #{type} </if>
+		</trim>
+		order by addtime desc
+		limit #{offset}, #{limit}
+	</select>
+	<select id="getDrMemberListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(id) from dr_member_msg
+		<trim prefix=" where " prefixOverrides="and">
+			and status = 0
+			<if test="uid != null">  and ruid = #{uid} </if>
+			<if test="type != null">  and type = #{type} </if>
+			<if test="isRead != null"> and isread = #{isRead}</if>
+		</trim>
+	</select>
+</mapper>

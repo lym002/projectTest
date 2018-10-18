@@ -1,0 +1,155 @@
+package com.jsjf.service.member.impl;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.jsjf.common.BaseResult;
+import com.jsjf.common.PageInfo;
+import com.jsjf.common.Utils;
+import com.jsjf.dao.activity.JsActivityFriendDAO;
+import com.jsjf.dao.activity.JsActivityMemberAccountDAO;
+import com.jsjf.dao.member.DrMemberFundsDAO;
+import com.jsjf.dao.member.DrMemberFundsLogDAO;
+import com.jsjf.dao.member.DrMemberFundsRecordDAO;
+import com.jsjf.dao.system.DrCompanyFundsLogDAO;
+import com.jsjf.model.activity.JsActivityFriend;
+import com.jsjf.model.member.DrMember;
+import com.jsjf.model.member.DrMemberFunds;
+import com.jsjf.model.member.DrMemberFundsLog;
+import com.jsjf.model.member.DrMemberFundsRecord;
+import com.jsjf.model.system.DrCompanyFundsLog;
+import com.jsjf.service.member.DrMemberFundsRecordService;
+import com.jsjf.service.system.impl.RedisClientTemplate;
+
+@Service
+@Transactional
+public class DrMemberFundsRecordServiceImpl implements
+		DrMemberFundsRecordService {
+	
+	@Autowired
+	private DrMemberFundsRecordDAO drMemberFundsRecordDAO;
+	@Autowired
+	private RedisClientTemplate redisClientTemplate;
+	@Autowired
+	private JsActivityMemberAccountDAO jsActivityMemberAccountDAO;
+	@Autowired
+	private JsActivityFriendDAO jsActivityFriendDAO;
+	@Autowired
+	private DrMemberFundsDAO drMemberFundsDAO;
+	@Autowired
+	private DrMemberFundsLogDAO drMemberFundsLogDAO;
+	@Autowired
+	private DrCompanyFundsLogDAO drCompanyFundsLogDAO;
+	
+	
+
+	@Override
+	public BaseResult selectMemberFundsRecordByParam(Map<String, Object> map,
+			PageInfo pi) {
+		BaseResult br = new BaseResult();
+		map.put("offset", pi.getPageInfo().getOffset());
+		map.put("limit", pi.getPageInfo().getLimit());
+		List<DrMemberFundsRecord> list = drMemberFundsRecordDAO.selectMemberFundsRecordListByParam(map);
+		Integer total = drMemberFundsRecordDAO.selectMemberFundsRecordListCountByParam(map);
+		map.clear();
+		pi.setRows(list);
+		pi.setTotal(total);
+		map.put("page", pi);
+		br.setMap(map);
+		return br;
+	}
+
+
+	@Override
+	public BaseResult getTheRewards(DrMember m,Map<String, Object> param) {
+		Map<String, Object> map = new HashMap<>();
+		BaseResult br = new BaseResult();
+		try {
+			if(Utils.isObjectEmpty(m)){
+				br.setErrorMsg("未登录");
+				br.setErrorCode("1004");
+				br.setSuccess(false);
+				return br;
+			}
+			if(!param.containsKey("afid") || Utils.isObjectEmpty(param.get("afid"))){
+				br.setErrorMsg("活动id不能为null");
+				br.setErrorCode("1003");
+				br.setSuccess(false);
+				return br;
+			}
+			JsActivityFriend jaf = jsActivityFriendDAO.selectByPrimaryKey(Integer.parseInt(param.get("afid").toString()));
+			if(Utils.isObjectEmpty(jaf)){
+				br.setErrorCode("1002");
+				br.setErrorMsg("没有活动");
+				br.setSuccess(false);
+				return br;
+			}
+			boolean lockFlag = redisClientTemplate.tryLock(m.getUid()+"_"+jaf.getId(), 3, TimeUnit.SECONDS,true);
+			if(lockFlag){
+				//查询当期 活动返利 未领取金额
+				map.put("uid", m.getUid());
+				map.put("afid", jaf.getId());
+				map.put("status", 0);
+				BigDecimal unclaimed = jsActivityMemberAccountDAO.selectActivityRewardsSum(map);
+				if(null == unclaimed || unclaimed.compareTo(BigDecimal.ZERO)<=0){
+					br.setErrorCode("1001");
+					br.setErrorMsg("没有未领取金额");
+					br.setSuccess(false);
+					return br;
+				}
+				
+				//修改活动返利记录表为已领
+				map.clear();
+				map.put("uid", m.getUid());
+				map.put("afid", jaf.getId());
+				map.put("status", 1);
+				map.put("toStatus", 0);
+				jsActivityMemberAccountDAO.update(map);
+				
+				//用户资金变动
+				DrMemberFunds funds = drMemberFundsDAO.queryDrMemberFundsByUid(m.getUid());				
+				funds.setBalance(funds.getBalance().add(unclaimed));
+				funds.setInvestProfit(funds.getInvestProfit().add(unclaimed));//已收益加上红包收益
+				drMemberFundsDAO.updateDrMemberFunds(funds);	
+				
+				//用户资金交易记录表
+				DrMemberFundsRecord fundsRecord = new DrMemberFundsRecord(null, null,m.getUid(), 4, 1, unclaimed, funds.getBalance(),
+						3,  jaf.getName()+"第"+jaf.getPeriods()+"期领奖", null);
+				drMemberFundsRecordDAO.insert(fundsRecord);
+				
+				//用户资金日志明显表
+				DrMemberFundsLog logs = new DrMemberFundsLog(m.getUid(), fundsRecord.getId(), unclaimed,
+						20, 1, jaf.getName()+"第"+jaf.getPeriods()+"期领奖");
+				drMemberFundsLogDAO.insertDrMemberFundsLog(logs);
+				
+				//公司资金交易记录表
+				DrCompanyFundsLog cfundsLog = new DrCompanyFundsLog(11, m.getUid(), null,unclaimed,
+						0, jaf.getName()+"第"+jaf.getPeriods()+"期领奖", 0);
+				drCompanyFundsLogDAO.insertDrCompanyFundsLog(cfundsLog);
+				
+				param.clear();
+				param.put("amount", unclaimed);
+				br.setSuccess(true);
+				br.setMap(param);
+			}else{
+				br.setErrorCode("1005");
+				br.setErrorMsg("领取频繁,稍后尝试");
+				br.setSuccess(false);
+				return br;
+			}
+		} catch (Exception e) {
+			br.setErrorCode("9999");
+			br.setErrorMsg("系统错误");
+			br.setSuccess(false);
+		}
+		return br;
+	}
+
+}

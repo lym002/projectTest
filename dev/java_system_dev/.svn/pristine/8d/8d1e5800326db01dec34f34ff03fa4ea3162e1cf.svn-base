@@ -1,0 +1,1350 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.jsjf.dao.member.DrMemberDAO">
+	<resultMap id="DrMemberResult" type="com.jsjf.model.member.DrMember">
+		<result column="uid" property="uid" jdbcType="INTEGER" />
+		<result column="mobilephone" property="mobilephone" jdbcType="VARCHAR" />
+		<result column="password" property="passWord" jdbcType="CHAR" />
+		<result column="tpassword" property="tpassWord" jdbcType="CHAR" />
+		<result column="photo" property="photo" jdbcType="VARCHAR" />
+		<result column="isblack" property="isBlack" jdbcType="INTEGER" />
+		<result column="regip" property="regIp" jdbcType="CHAR" />
+		<result column="regdate" property="regDate" jdbcType="TIMESTAMP" />
+		<result column="lastloginip" property="lastLoginIp" jdbcType="CHAR" />
+		<result column="lastLoginTime" property="lastLoginTime" jdbcType="TIMESTAMP" />
+		<result column="type" property="type" jdbcType="INTEGER" />
+		<result column="status" property="status" jdbcType="INTEGER" />
+		<result column="regfrom" property="regFrom" jdbcType="INTEGER" />
+		<result column="mobileverify" property="mobileVerify" jdbcType="INTEGER" />
+		<result column="realverify" property="realVerify" jdbcType="INTEGER" />
+		<result column="loginverify" property="loginVerify" jdbcType="INTEGER" />
+		<result column="emailverify" property="emailVerify" jdbcType="INTEGER" />
+		<result column="recommCodes" property="recommCodes" jdbcType="CHAR" />
+		<result column="level" property="level" jdbcType="INTEGER" />
+		<result column="toFrom" property="toFrom" jdbcType="VARCHAR" />
+		<result column="allot" property="allot" jdbcType="INTEGER" />
+		<result column="realname" property="realName" jdbcType="CHAR" />
+		<result column="idcards" property="idCards" jdbcType="VARCHAR" />
+		<result column="balance" property="balance" jdbcType="DECIMAL" />
+		<result column="freeze" property="freeze" jdbcType="DECIMAL" />
+		<result column="crushcount" property="crushCount" jdbcType="DECIMAL" />
+		<result column="carrycount" property="carryCount" jdbcType="DECIMAL" />
+		<result column="bidamountcount" property="bidAmountCount" jdbcType="DECIMAL" />
+		<result column="isParticipation" property="isParticipation" jdbcType="INTEGER"/>
+		<result column="toFromType" property="toFromType" jdbcType="VARCHAR" />
+		<result column="referrer" property="referrer" jdbcType="VARCHAR" />
+		
+		<result column="isFuiou" property="isFuiou" jdbcType="INTEGER" />
+		<result column="user_id" property="user_id" jdbcType="INTEGER" />
+		<result column="fuiou_acnt" property="fuiou_acnt" jdbcType="VARCHAR" />
+		<result column="auth_st" property="auth_st" jdbcType="VARCHAR" />
+		<result column="remark" property="remark" jdbcType="VARCHAR" />
+	</resultMap>
+
+	<!-- 通过UID查找会员信息 -->
+	<select id="selectByPrimaryKey" resultMap="DrMemberResult"
+		parameterType="com.jsjf.model.member.DrMember">
+		select m.uid, m.mobilephone, m.password, m.tpassword,
+		m.photo, m.isblack,
+		m.regip, m.regdate, m.lastloginip,
+		m.lastlogintime, m.type, m.status,
+		m.regfrom, m.mobileverify,
+		m.realverify, m.loginverify, m.emailverify,
+		m.recommCodes,
+		b.email,b.realname,b.birthdate,b.idcards,
+		c.isParticipation,IFNULL(c.`name`,'币优铺理财') toFrom,
+		m.isFuiou,m.user_id,m.fuiou_acnt,m.auth_st
+		from dr_member m
+		left join dr_member_base_info b on m.uid=b.uid
+		left join dr_channel_info c ON  LOCATE(c.code,m.toFrom) =1
+		where m.uid = #{uid:INTEGER}
+	</select>
+	
+	<select id="selectByMobilephone" resultMap="DrMemberResult"
+		parameterType="com.jsjf.model.member.DrMember">
+		select m.uid, m.mobilephone, m.recommCodes
+		from dr_member m
+		<where>
+			<if test="mobilephone!=null and mobilephone!=''">
+				and m.mobilephone = #{mobilephone}
+			</if>
+			<if test="recommCodes!=null and recommCodes!=''">
+				and m.recommCodes = #{recommCodes}
+			</if>
+		</where>
+		limit 1
+	</select>
+	
+	<select id="selectByUid" resultMap="DrMemberResult"
+		parameterType="Integer">
+		select m.*,m2.mobilePhone as referrer from dr_member m
+			left join dr_member_recommended r on m.uid = r.uid
+			LEFT JOIN dr_member m2 on r.referrerId = m2.uid
+			where m.uid = #{uid} 
+	</select>
+	
+	<select id="selectOnlyOneMember" resultType="com.jsjf.model.member.DrMember" parameterType="Integer">
+		select m.uid, m.mobilephone, m.password, m.tpassword,
+		m.photo, m.isblack,
+		m.regip, m.regdate, m.lastloginip,
+		m.lastlogintime, m.type, m.status,
+		m.regfrom, m.mobileverify,
+		m.realverify, m.loginverify, m.emailverify,
+		m.recommCodes,
+		b.email,b.realname,b.birthdate,b.idcards,
+		m.isFuiou,m.user_id,m.fuiou_acnt,m.auth_st
+		from dr_member m
+		inner join dr_member_recommended rec ON m.uid=rec.referrerId
+		inner join dr_member dm ON dm.uid = rec.uid
+		left join dr_member_base_info b ON m.uid = b.uid
+		where dm.uid=#{uid}
+	</select>
+	<!-- concat(left(bankNum,4),'****',right(bankNum,4))  concat(left(b.idcards,4),'****',right(b.idcards,4)) -->
+	<select id="selectDrMemberList" parameterType="java.util.HashMap" resultMap="DrMemberResult">
+		select m.uid,m.isFuiou,CONCAT(LEFT(m.mobilephone,3),'****',RIGHT(m.mobilephone,4)) AS mobilephone, m.regdate,m.recommCodes,concat(left(b.idcards,4),'****',right(b.idcards,4)) as idcards,CONCAT(LEFT(b.realname,1),'**') AS realname,f.balance,f.fuiou_balance,f.freeze,f.fuiou_freeze,f.crushcount+f.fuiou_crushcount as crushcount,
+		f.carrycount+f.fuiou_carrycount as carrycount,f.investAmount+f.fuiou_investAmount as bidAmountCount,
+		(select bankName from dr_member_bank where uid = m.uid and `status`=1 order by type desc limit 1) as bankName,
+		(select concat(left(bankNum,4),'****',right(bankNum,4)) from dr_member_bank where uid = m.uid and `status`=1 order by type desc limit 1) as bankNum,m2.mobilephone as referrer,
+		CASE t.update_status WHEN 1 THEN '发起申请' WHEN 2 THEN '待审核' WHEN 3 THEN '审核通过' WHEN 4 THEN '审核失败' end as updateStatus,t.mchnt_txn_ssn as bank_no_mchnt_txn_ssn,
+		t.remark,m.mobilephone as phone
+		from dr_member m
+		LEFT JOIN dr_member_base_info b ON m.uid = b.uid
+		LEFT JOIN dr_member_funds f ON m.uid = f.uid
+		LEFT JOIN dr_member_recommended recomm ON m.uid = recomm.uid
+		left join dr_member m2 ON recomm.referrerId = m2.uid
+		left join (select b.user_id,b.update_status,b.mchnt_txn_ssn,b.remark  from sys_fuiou_notice_log as b 
+		where b.icd='000011' and b.status=2 
+		AND not exists(select 1 from sys_fuiou_notice_log where user_id= b.user_id and addtime>b.addtime and icd='000011' and status=2))t on t.user_id=m.mobilePhone 
+
+		<where>
+			<if test="mobilephone != null and mobilephone != ''">
+				and m.mobilephone like CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realName != null and realName != '' ">
+				and b.realname like
+				CONCAT(CONCAT('%',#{realName:VARCHAR}),'%')
+			</if>
+			<if test="recommCodes != null and recommCodes != '' ">
+				and m.recommCodes like
+				CONCAT(CONCAT('%',#{recommCodes}),'%')
+			</if>
+			<if test="referrer != null and referrer != '' ">
+      			and (m2.recommCodes like CONCAT(CONCAT('%',#{referrer:VARCHAR}),'%') or m2.mobilephone like CONCAT(CONCAT('%',#{referrer:VARCHAR}),'%'))
+      		</if>
+      		<if test="idcards !=null and idcards != ''">
+      			and b.idcards like CONCAT(CONCAT('%',#{idcards:VARCHAR}),'%')
+      		</if>
+      		<if test="uid != null">
+      			and m.uid = #{uid}
+      		</if>
+      		<if test="updateStatus !=null and updateStatus!=''">
+      			and t.update_status=#{updateStatus}
+      		</if>
+		</where>
+			group by m.uid 
+		<if test="offset != null and limit != null">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<select id="queryDrMemberByMobilePhone" parameterType="java.util.HashMap" resultMap="DrMemberResult">
+		select m.uid, concat(substring(m.mobilephone,1,3),"***",substring(m.mobilephone,8)) AS mobilePhone, m.regdate,IFNULL(dci.`name`,'币优铺理财') toFrom,
+		DATE_FORMAT(FROM_DAYS(TO_DAYS(NOW())-TO_DAYS(b.birthdate)),'%y') as age,m.lastlogintime,
+		concat(substring(b.realname,1,1),"**") as realname,f.balance,f.fuiou_balance,f.investAmount+f.fuiou_investAmount as bidAmountCount,b.sex,
+		(select bankName from dr_member_bank where `status`=1 and uid = m.uid ORDER BY type desc limit 1) as bankName,
+		MIN(i.investTime) as firstInvest,max(i.investTime) as lastInvest,ifnull(sc.cnvalue,'非CPS') as toFromType,
+		m.isFuiou,concat(substring(b.idcards,1,4),"***",substring(b.idcards,15)) as idcards,m.recommCodes as recommCodes
+		from dr_member m
+		LEFT JOIN dr_member_base_info b ON m.uid = b.uid
+		LEFT JOIN dr_member_funds f ON m.uid = f.uid
+		LEFT JOIN dr_product_invest i ON m.uid=i.uid and i.`status` !=2
+		left join dr_channel_info dci on INSTR(m.toFrom,dci.code)=1
+		Left join sys_chooseoption sc on sc.category='channelType' and sc.`code`= dci.type
+		<where>
+			<if test="mobilephone!=null and mobilephone!=''">
+				and m.mobilephone = #{mobilephone}
+			</if>
+			<if test="recommCodes!=null and recommCodes!=''">
+				and recommCodes=#{recommCodes}
+			</if>
+		</where>
+		group by m.uid 
+	</select>
+	<select id="selectDrMemberListCount" parameterType="java.util.HashMap" resultType="int">
+
+		select count(1)
+			from dr_member m
+		LEFT JOIN dr_member_base_info b ON m.uid = b.uid
+		LEFT JOIN dr_member_funds f ON m.uid = f.uid
+		LEFT JOIN dr_member_recommended recomm ON m.uid = recomm.uid
+		left join dr_member m2 ON recomm.referrerId = m2.uid
+		left join (select b.user_id,b.update_status,b.mchnt_txn_ssn,b.remark  from sys_fuiou_notice_log as b 
+		where b.icd='000011' and b.status=2 
+		AND not exists(select 1 from sys_fuiou_notice_log where user_id= b.user_id and addtime>b.addtime and icd='000011' and status=2))t on t.user_id=m.mobilePhone 
+		<where>
+			<if test="mobilephone != null and mobilephone != ''">
+					and m.mobilephone like CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realName != null and realName != '' ">
+				and b.realname like
+				CONCAT(CONCAT('%',#{realName:VARCHAR}),'%')
+			</if>
+			<if test="recommCodes != null and recommCodes != '' ">
+				and m.recommCodes like
+				CONCAT(CONCAT('%',#{recommCodes:VARCHAR}),'%')
+			</if>
+			<if test="referrer != null and referrer != '' ">
+      			and (m2.recommCodes like CONCAT(CONCAT('%',#{referrer:VARCHAR}),'%') or m2.mobilephone like CONCAT(CONCAT('%',#{referrer:VARCHAR}),'%'))
+      		</if>
+      		<if test="idcards !=null and idcards != ''">
+      			and b.idcards like CONCAT(CONCAT('%',#{idcards:VARCHAR}),'%')
+      		</if>
+      		<if test="uid != null">
+      			and m.uid = #{uid}
+      		</if>
+      		<if test="updateStatus !=null and updateStatus!=''">
+      			and t.update_status=#{updateStatus}
+      		</if>
+		</where>
+	</select>
+
+	<!-- 添加登陆用户 -->
+	<insert id="insert" parameterType="com.jsjf.model.member.DrMember"
+		keyProperty="uid" useGeneratedKeys="true">
+		insert into dr_member (mobilephone,
+		password,
+		tpassword, photo, isblack,
+		regip, regdate, type,
+		status,
+		regfrom, mobileverify,
+		realverify, loginverify,
+		emailverify,
+		recommCodes, level, toFrom
+		)
+		values
+		(#{mobilephone,jdbcType=VARCHAR},
+		#{passWord,jdbcType=CHAR},
+		#{tpassWord,jdbcType=CHAR},
+		#{photo,jdbcType=VARCHAR},
+		#{isBlack,jdbcType=INTEGER},
+		#{regIp,jdbcType=CHAR},#{regDate},
+		#{type,jdbcType=INTEGER},
+		#{status,jdbcType=INTEGER},
+		#{regFrom,jdbcType=INTEGER},
+		#{mobileVerify,jdbcType=INTEGER},
+		#{realVerify,jdbcType=INTEGER},
+		#{loginVerify,jdbcType=INTEGER},
+		#{emailVerify,jdbcType=INTEGER},
+		#{recommCodes,jdbcType=CHAR},
+		#{level,jdbcType=INTEGER},
+		#{toFrom,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	<update id="updateDrMemberByUid" parameterType="com.jsjf.model.member.DrMember">
+		update dr_member
+		<set>
+			<if test="mobilephone != null"> mobilephone = #{mobilephone:VARCHAR},</if>
+			<if test="passWord != null"> password = #{passWord:CHAR},</if>
+			<if test="tpassWord != null"> tpassword = #{tpassWord:CHAR},</if>
+			<if test="photo != null"> photo = #{photo:CHAR},</if>
+			<if test="isBlack != null"> isblack = #{isBlack:CHAR},</if>
+			<if test="regIp != null"> regip = #{regIp:CHAR},</if>
+			<if test="regDate != null"> regdate = #{regDate:TIMESTAMP},</if>
+			<if test="lastLoginIp != null"> lastloginip = #{lastLoginIp:CHAR},</if>
+			<if test="lastLoginTime != null"> lastLoginTime = #{lastLoginTime:TIMESTAMP},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="regFrom != null"> regfrom = #{regFrom:INTEGER},</if>
+			<if test="mobileVerify != null"> mobileverify = #{mobileVerify:INTEGER},</if>
+			<if test="realVerify != null"> realverify = #{realVerify:INTEGER},</if>
+			<if test="loginVerify != null"> loginverify = #{loginVerify:INTEGER},</if>
+			<if test="emailVerify != null"> emailverify = #{emailVerify:INTEGER},</if>
+			<if test="recommCodes != null"> recommCodes = #{recommCodes:CHAR},</if>
+			<if test="level != null"> level = #{level:INTEGER},</if>
+			<if test="toFrom != null and toFrom != ''"> toFrom = #{toFrom:VARCHAR},</if>
+			<if test="isFuiou != null and isFuiou != ''">  isFuiou = #{isFuiou},</if>
+	    	<if test="user_id != null and user_id != ''">  user_id = #{user_id},</if>
+	    	<if test="fuiou_acnt != null and fuiou_acnt != ''">  fuiou_acnt = #{fuiou_acnt},</if>
+	    	<if test="auth_st != null and auth_st != ''">  auth_st = #{auth_st},</if>
+	    	<if test="mchnt_txn_ssn != null and mchnt_txn_ssn != ''">  mchnt_txn_ssn = #{mchnt_txn_ssn},</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+	<select id="selectRegMemberInfoListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select concat(substring(temp.mobilePhone,1,3),"***",substring(temp.mobilePhone,8)) mobilePhone ,
+		concat(substring(temp.recomMobilePhone,1,3),"***",substring(temp.recomMobilePhone,8)) recomMobilePhone,
+		channelName,concat(substring(realname,1,1),"**") AS realname,
+		concat(substring(recomRealName,1,1),"**") AS recomRealName,regdate,regfrom,isInvest,id,isCrush,bankName,isFuiou,
+		temp.recommCodes
+		from  
+		(select dm.mobilePhone,dmbi.realname,m.mobilePhone as recomMobilePhone,dmbi2.realname as recomRealName,
+		 DATE_FORMAT(dm.regdate,'%Y-%m-%d %H:%i:%s') regdate,IFNULL(dci.`name`,'币优铺理财') channelName, case dm.regfrom when 0 THEN 'PC' when 1 THEN 'IOS' when 2 then 'android' WHEN 3 THEN 'H5' WHEN 5 THEN '微信' else '其它' end regfrom,
+		case when (select count(id) from dr_product_invest i where i.uid = dm.uid)>0 then '是' else '否' end isInvest,
+		case when(select count(id) from dr_member_crush c where c.uid = dm.uid and c.status=1)>0 then '是' else '否' end isCrush,
+		dci.id,bank.bankName,dm.isFuiou,dm.recommCodes
+		 from dr_member dm
+		LEFT JOIN dr_member_base_info dmbi on dm.uid = dmbi.uid
+		LEFT JOIN  (SELECT * from (SELECT * from dr_member_bank where status=1 ORDER BY type DESC )a GROUP BY uid) bank ON dm.uid = bank.uid
+		LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+		left join dr_member m ON dmr.referrerId = m.uid
+		LEFT JOIN dr_member_base_info dmbi2 on m.uid = dmbi2.uid
+		LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.code)=1
+		<trim  prefix=" where " prefixOverrides="and">
+			<if test="mobilephone != null and mobilephone != ''">
+				and dm.mobilephone like
+				CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realname != null and realname != '' ">
+				and instr(dmbi.realname,#{realname:VARCHAR})>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="level != null and level != ''">
+				and dm.level = #{level}
+			</if>
+		</trim>
+		)temp
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="isInvest != null and isInvest != ''">
+				and temp.isInvest = #{isInvest}
+			</if>
+			<if test="isCrush != null and isCrush != ''">
+				and temp.isCrush = #{isCrush}
+			</if>
+		</trim>
+		ORDER BY temp.regdate desc
+		limit #{offset},#{limit}
+	</select>
+	<select id="selectRegMemberInfoListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from
+		(select dm.mobilePhone,dmbi.realname,dm.regdate,dci.id,
+		case when (select count(id) from dr_member_crush c where c.uid = dm.uid and c.status=1)>0 then '是' else '否' end isCrush,
+		case when (select count(id) from dr_product_invest i where i.uid = dm.uid)>0 then '是' else '否' end isInvest
+		FROM dr_member dm
+		LEFT JOIN dr_member_base_info dmbi on dm.uid = dmbi.uid
+		LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+		left join dr_member m ON dmr.referrerId = m.uid
+		LEFT JOIN dr_member_base_info dmbi2 on m.uid = dmbi2.uid
+		LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.code)=1
+		<trim  prefix=" where " prefixOverrides="and">
+			<if test="mobilephone != null and mobilephone != ''">
+				and dm.mobilephone like
+				CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realname != null and realname != '' ">
+				and instr(dmbi.realname,#{realname:VARCHAR})>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')
+			</if>
+			<if test="cids != null and cids.length>0">
+				and dci.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="level != null and level != ''">
+				and dm.level = #{level}
+			</if>
+		</trim>
+		)temp
+		<trim prefix=" where " prefixOverrides="and">
+			<if test="isInvest != null and isInvest != ''">
+				and temp.isInvest = #{isInvest}
+			</if>
+			<if test="isCrush != null and isCrush != ''">
+				and temp.isCrush = #{isCrush}
+			</if>
+		</trim>
+	</select>
+	
+			<!-- 投资订单  title  合计 ：**个渠道，***个投资用户，*** 个绑卡用户，****元投资  -->
+	<select id="selectMemberInfoDataSum" resultType="java.util.HashMap" parameterType="java.util.HashMap">
+
+	SELECT SUM(if(b.id>0,1,0)) channelCount,SUM(b.investCount) investCount,SUM(b.realVerifyCount) realVerifyCount,IF(SUM(b.investSum ) is null,0,SUM(b.investSum )) investSum from (
+		SELECT a.id, COUNT( if(a.amount>0,1,null)) investCount,COUNT(if(a.realverify=1,1,NULL)) realVerifyCount,SUM(a.amount) investSum from (
+		
+			SELECT sum(temp.amount) amount,temp.realverify ,temp.id from (		
+			select  dm.mobilePhone,dmbi.realname,dm.regdate,dci.id,
+				case when (select count(id) from dr_member_crush c where c.uid = dm.uid and c.status=1)>0 then '是' else '否' end isCrush,
+				case when (select count(id) from dr_product_invest i where i.uid = dm.uid)>0 then '是' else '否' end isInvest,iv.amount,dm.uid,dm.realverify
+			FROM dr_member dm
+					LEFT JOIN dr_member_base_info dmbi on dm.uid = dmbi.uid
+					LEFT JOIN dr_product_invest iv on dm.uid = iv.uid
+					LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+					left join dr_member m ON dmr.referrerId = m.uid
+					LEFT JOIN dr_member_base_info dmbi2 on m.uid = dmbi2.uid
+					LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.code)=1 
+					<trim  prefix=" where " prefixOverrides="and">
+						<if test="mobilephone != null and mobilephone != ''">
+							and dm.mobilephone like
+							CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+						</if>
+						<if test="realname != null and realname != '' ">
+							and instr(dmbi.realname,#{realname:VARCHAR})>0
+						</if>
+						<if test="startDate != null and startDate != ''">
+							and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')
+						</if>
+						<if test="endDate != null and endDate != ''">
+							and DATE_FORMAT(dm.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')
+						</if>
+						<if test="cids != null and cids.length>0">
+							and dci.id in
+							<foreach collection="cids" item="item" open="(" close=")" separator=",">
+								#{item}
+							</foreach>
+						</if>
+						<if test="level != null and level != ''">
+							and dm.level = #{level}
+						</if>
+					</trim>	
+			)temp 
+			<trim prefix=" where " prefixOverrides="and">
+				<if test="isInvest != null and isInvest != ''">
+					and temp.isInvest = #{isInvest}
+				</if>
+				<if test="isCrush != null and isCrush != ''">
+					and temp.isCrush = #{isCrush}
+				</if>
+			</trim>
+			GROUP BY temp.uid	
+		)a GROUP BY a.id
+		)b 
+			
+	</select>
+	
+	<select id="queryMember" parameterType="java.util.HashMap" resultType="java.util.HashMap">		
+		select ca.id as id,jc.uid as uid,concat(substring(jc.realname,1,1),"**") as realname,su.name as username,
+		CONCAT(subString(jc.mobilePhone,1,3),"****",subString(jc.mobilePhone,8)) as mobilePhone,
+		jc.channelName as channelName,date_format(jc.regdate,'%Y-%m-%d') as regdate,
+		if(jc.isRecharge=1,'是','否') as isRecharge,
+		if(jc.channelType=1,'cps','非cps') channelType,
+		if(jc.isbank=1,'是','否') isbank,
+		date_format(jc.lastlogintime,'%Y-%m-%d %H:%i:%s') as lastlogintime,
+		if(jc.isInvestment=1,'是','否') isInvestment,
+		sc.cnvalue customerType, 
+		TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) as notFollowNum,
+		scRegfrom.cnvalue as regfrom,<!-- 注册来源 -->
+		jc.meets,
+		date_format(jc.lastCallTime,'%Y-%m-%d %H:%i:%s') as lastCallTime,
+		jc.allot as deptId,
+		dmf.investAmount+dmf.fuiou_investAmount as moneysum,
+		sus.name as createUsername ,date_format(ca.createDate,'%Y-%m-%d') as createDate,
+		jc.recommCodes as recommCodes
+		from js_customer jc
+		left join dr_member_funds dmf on dmf.uid =jc.uid
+		LEFT JOIN dr_customerAllot ca on ca.uid = jc.uid
+		left join sys_users su on su.user_ky=ca.userKy
+		left join sys_users sus on sus.user_ky=ca.createUserKy
+		LEFT JOIn sys_chooseoption sc on sc.code = jc.customerType and sc.category = 'wincallType'
+		LEFT JOIn sys_chooseoption scRegfrom on scRegfrom.code = jc.regfrom and scRegfrom.category = 'channel'
+		where 1=1
+		<!-- 客户姓名 -->
+		<if test="customerName !=null and customerName !='' ">
+			and jc.realname LIKE CONCAT('%', #{customerName,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 客户手机号 -->
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and jc.mobilePhone LIKE CONCAT('%', #{mobilePhone,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes!='' ">
+			and jc.recommCodes = #{recommCodes}
+		</if>
+		<!-- 所属人 -->
+		<if test="userName !=null and userName !='' ">
+			and su.name LIKE CONCAT('%',  #{userName},'%')
+		</if>
+		<!-- 渠道类型 -->
+		<if test="channelType !=null">
+			and jc.channelType = #{channelType}
+		</if>
+		<!-- 注册时间 -->
+		<if test="regDateStart !=null and regDateStart !='' ">
+			and DATE_FORMAT(jc.regdate,'%Y-%m-%d')>= #{regDateStart}
+		</if>
+		<if test="regDateEnd !=null and regDateEnd !='' ">
+			and  #{regDateEnd}>=DATE_FORMAT(jc.regdate,'%Y-%m-%d')
+		</if>
+		<if test="lastcall !=null">
+			and  DATE_FORMAT(jc.lastCallTime,'%Y-%m-%d')=#{lastcall}
+		</if>
+			<!-- 最近登陆时间 -->
+		<if test="startLoginTime !=null ">
+			and  DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d') >= #{startLoginTime} 
+		</if>
+		<if test="endLoginTime !=null ">
+			and   #{endLoginTime}>=DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d')
+		</if>
+		<!-- 客户类型 -->
+ 
+		<if test="customerType !=null and customerType !='' ">
+			and jc.customerType in 
+			<foreach collection="customerType" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 沟通次数 -->
+		<if test="callNumAgo !=null ">
+			and ifnull(jc.meets,0) >= #{callNumAgo}
+		</if>
+		<if test="callNumAfter !=null ">
+			and #{callNumAfter} >= ifnull(jc.meets,0)
+		</if>
+		<!-- *天未跟进-->
+		<if test="notFollowNumAgo !=null ">
+			and TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) >= #{notFollowNumAgo}
+		</if>
+		<if test="notFollowNumAfter !=null ">
+			and #{notFollowNumAfter} >= TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d'))
+		</if>
+
+		<!-- 已分配 -->
+		<if test="namestatus ==1 ">
+			and su.name is not null and su.name!=''
+		</if>
+		<!-- 未分配 -->
+		<if test="namestatus ==2 ">
+			and (su.name is  null or su.name='')
+		</if>
+		<if test="isbank !=null ">
+			and jc.isbank=#{isbank}
+		</if>
+		<!-- 投资金额 -->
+		<if test="startMoney !=null and startMoney !='' ">
+			and dmf.investAmount+dmf.fuiou_investAmount >= #{startMoney}
+		</if>
+		<if test="endMoney !=null and endMoney !='' ">
+			and  #{endMoney} >= dmf.investAmount+dmf.fuiou_investAmount
+		</if>
+		<!-- 渠道名称 -->
+		<if test="channelName !=null and channelName !='' ">
+			and jc.channelName in 
+			<foreach collection="channelName" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 所属部门 -->
+		<if test="deptId !=null and deptId != ''">
+			and jc.allot = #{deptId}
+		</if>
+		<if test="deptIds !=null and deptIds !='' ">
+			and jc.allot in
+			<foreach collection="deptIds" index="index" item="item" close=")" open="(" separator=",">
+				 #{item}
+			</foreach>
+		</if>
+		<!-- 操作人 -->
+		<if test="opUserKy !=null ">
+			and  sus.user_ky = #{opUserKy}
+		</if>
+		order by notFollowNum desc	
+		
+		<if test="offset !=null and limit !=null ">
+			limit #{offset},#{limit}
+		</if>
+	</select>
+	
+	<select id="queryMemberCount" parameterType="java.util.HashMap" resultType="int">
+		select count(jc.uid) 
+		from js_customer jc
+		left join dr_member_funds dmf on dmf.uid =jc.uid
+		LEFT JOIN dr_customerAllot ca on ca.uid = jc.uid
+		left join sys_users su on su.user_ky=ca.userKy
+		left join sys_users sus on sus.user_ky=ca.createUserKy
+		where 1=1
+		<!-- 客户姓名 -->
+		<if test="customerName !=null and customerName !='' ">
+			and jc.realname LIKE CONCAT('%', #{customerName,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 客户手机号 -->
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and jc.mobilePhone LIKE CONCAT('%', #{mobilePhone,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes!='' ">
+			and jc.recommCodes = #{recommCodes}
+		</if>
+		<!-- 所属人 -->
+		<if test="userName !=null and userName !='' ">
+			and su.name LIKE CONCAT('%',  #{userName},'%')
+		</if>
+		<!-- 渠道类型 -->
+		<if test="channelType !=null">
+			and jc.channelType = #{channelType}
+		</if>
+		<!-- 注册时间 -->
+		<if test="regDateStart !=null and regDateStart !='' ">
+			and DATE_FORMAT(jc.regdate,'%Y-%m-%d')>= #{regDateStart}
+		</if>
+		<if test="regDateEnd !=null and regDateEnd !='' ">
+			and  #{regDateEnd}>=DATE_FORMAT(jc.regdate,'%Y-%m-%d')
+		</if>
+		<if test="lastcall !=null">
+			and  DATE_FORMAT(jc.lastCallTime,'%Y-%m-%d')=#{lastcall}
+		</if>
+			<!-- 最近登陆时间 -->
+		<if test="startLoginTime !=null ">
+			and  DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d') >= #{startLoginTime} 
+		</if>
+		<if test="endLoginTime !=null ">
+			and   #{endLoginTime}>=DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d')
+		</if>
+		<!-- 客户类型 -->
+ 
+		<if test="customerType !=null and customerType !='' ">
+			and jc.customerType in 
+			<foreach collection="customerType" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 沟通次数 -->
+		<if test="callNumAgo !=null ">
+			and ifnull(jc.meets,0) >= #{callNumAgo}
+		</if>
+		<if test="callNumAfter !=null ">
+			and #{callNumAfter} >= ifnull(jc.meets,0)
+		</if>
+		<!-- *天未跟进-->
+		<if test="notFollowNumAgo !=null ">
+			and TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) >= #{notFollowNumAgo}
+		</if>
+		<if test="notFollowNumAfter !=null ">
+			and #{notFollowNumAfter} >= TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d'))
+		</if>
+
+		<!-- 已分配 -->
+		<if test="namestatus ==1 ">
+			and su.name is not null and su.name!=''
+		</if>
+		<!-- 未分配 -->
+		<if test="namestatus ==2 ">
+			and (su.name is  null or su.name='')
+		</if>
+		<if test="isbank !=null ">
+			and jc.isbank=#{isbank}
+		</if>
+		<!-- 投资金额 -->
+		<if test="startMoney !=null and startMoney !='' ">
+			and dmf.investAmount+dmf.fuiou_investAmount >= #{startMoney}
+		</if>
+		<if test="endMoney !=null and endMoney !='' ">
+			and  #{endMoney} >= dmf.investAmount+dmf.fuiou_investAmount
+		</if>
+		<!-- 渠道名称 -->
+		<if test="channelName !=null and channelName !='' ">
+			and jc.channelName in 
+			<foreach collection="channelName" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 所属部门 -->
+		<if test="deptId !=null and deptId != ''">
+			and jc.allot = #{deptId}
+		</if>
+		<if test="deptIds !=null and deptIds !='' ">
+			and jc.allot in
+			<foreach collection="deptIds" index="index" item="item" close=")" open="(" separator=",">
+				 #{item}
+			</foreach>
+		</if>
+		<!-- 操作人 -->
+		<if test="opUserKy !=null ">
+			and  sus.user_ky = #{opUserKy}
+		</if>
+	</select>
+	
+	<select id="selCustomerManagement" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select distinct jc.uid as uid,concat(substring(jc.realname,1,1),"**") as realname,su.name as username,
+		CONCAT(subString(jc.mobilePhone,1,3),"****",subString(jc.mobilePhone,8)) as mobilePhone,
+		jc.channelName as channelName,date_format(jc.regdate,'%Y-%m-%d') as regdate,
+		if(jc.isRecharge=1,'是','否') as isRecharge,
+		if(jc.channelType=1,'cps','非cps') channelType,
+		sc.cnvalue customerType, 
+		jc.meets,
+		date_format(jc.lastCallTime,'%Y-%m-%d %H:%i:%s') as lastCallTime,
+		TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) as notFollowNum,
+		jc.allot as deptId,
+		date_format((select shouldTime from dr_product_invest_repayinfo pr
+			LEFT JOIN dr_product_info sdp ON pr.pid = sdp.id		
+			 where pr.uid=jc.uid and DATE_FORMAT(pr.shouldTime,'%Y%m%d') >= CURDATE()  and  sdp.type != 5 
+			 	<if test="status == 1"> and  sdp.type = 1</if> 
+				<if test="status == 2"> and  sdp.type != 1</if>
+			  order by pr.shouldTime asc limit 1),'%Y-%m-%d') as lastPaymentTime,
+		invest.investAmountSum,
+		invest.investCount,
+		date_format(jc.lastlogintime,'%Y-%m-%d %H:%i:%s') as lastlogintime,
+		invest.investTime,
+		jc.balance as balance,
+		date_format(jc.appointDate,'%Y-%m-%d %H:%i:%s') as appointDate,
+		jc.fuiou_balance as fuiouBalance,if(jc.isFuiou=1,'是','否') as isFuiou,jc.recommCodes as recommCodes
+		from js_customer jc
+		LEFT JOIN dr_customerAllot ca on ca.uid = jc.uid
+		left join sys_users su on su.user_ky=ca.userKy
+		LEFT JOIn sys_chooseoption sc on sc.code = jc.customerType and sc.category = 'wincallType'
+		left join (SELECT SUM(zdpi.amount) as investAmountSum,zdpi.uid,COUNT(1) as  investCount, date_format(max(investTime),'%Y-%m-%d %H:%i:%s') as investTime
+						from dr_product_invest zdpi LEFT JOIN dr_product_info zdp ON  zdpi.pid = zdp.id 
+						WHERE zdpi.status !=2 and  zdp.type != 5
+						GROUP BY zdpi.uid  ) as invest ON invest.uid = jc.uid
+		
+		<!-- 投资时间 -->
+		<if test="startTime !=null or endTime !=null  ">
+			left join dr_product_invest pi on pi.uid = jc.uid
+		</if>
+		where <!-- jc.allot != 100 -->1=1
+		<!-- 投资时间 -->
+		<if test="startTime !=null  ">
+			 and DATE_FORMAT(pi.investTime,'%Y-%m-%d') >= #{startTime}
+		</if>
+		<if test="endTime !=null  ">
+			 and #{endTime}>= DATE_FORMAT(pi.investTime,'%Y-%m-%d')
+		</if>
+		<!-- 客户姓名 -->
+		<if test="customerName !=null and customerName !='' ">
+			and jc.realname LIKE CONCAT('%', #{customerName,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 客户手机号 -->
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and jc.mobilePhone LIKE CONCAT('%', #{mobilePhone,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes!='' ">
+			and jc.recommCodes = #{recommCodes}
+		</if>
+		<!-- 所属人 -->
+		<if test="userKy !=null and userKy !='' ">
+			and ca.userKy= #{userKy}
+		</if>
+		<!-- 客户状态 -->
+		<if test="status != null">
+			and jc.customerStatus = #{status}
+		</if>
+		<!-- 投资次数 -->
+		<if test="investCountFirst !=null">
+			and invest.investCount >= #{investCountFirst}
+		</if>
+		<if test="investCountEnd != null">
+			and #{investCountEnd} >= invest.investCount
+		</if>
+		<!-- 渠道类型 -->
+		<if test="channelType !=null and channelType !='' ">
+			<if test="channelType == 1">
+				and jc.channelType = #{channelType}
+			</if>
+			<if test="channelType == 0">
+			and (jc.channelType = #{channelType} or jc.channelType IS NULL)
+			</if>
+		</if>
+		<!-- 最近通话时间 -->
+		<if test="startCallDate !=null ">
+			and jc.lastCallTime >= #{startCallDate}
+		</if>
+		<if test="endCallDate !=null">
+			and  #{endCallDate}>=jc.lastCallTime
+		</if>
+		<!-- *天未跟进-->
+		<if test="notFollowNumAgo !=null ">
+			and TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) >= #{notFollowNumAgo}
+		</if>
+		<if test="notFollowNumAfter !=null ">
+			and #{notFollowNumAfter} >= TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d'))
+		</if>
+		<!-- 下次预约时间 -->
+		<if test="startAppointDate !=null ">
+			and jc.appointDate >= #{startAppointDate} 
+		</if>
+		<if test="endAppointDate !=null ">
+			and #{endAppointDate} >= jc.appointDate
+		</if>
+		<!-- 注册时间 -->
+		<if test="startRegDate !=null and startRegDate !='' ">
+			and DATE_FORMAT(jc.regdate,'%Y-%m-%d')>= #{startRegDate}
+		</if>
+		<if test="endRegDate !=null and endRegDate !='' ">
+			and  #{endRegDate}>=DATE_FORMAT(jc.regdate,'%Y-%m-%d')
+		</if>
+		<!-- 客户类型 -->
+		 <if test="customerType !=null and customerType !='' ">
+			and jc.customerType in 
+			<foreach collection="customerType" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 最近回款时间 -->
+		<if test="startshouldTime !=null or endshouldTime !=null ">
+			and (select 1 from dr_product_invest_repayinfo pr 
+					left join dr_product_info tdp on tdp.id = pr.pid where pr.uid=jc.uid  and  tdp.type !=5
+				<if test="startshouldTime !=null ">
+					and  DATE_FORMAT(shouldTime,'%Y-%m-%d') >= #{startshouldTime} 
+				</if>
+				<if test="endshouldTime !=null ">
+					and   #{endshouldTime}>=DATE_FORMAT(shouldTime,'%Y-%m-%d')
+				</if>
+			order by pr.shouldTime asc limit 1)
+		</if>
+		<!-- 最近登陆时间 -->
+		<if test="startLoginTime !=null ">
+			and  DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d') >= #{startLoginTime} 
+		</if>
+		<if test="endLoginTime !=null ">
+			and   #{endLoginTime}>=DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d')
+		</if>
+		<!-- 沟通次数 -->
+		<if test="callNumAgo !=null ">
+			and ifnull(jc.meets,0) >= #{callNumAgo}
+		</if>
+		<if test="callNumAfter !=null ">
+			and #{callNumAfter} >= ifnull(jc.meets,0)
+		</if>
+		<!-- 投资金额 -->
+		<if test="investAmountSumFirst !=null and investAmountSumFirst !='' ">
+			and invest.investAmountSum >= #{investAmountSumFirst}
+		</if>
+		<if test="investAmountSumEnd !=null and investAmountSumEnd !='' ">
+			and  #{investAmountSumEnd} >= invest.investAmountSum
+		</if>
+		<!-- 可用余额 -->
+		<if test="balanceFirst !=null and balanceFirst !='' ">
+			and jc.fuiou_balance+jc.balance>= #{balanceFirst}
+		</if>
+		<if test="balanceEnd !=null and balanceEnd !='' ">
+			and  #{balanceEnd} >= jc.fuiou_balance+jc.balance
+		</if>
+		<!-- 渠道名称 -->
+		<if test="channelName !=null and channelName !='' ">
+			and jc.channelName LIKE CONCAT('%', #{channelName,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 所属部门 -->
+		<if test="deptIds !=null and deptIds !='' ">
+			and jc.allot in
+			<foreach collection="deptIds" index="index" item="item" close=")" open="(" separator=",">
+				 #{item}
+			</foreach>
+		</if>
+		order by notFollowNum desc	
+		limit #{offset},#{limit}
+	</select>
+	
+	<select id="selCustomerManagementCount" parameterType="java.util.HashMap" resultType="int">
+		select count(distinct(jc.uid)) 
+		from js_customer jc
+		LEFT JOIN dr_customerAllot ca on ca.uid = jc.uid
+		left join sys_users su on su.user_ky=ca.userKy
+		LEFT JOIn sys_chooseoption sc on sc.code = jc.customerType and sc.category = 'wincallType'
+		left join (SELECT SUM(zdpi.amount) as investAmountSum,zdpi.uid,COUNT(1) as  investCount, date_format(max(investTime),'%Y-%m-%d %H:%i:%s') as investTime
+						from dr_product_invest zdpi LEFT JOIN dr_product_info zdp ON  zdpi.pid = zdp.id 
+						WHERE zdpi.status !=2 and  zdp.type != 5
+						GROUP BY zdpi.uid  ) as invest ON invest.uid = jc.uid
+		
+		<!-- 投资时间 -->
+		<if test="startTime !=null or endTime !=null  ">
+			left join dr_product_invest pi on pi.uid = jc.uid
+		</if>
+		where <!-- jc.allot != 100 -->1=1
+		<!-- 投资时间 -->
+		<if test="startTime !=null  ">
+			 and DATE_FORMAT(pi.investTime,'%Y-%m-%d') >= #{startTime}
+		</if>
+		<if test="endTime !=null  ">
+			 and #{endTime}>= DATE_FORMAT(pi.investTime,'%Y-%m-%d')
+		</if>
+		<!-- 客户姓名 -->
+		<if test="customerName !=null and customerName !='' ">
+			and jc.realname LIKE CONCAT('%', #{customerName,jdbcType=VARCHAR},'%')
+		</if>
+		<if test="recommCodes !=null and recommCodes!='' ">
+			and jc.recommCodes = #{recommCodes}
+		</if>
+		<!-- 客户手机号 -->
+		<if test="mobilePhone !=null and mobilePhone !='' ">
+			and jc.mobilePhone LIKE CONCAT('%', #{mobilePhone,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 所属人 -->
+		<if test="userKy !=null and userKy !='' ">
+			and ca.userKy= #{userKy}
+		</if>
+		<!-- 客户状态 -->
+		<if test="status != null">
+			and jc.customerStatus = #{status}
+		</if>
+		<!-- 投资次数 -->
+		<if test="investCountFirst !=null">
+			and invest.investCount >= #{investCountFirst}
+		</if>
+		<if test="investCountEnd != null">
+			and #{investCountEnd} >= invest.investCount
+		</if>
+		<!-- 渠道类型 -->
+		<if test="channelType !=null and channelType !='' ">
+			<if test="channelType == 1">
+				and jc.channelType = #{channelType}
+			</if>
+			<if test="channelType == 0">
+			and (jc.channelType = #{channelType} or jc.channelType IS NULL)
+			</if>
+		</if>
+		<!-- 最近通话时间 -->
+		<if test="startCallDate !=null ">
+			and jc.lastCallTime >= #{startCallDate}
+		</if>
+		<if test="endCallDate !=null">
+			and  #{endCallDate}>=jc.lastCallTime
+		</if>
+		<!-- *天未跟进-->
+		<if test="notFollowNumAgo !=null ">
+			and TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d')) >= #{notFollowNumAgo}
+		</if>
+		<if test="notFollowNumAfter !=null ">
+			and #{notFollowNumAfter} >= TIMESTAMPDIFF(DAY,date_format(lastCallTime,'%Y-%m-%d'),date_format(now(),'%Y-%m-%d'))
+		</if>
+		<!-- 下次预约时间 -->
+		<if test="startAppointDate !=null ">
+			and jc.appointDate >= #{startAppointDate} 
+		</if>
+		<if test="endAppointDate !=null ">
+			and #{endAppointDate} >= jc.appointDate
+		</if>
+		<!-- 注册时间 -->
+		<if test="startRegDate !=null and startRegDate !='' ">
+			and DATE_FORMAT(jc.regdate,'%Y-%m-%d')>= #{startRegDate}
+		</if>
+		<if test="endRegDate !=null and endRegDate !='' ">
+			and  #{endRegDate}>=DATE_FORMAT(jc.regdate,'%Y-%m-%d')
+		</if>
+		<!-- 客户类型 -->
+		 <if test="customerType !=null and customerType !='' ">
+			and jc.customerType in 
+			<foreach collection="customerType" index="index" item="item" open="(" close=")" separator=",">
+					#{item}
+			</foreach>
+		</if> 
+		<!-- 最近回款时间 -->
+		<if test="startshouldTime !=null or endshouldTime !=null ">
+			and (select 1 from dr_product_invest_repayinfo pr 
+					left join dr_product_info tdp on tdp.id = pr.pid where pr.uid=jc.uid  and  tdp.type !=5
+				<if test="startshouldTime !=null ">
+					and  DATE_FORMAT(shouldTime,'%Y-%m-%d') >= #{startshouldTime} 
+				</if>
+				<if test="endshouldTime !=null ">
+					and   #{endshouldTime}>=DATE_FORMAT(shouldTime,'%Y-%m-%d')
+				</if>
+			order by pr.shouldTime asc limit 1)
+		</if>
+		<!-- 最近登陆时间 -->
+		<if test="startLoginTime !=null ">
+			and  DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d') >= #{startLoginTime} 
+		</if>
+		<if test="endLoginTime !=null ">
+			and   #{endLoginTime}>=DATE_FORMAT(jc.lastlogintime,'%Y-%m-%d')
+		</if>
+		<!-- 沟通次数 -->
+		<if test="callNumAgo !=null ">
+			and ifnull(jc.meets,0) >= #{callNumAgo}
+		</if>
+		<if test="callNumAfter !=null ">
+			and #{callNumAfter} >= ifnull(jc.meets,0)
+		</if>
+		<!-- 投资金额 -->
+		<if test="investAmountSumFirst !=null and investAmountSumFirst !='' ">
+			and invest.investAmountSum >= #{investAmountSumFirst}
+		</if>
+		<if test="investAmountSumEnd !=null and investAmountSumEnd !='' ">
+			and  #{investAmountSumEnd} >= invest.investAmountSum
+		</if>
+		<!-- 可用余额 -->
+		<if test="balanceFirst !=null and balanceFirst !='' ">
+			and jc.balance>= #{balanceFirst}
+		</if>
+		<if test="balanceEnd !=null and balanceEnd !='' ">
+			and  #{balanceEnd} >= jc.balance
+		</if>
+		<!-- 渠道名称 -->
+		<if test="channelName !=null and channelName !='' ">
+			and jc.channelName LIKE CONCAT('%', #{channelName,jdbcType=VARCHAR},'%')
+		</if>
+		<!-- 所属部门 -->
+		<if test="deptIds !=null and deptIds !='' ">
+			and jc.allot in
+			<foreach collection="deptIds" index="index" item="item" close=")" open="(" separator=",">
+				 #{item}
+			</foreach>
+		</if>
+	</select>
+	<!-- 查询批量发放用户信息 -->
+	<select id="selectGiveRegMemberInfoListByParam" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select concat(substring(temp.mobilePhone,1,3),"***",substring(temp.mobilePhone,8)) mobilePhone ,
+		concat(substring(temp.recomMobilePhone,1,3),"***",substring(temp.recomMobilePhone,8)) recomMobilePhone,
+		channelName,realname,recomRealName,regdate,regfrom,id,isInvest,keyWord,isCrush,bankName,uid,shouldTime
+		from  
+		(select dm.mobilePhone,dmbi.realname,m.mobilePhone as recomMobilePhone,dmbi2.realname as recomRealName,
+		 DATE_FORMAT(dm.regdate,'%Y-%m-%d %H:%i:%s') regdate,IFNULL(dci.`name`,'币优铺理财') channelName, case dm.regfrom when 1 THEN 'IOS' when 2 then 'android' WHEN 3 THEN '微信' else 'PC' end regfrom,
+		case when (select count(id) from dr_product_invest i where i.uid = dm.uid)>0 then '是' else '否' end isInvest,
+		case when(select count(id) from dr_member_crush c where c.uid = dm.uid and c.status=1)>0 then '是' else '否' end isCrush,
+		dci.id,kw.keyWord,bank.bankName,icount.ucount,dm.uid,D.shouldTime
+		 from dr_member dm
+		LEFT JOIN dr_member_base_info dmbi on dm.uid = dmbi.uid
+		LEFT JOIN dr_member_bank bank ON dm.uid=bank.uid and bank.status=1 and bank.type=1
+		LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+		left join dr_member m ON dmr.referrerId = m.uid
+		LEFT JOIN dr_member_base_info dmbi2 on m.uid = dmbi2.uid
+		LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.code)=1
+		LEFT JOIN dr_channel_keywords kw ON kw.cid = dci.id and INSTR(dm.toFrom,kw.kCode)>1
+		LEFT JOIN (select dm2.uid uid,count(dm2.uid) ucount from dr_member dm2 left join dr_product_invest dpi on dpi.uid = dm2.uid LEFT JOIN dr_product_info dpi2 on dpi.pid = dpi2.id where dpi2.type !=1 and if(dpi2.atid or dpi2.prizeId,0,1) GROUP BY dpi.uid)icount
+   		on icount.uid = dm.uid
+   		LEFT JOIN (
+   			SELECT dpir.uid,max(dpir.id),dpir.shouldTime shouldTime
+			FROM dr_product_invest_repayinfo dpir
+			LEFT JOIN dr_member dm2 ON dm2.uid = dpir.uid GROUP BY	dpir.uid
+   		)D on D.uid = dm.uid)temp 
+		<trim prefix=" where " prefixOverrides="and">
+			realname IS NOT NULL
+			<if test="mobilephone != null and mobilephone != ''">
+				and temp.mobilephone like
+				CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realname != null and realname != '' ">
+				and instr(temp.realname,#{realname:VARCHAR})>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and DATE_FORMAT(temp.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and DATE_FORMAT(temp.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''">
+				and DATE_FORMAT(temp.shouldTime,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{refundStartDate},'%Y-%m-%d')
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''">
+				and DATE_FORMAT(temp.shouldTime,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{refundEndDate},'%Y-%m-%d')
+			</if>
+			<if test="cids != null and cids.length>0">
+				and temp.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="isInvest != null and isInvest != ''">
+				and temp.isInvest = #{isInvest}
+			</if>
+			<if test="keyWord !=null and keyWord != ''">
+				and temp.keyWord like CONCAT(CONCAT('%',#{keyWord:VARCHAR}),'%') 
+			</if>
+			<if test="isCrush != null and isCrush != ''">
+				and temp.isCrush = #{isCrush}
+			</if>
+			<if test="isFirst !=null and isFirst !=''">
+				and temp.ucount = 1
+			</if>
+		</trim>
+		ORDER BY temp.regdate desc
+		limit #{offset},#{limit}
+	</select>
+	<!-- 查询选择发放用户总数 -->
+	<select id="selectGiveRegMemberInfoListCountByParam" parameterType="java.util.HashMap" resultType="int">
+		select count(1) from
+		(select dm.mobilePhone,dmbi.realname,dm.regdate,dci.id,kw.keyWord,icount.ucount,dm.uid,D.shouldTime,
+		case when (select count(id) from dr_member_crush c where c.uid = dm.uid and c.status=1)>0 then '是' else '否' end isCrush,
+		case when (select count(id) from dr_product_invest i where i.uid = dm.uid)>0 then '是' else '否' end isInvest
+		FROM dr_member dm
+		LEFT JOIN dr_member_base_info dmbi on dm.uid = dmbi.uid
+		LEFT JOIN dr_member_recommended dmr ON dm.uid = dmr.uid
+		left join dr_member m ON dmr.referrerId = m.uid
+		LEFT JOIN dr_member_base_info dmbi2 on m.uid = dmbi2.uid
+		LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.code)=1
+		LEFT JOIN dr_channel_keywords kw ON kw.cid = dci.id and INSTR(dm.toFrom,kw.kCode)>1
+		LEFT JOIN (select dm2.uid uid,count(dm2.uid) ucount from dr_member dm2 left join dr_product_invest dpi on dpi.uid = dm2.uid LEFT JOIN dr_product_info dpi2 on dpi.pid = dpi2.id where dpi2.type !=1 and if(dpi2.atid or dpi2.prizeId,0,1) GROUP BY dpi.uid)icount
+   on icount.uid = dm.uid
+   		LEFT JOIN (
+   			SELECT dpir.uid,max(dpir.id),dpir.shouldTime shouldTime
+			FROM dr_product_invest_repayinfo dpir
+			LEFT JOIN dr_member dm2 ON dm2.uid = dpir.uid GROUP BY	dpir.uid
+   		)D on D.uid = dm.uid) temp
+		<trim prefix=" where " prefixOverrides="and">
+			 realname IS NOT NULL
+			<if test="mobilephone != null and mobilephone != ''">
+				and temp.mobilephone like
+				CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')
+			</if>
+			<if test="realname != null and realname != '' ">
+				and instr(temp.realname,#{realname:VARCHAR})>0
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and DATE_FORMAT(temp.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and DATE_FORMAT(temp.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')
+			</if>
+			<if test="refundStartDate != null and refundStartDate != ''">
+				and DATE_FORMAT(temp.shouldTime,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{refundStartDate},'%Y-%m-%d')
+			</if>
+			<if test="refundEndDate != null and refundEndDate != ''">
+				and DATE_FORMAT(temp.shouldTime,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{refundEndDate},'%Y-%m-%d')
+			</if>
+			<if test="cids != null and cids.length>0">
+				and temp.id in
+				<foreach collection="cids" item="item" open="(" close=")" separator=",">
+					#{item}
+				</foreach>
+			</if>
+			<if test="isInvest != null and isInvest != ''">
+				and temp.isInvest = #{isInvest}
+			</if>
+			<if test="keyWord !=null and keyWord != ''">
+				and temp.keyWord like CONCAT(CONCAT('%',#{keyWord:VARCHAR}),'%') 
+			</if>
+			<if test="isCrush != null and isCrush != ''">
+				and temp.isCrush = #{isCrush}
+			</if>
+			<if test="isFirst !=null and isFirst !=''">
+				and temp.ucount = 1
+			</if>
+		</trim>
+	</select>
+	
+	<select id="selectLuckyMoney" resultType="String">
+		select m.mobilePhone from dr_member m 
+		where m.realverify=1 
+		and NOT EXISTS(
+			select 1 from js_activity_lucky_money lm where m.uid = lm.shaerUid AND DATE_FORMAT(addTime,'%Y%m%d') = DATE_FORMAT(NOW(),'%Y%m%d')
+		)
+	</select>
+	
+	<select id="selectTiYanJinGuoQi" resultType="java.util.HashMap">
+		select m.mobilePhone as mobile,sum(amount) as amount from dr_member_favourable f
+		,dr_member m 
+		where f.type = 3 and f.`status` =0 and f.uid = m.uid
+		group by m.mobilePhone
+	</select>
+	
+	<select id="selectNotCertified" resultType="String">
+		SELECT mobilePhone from dr_member 
+		where DATE_FORMAT(regdate,'%Y%m%d') = DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 DAY),'%Y%m%d') AND realverify = 0;
+		
+	</select>
+	<select id="selectdrMemberGroupByChannle" resultType="java.util.HashMap">
+			SELECT DISTINCT dm.uid,ifnull(dci.code,'byp') code from dr_member dm 
+				LEFT JOIN dr_channel_info dci ON INSTR(dm.toFrom,dci.`code`)=1 
+				WHERE dm.allot = 0 ORDER BY dci.`code`;
+	</select>
+	<update id="updateMemberAllot" parameterType="java.util.HashMap">
+			update dr_member set allot=#{allot} where  uid in 
+			<foreach collection="uids" close=")" index="index" open="(" separator="," item="item">
+				#{item}
+			</foreach>
+	</update>
+	
+	<select id="selectdrMemberByMobile" resultType="com.jsjf.model.member.DrMember" parameterType="java.util.HashMap">
+		SELECT 
+		CONCAT(SUBSTRING((SELECT mobilePhone FROM dr_member WHERE uid = b.uid),1,3),"****",SUBSTRING((SELECT mobilePhone FROM dr_member WHERE uid = b.uid),8)) AS mobilephone,
+		 (SELECT concat(substring(realname,1,1),"**") FROM dr_member member LEFT JOIN dr_member_base_info info ON member.uid = info.uid WHERE member.uid = b.uid) AS realName,
+		 IFNULL((
+							SELECT SUM(ja.amont) from js_activity_Inviter_Award ja 
+							where ja.user_id = b.uid and ja.`status` = 1
+							
+			),0) AS isBackNow,
+			IFNULL((
+							SELECT SUM(ja.amont) from js_activity_Inviter_Award ja 
+							where ja.user_id = b.uid and ja.`status` = 0),0) AS noBackNow
+
+  		 FROM dr_member a 
+	     LEFT JOIN dr_member_recommended b ON  a.uid = b.referrerId
+	     <where>
+	     	<if test="mobilePhone!=null and mobilePhone!=''">
+	     		and a.mobilePhone = #{mobilePhone}
+	     	</if>
+	     	<if test="recommCodes!=null and recommCodes!=''">
+	     		and a.recommCodes = #{recommCodes}
+	     	</if>
+	     </where>
+	     
+		 limit #{offset},#{limit}
+	</select>
+	<select id="selectdrMemberByMobilePhoneCount" resultType="java.lang.Integer" parameterType="java.util.HashMap">
+		select count(1)
+  		 from dr_member a 
+	     left join dr_member_recommended b on  a.uid = b.referrerId
+	     where a.mobilePhone = #{mobilePhone}
+	</select>
+	<select id="selectReferrerMemberByMobilePhone" resultType="com.jsjf.model.member.DrMember" parameterType="java.util.Map">
+		 SELECT concat(substring(dm.mobilePhone,1,3),"****",substring(dm.mobilePhone,8)) mobilephone,CONCAT(LEFT(i.realname,1),if(i.sex=1,'先生','女士'))as realName
+		 FROM dr_member m 
+		 LEFT JOIN dr_member_recommended r ON m.uid = r.uid 
+		 LEFT JOIN dr_member_base_info i ON r.referrerId = i.uid
+		 LEFT JOIN dr_member dm ON r.referrerId = dm.uid
+		 <where>
+		 	<if test="mobilephone != null and mobilephone != ''">
+		 		and m.mobilePhone = #{mobilephone} 
+			</if>
+		 	<if test="recommCodes != null and recommCodes != ''">
+		 		and m.recommCodes = #{recommCodes} 
+			</if>
+		 </where>
+		 
+	</select>
+	
+		<select id="gt4DayNotlogged" resultType="String" parameterType="int">
+		SELECT dm.mobilePhone from dr_member dm
+		LEFT JOIN dr_member_funds df ON dm.uid = df.uid
+		LEFT JOIN dr_product_invest dpi ON dm.uid = dpi.uid
+		LEFT JOIN dr_product_info dp ON dp.id = dpi.pid 
+		where 
+		<if test="sign == 1">
+			DATEDIFF(NOW(),dm.lastlogintime)  >=   4 
+		</if>
+		<if test="sign != 1">
+			DATEDIFF(NOW(),dm.lastlogintime) = 4 
+		</if>
+		 and dp.type = 2 and df.balance >= 100 
+		 GROUP BY dm.uid HAVING COUNT(1)>1
+	</select>
+	
+	<select id="gt7DayNotlogged" resultType="java.util.HashMap" parameterType="int">
+		SELECT dm.mobilePhone,dm.uid,
+		ifnull((SELECT 1 from dr_member_favourable dmf where dm.uid = dmf.uid and dmf.type in (1,2,4) and dmf.`status` = 0 GROUP BY dmf.uid),0) coupon
+		 from dr_member dm
+		LEFT JOIN dr_member_funds df ON dm.uid = df.uid
+		LEFT JOIN dr_product_invest dpi ON dm.uid = dpi.uid
+		LEFT JOIN dr_product_info dp ON dp.id = dpi.pid 
+		where 
+		<if test="sign == 1">
+			DATEDIFF(NOW(),dm.lastlogintime) >= 7
+		</if>
+		<if test="sign != 1">
+			DATEDIFF(NOW(),dm.lastlogintime) = 7
+		</if>
+		 and dp.type = 2 and df.balance >= 100  GROUP BY dm.uid HAVING COUNT(1)>1
+	</select>
+	
+	<select id="couponGived4NotUse" resultType="String" parameterType="String">
+		SELECT DISTINCT dm.mobilePhone
+		 from dr_member dm
+		LEFT JOIN dr_member_favourable dmf ON dm.uid = dmf.uid
+		where dmf.status = 0 and DATEDIFF(NOW(),dmf.addtime)=4 and dmf.name=#{name} 
+	</select>
+	
+	<select id="selectDrMemberByMobilePhone" resultType="com.jsjf.model.member.DrMember" parameterType="String">
+			SELECT dm.*,dmb.realname,dmb.idcards from dr_member dm 
+				LEFT JOIN dr_member_base_info dmb ON dm.uid = dmb.uid
+				where  dm.mobilePhone = #{mobilePhone}
+	</select>
+	
+	<select id="selectDrMemberByChannel" resultType="com.jsjf.model.member.DrMember" parameterType="java.util.HashMap">
+			SELECT a.uid as uid,concat(substring(c.realname,1,1),"**") as realName,
+			concat(substring(a.mobilePhone,1,3),"***",substring(a.mobilePhone,8)) as mobilePhone,
+			a.regdate as regdate,a.toFrom as toFrom,
+			d.name toFromName FROM `dr_member` a 
+			left join `dr_member_base_info` c on a.uid = c.uid
+			left join dr_channel_info d on a.toFrom = d.code
+			<where>
+			(INSTR('byp',a.toFrom) = 1 
+			OR NOT EXISTS (SELECT 1 FROM `dr_channel_info` b WHERE INSTR(a.toFrom,b.code) = 1))
+				<if test = "realName != null and realName != ''"> and a.realName like CONCAT(CONCAT('%',#{realName:VARCHAR}),'%')</if>
+				<if test = "mobilephone !=null and mobilephone != '' "> and a.mobilephone like CONCAT(CONCAT(#{mobilephone:VARCHAR}),'%')</if>
+				<if test = "startDate != null and startDate != ''">
+					<![CDATA[and DATE_FORMAT(a.regdate,'%Y-%m-%d') >= #{startDate}]]>
+				</if>
+				<if test = "endDate != null and endDate != ''">
+					<![CDATA[and DATE_FORMAT(a.regdate,'%Y-%m-%d') <= #{endDate}]]>
+				</if>
+				<if test = "toFrom != null and toFrom != ''"> and INSTR(#{toFrom},a.toFrom) = 1 </if>
+				<if test = "toFromName"> and a.toFromName like CONCAT(CONCAT('%',#{toFromName:VARCHAR}),'%')</if>
+			</where>
+			order by a.regdate desc
+			limit #{offset},#{limit}
+	</select>
+	
+
+	<select id="selectDrMemberByChannelCount" resultType="java.lang.Integer" parameterType="java.util.HashMap">
+			SELECT count(1) FROM `dr_member` a 
+			<where>
+			INSTR('byp',a.toFrom) = 1 
+			OR NOT EXISTS (SELECT 1 FROM `dr_channel_info` b WHERE INSTR(a.toFrom,b.code) = 1)
+				<if test = "realName != null and realName != ''"> and a.realName like CONCAT(CONCAT('%',#{realName:VARCHAR}),'%')</if>
+				<if test = "mobilephone !=null and mobilephone != '' "> and a.mobilephone like CONCAT(CONCAT('%',#{mobilephone:VARCHAR}),'%')</if>
+				<if test = "startDate != null"> and DATE_FORMAT(a.regdate,'%Y-%m-%d') <![CDATA[ >= ]]>DATE_FORMAT(#{startDate},'%Y-%m-%d')</if>
+				<if test = "endDate != null"> and DATE_FORMAT(a.regdate,'%Y-%m-%d') <![CDATA[ <= ]]>DATE_FORMAT(#{endDate},'%Y-%m-%d')</if>
+				<if test = "toFrom != null and toFrom != ''"> and INSTR(#{toFrom},a.toFrom) = 1 </if>
+				<if test = "toFromName"> and a.toFromName like CONCAT(CONCAT('%',#{toFromName:VARCHAR}),'%')</if>
+			</where>
+	</select>
+
+	<select id="selectDrMemberByUserId" resultType="com.jsjf.model.member.DrMember" parameterType="String">
+			SELECT dm.*,dmb.realname,dmb.idcards from dr_member dm 
+				LEFT JOIN dr_member_base_info dmb ON dm.uid = dmb.uid
+				where  dm.user_id =#{user_id}
+	</select>
+	
+	<update id="updatelastCallTime" parameterType="java.util.HashMap">
+		update js_customer 
+		set lastCallTime=#{calldate},meets=meets+1,customerType=#{type}  
+		<if test="appointDate != null"> ,appointDate=#{appointDate}</if>
+		where mobilePhone=#{moblie}
+	</update>
+	
+	<update id="updateFileStatus" parameterType="java.util.List">
+		<foreach collection ="list" item="item" index="index" open="" close="" separator=";">
+		update dr_member
+		<set>
+			 fileStatus = #{item.fileStatus},
+		 	 fuiouMessageNo = #{item.fuiouMessageNo}
+		</set>
+		where uid = #{item.uid:INTEGER}
+		</foreach>
+	</update>
+
+	<update id="updateByPrimaryKey" parameterType="com.jsjf.model.member.DrMember">
+		update dr_member
+		<set>
+			<if test="passWord != null"> password = #{passWord:CHAR},</if>
+			<if test="tpassWord != null"> tpassword = #{tpassWord:CHAR},</if>
+			<if test="photo != null"> photo = #{photo:CHAR},</if>
+			<if test="isBlack != null"> isblack = #{isBlack:CHAR},</if>
+			<if test="regIp != null"> regip = #{regIp:CHAR},</if>
+			<if test="regDate != null"> regdate = #{regDate:TIMESTAMP},</if>
+			<if test="lastLoginIp != null"> lastloginip = #{lastLoginIp:CHAR},</if>
+			<if test="lastLoginTime != null"> lastLoginTime = #{lastLoginTime:TIMESTAMP},</if>
+			<if test="type != null"> type = #{type:INTEGER},</if>
+			<if test="userKy != null"> USER_KY = #{userKy:INTEGER},</if>
+			<if test="status != null"> status = #{status:INTEGER},</if>
+			<if test="regFrom != null"> regfrom = #{regFrom:INTEGER},</if>
+			<if test="mobileVerify != null"> mobileverify = #{mobileVerify:INTEGER},</if>
+			<if test="realVerify != null"> realverify = #{realVerify:INTEGER},</if>
+			<if test="loginVerify != null"> loginverify = #{loginVerify:INTEGER},</if>
+			<if test="emailVerify != null"> emailverify = #{emailVerify:INTEGER},</if>
+			<if test="recommCodes != null"> recommCodes = #{recommCodes:CHAR},</if>
+			<if test="level != null"> level = #{level:INTEGER},</if>
+			<if test="isFuiou != null "> isFuiou = #{isFuiou},</if>
+			<if test="user_id != null and user_id != ''"> user_id = #{user_id},</if>
+			<if test="fuiou_acnt != null and fuiou_acnt != ''"> fuiou_acnt = #{fuiou_acnt},</if>
+			<if test="auth_st != null and auth_st != ''"> auth_st = #{auth_st},</if>
+			<if test="mchnt_txn_ssn != null and mchnt_txn_ssn != ''"> mchnt_txn_ssn = #{mchnt_txn_ssn},</if>
+			<if test="is_byp_old_user != null and is_byp_old_user != ''"> is_byp_old_user = #{is_byp_old_user},</if>
+			<if test="user_integral != null and user_integral != ''"> user_integral = #{user_integral},</if>
+			<if test="userIntegralUse != null and userIntegralUse != ''"> user_integral_use = #{userIntegralUse},</if>
+			<if test="lastSignInTime != null and lastSignInTime != ''"> last_sign_in_time = #{lastSignInTime},</if>
+			<if test="signInNumberDays != null and signInNumberDays != ''"> sign_in_number_days = #{signInNumberDays}</if>
+		</set>
+		where uid = #{uid:INTEGER}
+	</update>
+	
+	 <!-- 查询openId -->
+     <select id="queryOpenId" resultType="java.lang.String"
+            parameterType="java.lang.Integer">
+        SELECT open_id as openId
+        FROM
+        byp_bind_weixin
+        where uid = #{uid:INTEGER}
+    </select>
+</mapper>
